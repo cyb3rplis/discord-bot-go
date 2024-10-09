@@ -81,7 +81,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	time.Sleep(250 * time.Millisecond)
 
 	// Start speaking.
-	vc.Speaking(true)
+	_ = vc.Speaking(true)
 
 	// Send the buffer data.
 	for _, buff := range buffer {
@@ -89,9 +89,9 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	}
 
 	// Stop speaking
-	vc.Speaking(false)
+	_ = vc.Speaking(false)
 
-	// Sleep for a specificed amount of time before ending.
+	// Sleep for a specified amount of time before ending.
 	time.Sleep(250 * time.Millisecond)
 
 	// Disconnect from the provided voice channel.

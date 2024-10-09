@@ -23,8 +23,33 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// check if the message is "<prefix>sound"
-	if strings.HasPrefix(m.Content, fmt.Sprintf("%ssound", config.GetValueString("general", "prefix", "."))) {
+	//LIST SOUNDS
+	if m.Content == ".sound list" {
+		sounds, err := sound.ListSounds()
+		if err != nil {
+			fmt.Println("error listing sounds:", err)
+			return
+		}
+		if len(sounds) == 0 {
+			_, err := s.ChannelMessageSend(m.ChannelID, "No sounds found.")
+			if err != nil {
+				fmt.Println("error sending message:", err)
+			}
+			return
+		}
+
+		soundList := "> Available sounds: \n"
+		for _, sound := range sounds {
+			soundList += fmt.Sprintf("* %s\n", sound)
+		}
+		_, err = s.ChannelMessageSend(m.ChannelID, soundList)
+		if err != nil {
+			fmt.Println("error sending message:", err)
+		}
+
+		//PLAY SOUND
+		// check if the message is "<prefix>sound"
+	} else if strings.HasPrefix(m.Content, fmt.Sprintf("%ssound", config.GetValueString("general", "prefix", "."))) {
 
 		// Find the channel that the message came from.
 		c, err := s.State.Channel(m.ChannelID)
