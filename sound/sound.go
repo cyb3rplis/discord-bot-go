@@ -58,12 +58,16 @@ func LoadSound(soundName string) error {
 }
 
 // playSound plays the current buffer to the provided channel.
-func PlaySound(s *discordgo.Session, guildID, channelID, soundName string) (err error) {
+func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
 
 	// Load the sound file.
 	err = LoadSound(soundName)
 	if err != nil {
 		fmt.Printf("error loading sound %s, %v ", soundName, err)
+		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("> sound does not exists."))
+		if err != nil {
+			fmt.Println("error loading sound:", err)
+		}
 		return
 	}
 

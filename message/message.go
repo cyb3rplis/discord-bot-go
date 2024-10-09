@@ -54,7 +54,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Look for the message sender in that guild's current voice states.
 		for _, vs := range g.VoiceStates {
 			if vs.UserID == m.Author.ID {
-				err = sound.PlaySound(s, g.ID, vs.ChannelID, soundFile)
+				err = sound.PlaySound(s, m, g.ID, vs.ChannelID, soundFile)
 				if err != nil {
 					fmt.Println("error playing sound:", err)
 				}
