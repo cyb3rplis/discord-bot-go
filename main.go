@@ -141,7 +141,7 @@ func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 // loadSound attempts to load an encoded sound file from disk.
 func loadSound() error {
 
-	file, err := os.Open("./sounds/sikerim.dca")
+	file, err := os.Open("./sounds/airhorn.dca")
 	if err != nil {
 		fmt.Println("Error opening dca file :", err)
 		return err
@@ -209,7 +209,7 @@ func playSound(s *discordgo.Session, guildID, channelID string) (err error) {
 	time.Sleep(250 * time.Millisecond)
 
 	// Disconnect from the provided voice channel.
-	//vc.Disconnect()
+	vc.Disconnect()
 
 	return nil
 }
