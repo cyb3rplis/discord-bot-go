@@ -4,14 +4,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/config"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
 )
 
 var buffer = make([][]byte, 0)
@@ -64,7 +65,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	err = LoadSound(soundName)
 	if err != nil {
 		fmt.Printf("error loading sound %s, %v ", soundName, err)
-		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("> sound does not exists."))
+		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .help for all sounds")
 		if err != nil {
 			fmt.Println("error loading sound:", err)
 		}

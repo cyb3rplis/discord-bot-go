@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/sasbury/mini"
 )
 
@@ -18,7 +19,7 @@ func init() {
 }
 
 func GetConfig() *mini.Config {
-	fmt.Println("Loading config file", "file", "../config.ini")
+	fmt.Println("Loading config file", "file", "../config/config.ini")
 	conf, err := mini.LoadConfiguration("../config/config.ini")
 	if err != nil {
 		fmt.Println("error reading config file config.ini")

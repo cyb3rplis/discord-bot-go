@@ -2,8 +2,10 @@ package message
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/config"
+	"regexp"
 	"strings"
+
+	"github.com/cyb3rplis/discord-bot-go/config"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/sound"
@@ -24,7 +26,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//LIST SOUNDS
-	if m.Content == ".sound list" {
+	if m.Content == ".help" {
 		sounds, err := sound.ListSounds()
 		if err != nil {
 			fmt.Println("error listing sounds:", err)
@@ -38,9 +40,9 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		soundList := "> Available sounds: \n"
+		soundList := "> Available sounds: \n\n"
 		for _, soundName := range sounds {
-			soundList += fmt.Sprintf("* %s\n", soundName[:len(soundName)-4]+"\n")
+			soundList += fmt.Sprintf("> * %s\n", soundName[:len(soundName)-4]+"\n")
 		}
 		_, err = s.ChannelMessageSend(m.ChannelID, soundList)
 		if err != nil {
@@ -68,6 +70,15 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		args := strings.Split(m.Content, " ")
 		if len(args) < 2 || args[1] == "" || len(args) > 2 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "Usage: .sound <sound_name>")
+			if err != nil {
+				fmt.Println("error sending message:", err)
+			}
+			return
+		}
+
+		var validPattern = regexp.MustCompile(`^[a-z0-9]+$`)
+		if !validPattern.MatchString(args[1]) {
+			_, err := s.ChannelMessageSend(m.ChannelID, "sound contains invalid characters, only [a-z0-9] allowed")
 			if err != nil {
 				fmt.Println("error sending message:", err)
 			}
