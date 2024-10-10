@@ -76,7 +76,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		var validPattern = regexp.MustCompile(`^[a-z0-9]+$`)
+		var validPattern = regexp.MustCompile(`^[a-z\-0-9]+$`)
 		if !validPattern.MatchString(args[1]) {
 			_, err := s.ChannelMessageSend(m.ChannelID, "sound contains invalid characters, only [a-z0-9] allowed")
 			if err != nil {
