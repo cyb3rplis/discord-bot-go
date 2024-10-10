@@ -26,7 +26,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//LIST SOUNDS
-	if m.Content == ".help" {
+	if m.Content == fmt.Sprintf("%slist", config.GetValueString("general", "prefix", ".")) {
 		sounds, err := sound.ListSounds()
 		if err != nil {
 			fmt.Println("error listing sounds:", err)
@@ -40,7 +40,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		soundList := "> Available sounds: \n\n"
+		soundList := fmt.Sprintf("> Available sounds (play with: %ssound <sound-name>) \n", config.GetValueString("general", "prefix", "."))
 		for _, soundName := range sounds {
 			soundList += fmt.Sprintf("> * %s", soundName[:len(soundName)-4]+"\n")
 		}
