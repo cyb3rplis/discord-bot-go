@@ -61,7 +61,7 @@ func LoadSound(soundName string) error {
 	}
 }
 
-// playSound plays the current buffer to the provided channel.
+// PlaySound plays the current buffer to the provided channel.
 func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundFile, soundName string) (err error) {
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
@@ -71,24 +71,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 			fmt.Println("error sending message:", err)
 		}
 		return nil
-	}
-
-	_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-		Content: fmt.Sprintf("Current sound is playing: %s", soundName),
-		Components: []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.Button{
-						Label:    "Stop Sound",
-						Style:    discordgo.PrimaryButton,
-						CustomID: "stop_sound", // Unique identifier for the button
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		fmt.Println("error sending message:", err)
 	}
 
 	// Load the sound file.
@@ -182,47 +164,13 @@ func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	return soundFiles, nil
 }
 
-func ListSounds() ([]string, error) {
-	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
-	if err != nil {
-		return nil, err
-	}
-	var soundFiles []string
-	baseDir, err := filepath.Abs(config.GetValueString("general", "sounds_dir", "-"))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, file := range files {
-		// Only include .dca files
-		if filepath.Ext(file.Name()) == ".dca" {
-			// resolve the absolute path of each file
-			filePath, err := filepath.Abs(filepath.Join(config.GetValueString("general", "sounds_dir", "-"), file.Name()))
-			if err != nil {
-				return nil, err
-			}
-			// ensure the file is inside the base directory
-			if !strings.HasPrefix(filePath, baseDir) {
-				return nil, errors.New("potential path traversal detected")
-			}
-			// only append if not a symlink
-			if !isSymlink(filePath) {
-				soundFiles = append(soundFiles, file.Name())
-			}
-		}
-	}
-	return soundFiles, nil
-}
-
-// InteractionCreate create event handler (for button clicks)
-func InteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// Interaction create event handler (for button clicks)
+func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check if the interaction is a button click
 	if i.Type == discordgo.InteractionMessageComponent {
-		switch i.MessageComponentData().CustomID {
-		case "stop_sound":
-			// Handle the button press, stop the song logic here
-			// For example, stop the song in your music player
-			// Then, send a response to the interaction to confirm the action
+		switch {
+		case i.MessageComponentData().CustomID == "stop_sound":
+			// Handle the stop sound button press
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseUpdateMessage,
 				Data: &discordgo.InteractionResponseData{
@@ -235,6 +183,56 @@ func InteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			// Send stop signal to stopChannel
 			stopChannel <- struct{}{}
+
+		default:
+			if strings.HasPrefix(i.MessageComponentData().CustomID, "play_sound_") {
+
+				// Acknowledge the interaction
+				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseDeferredMessageUpdate,
+				})
+				if err != nil {
+					log.Println("Failed to respond to interaction:", err)
+					return
+				}
+
+				// extract the subfolder and sound name from the custom ID
+				parts := strings.SplitN(strings.TrimPrefix(i.MessageComponentData().CustomID, "play_sound_"), "_", 2)
+				if len(parts) != 2 {
+					fmt.Println("Invalid custom ID format")
+					return
+				}
+				subfolder := parts[0]
+				soundName := parts[1]
+
+				// Find the channel that the interaction came from
+				c, err := s.State.Channel(i.ChannelID)
+				if err != nil {
+					// could not find channel
+					return
+				}
+
+				// Find the guild for that channel
+				g, err := s.State.Guild(c.GuildID)
+				if err != nil {
+					// could not find guild
+					return
+				}
+
+				// Look for the interaction user in that guild's current voice states
+				for _, vs := range g.VoiceStates {
+					if vs.UserID == i.Member.User.ID {
+						// Construct the sound file path
+						soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
+						// Play the sound
+						err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundFile, soundName)
+						if err != nil {
+							fmt.Println("error playing sound:", err)
+						}
+						return
+					}
+				}
+			}
 		}
 	}
 }

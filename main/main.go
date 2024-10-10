@@ -26,7 +26,7 @@ func main() {
 	dg.AddHandler(message.AudioMessageHandler)
 
 	// Register interaction handler for button clicks
-	dg.AddHandler(sound.InteractionCreate)
+	dg.AddHandler(sound.InteractionHandler)
 
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandler(guildCreate)

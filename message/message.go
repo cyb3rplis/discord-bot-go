@@ -2,8 +2,6 @@ package message
 
 import (
 	"fmt"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -12,7 +10,6 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/sound"
 )
 
-// This function will be called (due to AudioMessageHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	prefix := config.GetValueString("general", "prefix", ".")
@@ -35,12 +32,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//if the command starts with the prefix and is not a list or stop command
 	case command == fmt.Sprintf("%shelp", prefix):
 		// Default case: show help message
-		_, err := s.ChannelMessageSend(m.ChannelID, "🧐 Usage: \n > » List Categories: <.l> \n > » List Sounds: <.c> <.l> \n > » Play Sound: <.c> <sound_name>")
+		_, err := s.ChannelMessageSend(m.ChannelID, "🧐 Usage: \n > » List Categories: <.list> \n > » List Sounds: <.category_name> <.sound_name> \n > » Play Sound: <.category> <sound_name>")
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
 	// LIST CATEGORIES
-	case command == fmt.Sprintf("%sl", prefix):
+	case command == fmt.Sprintf("%slist", prefix):
 		soundCategories, err := sound.ListSoundsCategories()
 		if err != nil {
 			fmt.Println("error listing sound categories:", err)
@@ -53,7 +50,6 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			return
 		}
-
 		list := fmt.Sprintf("> Available Sound Categories \n")
 		for _, folder := range soundCategories {
 			list += fmt.Sprintf("> * %s\n", folder)
@@ -77,66 +73,32 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			return
 		}
-		soundList := fmt.Sprintf("> Available sounds for this category %s \n Usage: %s%s <sound-name> \n", subfolder, prefix, subfolder)
-		for _, soundName := range sounds {
-			soundList += fmt.Sprintf("> * %s\n", soundName[:len(soundName)-4])
+		content := []discordgo.MessageComponent{}
+		row := discordgo.ActionsRow{}
+		for i, soundName := range sounds {
+			soundName = strings.TrimSuffix(soundName, ".dca")
+			// only 5 buttons per row
+			if i > 0 && i%5 == 0 {
+				content = append(content, row)
+				row = discordgo.ActionsRow{}
+			}
+			row.Components = append(row.Components, discordgo.Button{
+				Label:    soundName,
+				Style:    discordgo.SecondaryButton,
+				CustomID: fmt.Sprintf("play_sound_%s_%s", subfolder, soundName),
+			})
 		}
-		_, err = s.ChannelMessageSend(m.ChannelID, soundList)
+		// Append the last row if it has any components
+		if len(row.Components) > 0 {
+			content = append(content, row)
+		}
+
+		_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+			Components: content,
+		})
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
-	// PLAY SOUND
-	case len(args) == 2 && strings.HasPrefix(command, prefix):
-		subfolder := strings.TrimPrefix(command, prefix)
-		soundName := args[1]
-		// Validate the sound name
-		var validPattern = regexp.MustCompile(`^[a-z\-0-9]+$`)
-		if !validPattern.MatchString(soundName) {
-			_, err := s.ChannelMessageSend(m.ChannelID, "Sound contains invalid characters, only [a-z0-9] allowed")
-			if err != nil {
-				fmt.Println("error sending message:", err)
-			}
-			return
-		}
-
-		// Check if subfolder exists
-		subfolderPath := fmt.Sprintf("%s/%s", config.GetValueString("general", "sounds_dir", "-"), subfolder)
-		if _, err := os.Stat(subfolderPath); os.IsNotExist(err) {
-			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Category %s does not exist. \n  Usage: \n > List Categories: <.l> \n", subfolder))
-			if err != nil {
-				fmt.Println("error sending message:", err)
-			}
-			return
-		}
-
-		// Construct the sound file path
-		soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
-
-		// Find the channel that the message came from.
-		c, err := s.State.Channel(m.ChannelID)
-		if err != nil {
-			// Could not find channel.
-			return
-		}
-
-		// Find the guild for that channel.
-		g, err := s.State.Guild(c.GuildID)
-		if err != nil {
-			// Could not find guild.
-			return
-		}
-
-		// Look for the message sender in that guild's current voice states.
-		for _, vs := range g.VoiceStates {
-			if vs.UserID == m.Author.ID {
-				err = sound.PlaySound(s, m, g.ID, vs.ChannelID, soundFile, soundName)
-				if err != nil {
-					fmt.Println("error playing sound:", err)
-				}
-				return
-			}
-		}
-
 	default:
 		return
 	}
