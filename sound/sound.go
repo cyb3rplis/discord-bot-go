@@ -96,7 +96,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	time.Sleep(250 * time.Millisecond)
 
 	// Disconnect from the provided voice channel.
-	//vc.Disconnect()
+	vc.Disconnect()
 
 	return nil
 }

@@ -42,7 +42,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		soundList := "> Available sounds: \n\n"
 		for _, soundName := range sounds {
-			soundList += fmt.Sprintf("> * %s\n", soundName[:len(soundName)-4]+"\n")
+			soundList += fmt.Sprintf("> * %s", soundName[:len(soundName)-4]+"\n")
 		}
 		_, err = s.ChannelMessageSend(m.ChannelID, soundList)
 		if err != nil {
@@ -86,6 +86,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		soundFile := fmt.Sprintf("%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), args[1])
+		fmt.Println("playing sound file: ", soundFile)
 
 		// Look for the message sender in that guild's current voice states.
 		for _, vs := range g.VoiceStates {
