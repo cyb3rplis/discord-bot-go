@@ -65,7 +65,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	err = LoadSound(soundName)
 	if err != nil {
 		fmt.Printf("error loading sound %s, %v ", soundName, err)
-		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .help for all sounds")
+		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .list for all sounds")
 		if err != nil {
 			fmt.Println("error loading sound:", err)
 		}
