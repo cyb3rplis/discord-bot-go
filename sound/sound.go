@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 
 var buffer = make([][]byte, 0)
 var botSpeaking = false
+var stopChannel = make(chan struct{})
 
 // loadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
@@ -71,6 +73,24 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 		return nil
 	}
 
+	_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Content: fmt.Sprintf("Current sound is playing: %s", soundName),
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.Button{
+						Label:    "Stop Sound",
+						Style:    discordgo.PrimaryButton,
+						CustomID: "stop_sound", // Unique identifier for the button
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		fmt.Println("error sending message:", err)
+	}
+
 	// Load the sound file.
 	err = LoadSound(soundName)
 	if err != nil {
@@ -99,7 +119,16 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 
 	// Send the buffer data.
 	for _, buff := range buffer {
-		vc.OpusSend <- buff
+		select {
+		case <-stopChannel:
+			// Stop sending buffer data if stop signal is received
+			_ = vc.Speaking(false)
+			botSpeaking = false
+			buffer = make([][]byte, 0)
+			return nil
+		default:
+			vc.OpusSend <- buff
+		}
 	}
 
 	// Stop speaking
@@ -148,6 +177,31 @@ func ListSounds() ([]string, error) {
 		}
 	}
 	return soundFiles, nil
+}
+
+// InteractionCreate create event handler (for button clicks)
+func InteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// Check if the interaction is a button click
+	if i.Type == discordgo.InteractionMessageComponent {
+		switch i.MessageComponentData().CustomID {
+		case "stop_sound":
+			// Handle the button press, stop the song logic here
+			// For example, stop the song in your music player
+			// Then, send a response to the interaction to confirm the action
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Content:    "The sound has been stopped.",
+					Components: []discordgo.MessageComponent{}, // Remove the button after it's pressed
+				},
+			})
+			if err != nil {
+				log.Println("Failed to respond to interaction:", err)
+			}
+			// Send stop signal to stopChannel
+			stopChannel <- struct{}{}
+		}
+	}
 }
 
 // helper

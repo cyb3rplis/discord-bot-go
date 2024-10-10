@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/sound"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,6 +24,9 @@ func main() {
 
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(message.AudioMessageHandler)
+
+	// Register interaction handler for button clicks
+	dg.AddHandler(sound.InteractionCreate)
 
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandler(guildCreate)
