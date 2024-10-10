@@ -62,7 +62,7 @@ func LoadSound(soundName string) error {
 }
 
 // playSound plays the current buffer to the provided channel.
-func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
+func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundFile, soundName string) (err error) {
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
@@ -92,10 +92,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	}
 
 	// Load the sound file.
-	err = LoadSound(soundName)
+	err = LoadSound(soundFile)
 	if err != nil {
-		fmt.Printf("error loading sound %s, %v ", soundName, err)
-		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .list for all sounds")
+		fmt.Printf("error loading sound %s, %v ", soundFile, err)
+		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .list to show all categories")
 		if err != nil {
 			fmt.Println("error loading sound:", err)
 		}
@@ -145,6 +145,41 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	botSpeaking = false
 
 	return nil
+}
+
+func ListSoundsCategories() ([]string, error) {
+	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
+	if err != nil {
+		return nil, err
+	}
+	var subfolders []string
+	for _, file := range files {
+		if file.IsDir() {
+			subfolders = append(subfolders, file.Name())
+		}
+	}
+	return subfolders, nil
+}
+
+func ListSoundsInSubfolder(subfolder string) ([]string, error) {
+	baseDir := config.GetValueString("general", "sounds_dir", "-")
+	subfolderPath := filepath.Join(baseDir, subfolder)
+	cleanedSubfolderPath := filepath.Clean(subfolderPath)
+	// Ensure the cleaned subfolder path is within the base directory
+	if !strings.HasPrefix(cleanedSubfolderPath, baseDir) {
+		return nil, errors.New("potential path traversal detected")
+	}
+	files, err := ioutil.ReadDir(cleanedSubfolderPath)
+	if err != nil {
+		return nil, err
+	}
+	var soundFiles []string
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".dca" {
+			soundFiles = append(soundFiles, file.Name())
+		}
+	}
+	return soundFiles, nil
 }
 
 func ListSounds() ([]string, error) {
