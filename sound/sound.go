@@ -16,6 +16,7 @@ import (
 )
 
 var buffer = make([][]byte, 0)
+var botSpeaking = false
 
 // loadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
@@ -61,6 +62,15 @@ func LoadSound(soundName string) error {
 // playSound plays the current buffer to the provided channel.
 func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
 
+	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
+	if botSpeaking {
+		_, err := s.ChannelMessageSend(m.ChannelID, "🎉🎉 bot is already playing a sound, please try again later 🎉🎉")
+		if err != nil {
+			fmt.Println("error sending message:", err)
+		}
+		return nil
+	}
+
 	// Load the sound file.
 	err = LoadSound(soundName)
 	if err != nil {
@@ -72,11 +82,14 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 		return
 	}
 
+	fmt.Println("playing sound file: ", soundName)
+
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(guildID, channelID, false, true)
 	if err != nil {
 		return err
 	}
+	botSpeaking = true
 
 	// Sleep for a specified amount of time before playing the sound
 	time.Sleep(250 * time.Millisecond)
@@ -100,6 +113,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 
 	// empty buffer to not play older sounds
 	buffer = make([][]byte, 0)
+	botSpeaking = false
 
 	return nil
 }

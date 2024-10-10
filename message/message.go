@@ -86,7 +86,6 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		soundFile := fmt.Sprintf("%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), args[1])
-		fmt.Println("playing sound file: ", soundFile)
 
 		// Look for the message sender in that guild's current voice states.
 		for _, vs := range g.VoiceStates {
