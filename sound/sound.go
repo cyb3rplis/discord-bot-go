@@ -145,7 +145,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case strings.HasPrefix(customID, "list_sounds_"):
 		handleListSoundsInteraction(s, i, customID)
 	default:
-		fmt.Println("Unknown interaction:", customID)
+		fmt.Println("unknown interaction:", customID)
 	}
 }
 
@@ -197,24 +197,44 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	if err != nil {
 		fmt.Println("error sending message:", err)
 	}
-	// List sounds in the selected category
-	listSoundsInCategory(s, i.ChannelID, category)
+	// List getSoundsInCategory in the selected category
+	sounds, err := getSoundsInCategory(s, i.ChannelID, category)
+	if err != nil {
+		fmt.Println("error listing sounds in category:", err)
+		return
+	}
+
+	// Split content into multiple messages if it exceeds 5 rows
+	for len(sounds) > 0 {
+		var messageContent []discordgo.MessageComponent
+		if len(sounds) > 5 {
+			messageContent, sounds = sounds[:5], sounds[5:]
+		} else {
+			messageContent, sounds = sounds, nil
+		}
+		_, err = s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+			Components: messageContent,
+		})
+		if err != nil {
+			fmt.Println("error sending message:", err)
+		}
+	}
 }
 
-// listSoundsInCategory lists the sounds in the specified category and sends them as buttons
-func listSoundsInCategory(s *discordgo.Session, channelID, category string) {
+// getSoundsInCategory lists the sounds in the specified category and sends them as buttons
+func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]discordgo.MessageComponent, error) {
 	// Get all sound files in the subfolder
 	sounds, err := WalkSoundFiles(category)
 	if err != nil {
 		fmt.Println("error listing sounds in subfolder:", err)
-		return
+		return nil, err
 	}
 	if len(sounds) == 0 {
 		_, err := s.ChannelMessageSend(channelID, "No sounds found in this category.")
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
-		return
+		return nil, errors.New("no sounds found in this category")
 	}
 	content := []discordgo.MessageComponent{}
 	row := discordgo.ActionsRow{}
@@ -236,21 +256,7 @@ func listSoundsInCategory(s *discordgo.Session, channelID, category string) {
 		content = append(content, row)
 	}
 
-	// Split content into multiple messages if it exceeds 5 rows
-	for len(content) > 0 {
-		var messageContent []discordgo.MessageComponent
-		if len(content) > 5 {
-			messageContent, content = content[:5], content[5:]
-		} else {
-			messageContent, content = content, nil
-		}
-		_, err = s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
-			Components: messageContent,
-		})
-		if err != nil {
-			fmt.Println("error sending message:", err)
-		}
-	}
+	return content, nil
 }
 
 // WalkSoundFiles returns a list of sound files in a subfolder.
