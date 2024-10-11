@@ -75,7 +75,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		row := discordgo.ActionsRow{}
 		for i, soundName := range sounds {
 			soundName = strings.TrimSuffix(soundName, ".dca")
-			// only 5 buttons per row
+			// only 5 buttons per row - discord does not allow more
 			if i > 0 && i%5 == 0 {
 				content = append(content, row)
 				row = discordgo.ActionsRow{}

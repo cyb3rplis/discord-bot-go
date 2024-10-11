@@ -41,7 +41,6 @@ func LoadSound(soundName string) error {
 			}
 			return nil
 		}
-
 		if err != nil {
 			fmt.Println("error reading from dca file :", err)
 			return err
@@ -50,8 +49,6 @@ func LoadSound(soundName string) error {
 		// Read encoded pcm from dca file.
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
-
-		// Should not be any end of file errors
 		if err != nil {
 			fmt.Println("error reading from dca file :", err)
 			return err
@@ -67,11 +64,8 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
-		_, err := s.ChannelMessageSend(m.ChannelID, "🤫 Bot is already playing a sound, please try again after the sound has finished 🤫")
-		if err != nil {
-			fmt.Println("error sending message:", err)
-		}
-		return nil
+		stopChannel <- struct{}{}
+		time.Sleep(250 * time.Millisecond) // Give some time for the current sound to stop
 	}
 
 	// Load the sound file.
@@ -85,7 +79,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 		return
 	}
 
-	fmt.Println("playing sound file: ", soundName)
+	fmt.Println("> playing sound file: ", soundName)
 
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(guildID, channelID, false, true)
@@ -128,43 +122,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	botSpeaking = false
 
 	return nil
-}
-
-// ListSoundsCategories returns a list of subfolders in the sounds directory.
-func ListSoundsCategories() ([]string, error) {
-	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
-	if err != nil {
-		return nil, err
-	}
-	var subfolders []string
-	for _, file := range files {
-		if file.IsDir() {
-			subfolders = append(subfolders, file.Name())
-		}
-	}
-	return subfolders, nil
-}
-
-// ListSoundsInSubfolder returns a list of sound files in a subfolder.
-func ListSoundsInSubfolder(subfolder string) ([]string, error) {
-	baseDir := config.GetValueString("general", "sounds_dir", "-")
-	subfolderPath := filepath.Join(baseDir, subfolder)
-	cleanedSubfolderPath := filepath.Clean(subfolderPath)
-	// Ensure the cleaned subfolder path is within the base directory
-	if !strings.HasPrefix(cleanedSubfolderPath, baseDir) {
-		return nil, errors.New("potential path traversal detected")
-	}
-	files, err := ioutil.ReadDir(cleanedSubfolderPath)
-	if err != nil {
-		return nil, err
-	}
-	var soundFiles []string
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".dca" {
-			soundFiles = append(soundFiles, file.Name())
-		}
-	}
-	return soundFiles, nil
 }
 
 // InteractionHandler create event handler (for button clicks)
@@ -211,14 +168,14 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				// Find the channel that the interaction came from
 				c, err := s.State.Channel(i.ChannelID)
 				if err != nil {
-					// could not find channel
+					fmt.Println("error finding channel:", err)
 					return
 				}
 
 				// Find the guild for that channel
 				g, err := s.State.Guild(c.GuildID)
 				if err != nil {
-					// could not find guild
+					fmt.Println("error finding guild:", err)
 					return
 				}
 
@@ -240,11 +197,39 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// helper
-func isSymlink(path string) bool {
-	fileInfo, err := os.Lstat(path)
+// ListSoundsCategories returns a list of subfolders in the sounds directory.
+func ListSoundsCategories() ([]string, error) {
+	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
 	if err != nil {
-		return false
+		return nil, err
 	}
-	return (fileInfo.Mode() & os.ModeSymlink) != 0
+	var subfolders []string
+	for _, file := range files {
+		if file.IsDir() {
+			subfolders = append(subfolders, file.Name())
+		}
+	}
+	return subfolders, nil
+}
+
+// ListSoundsInSubfolder returns a list of sound files in a subfolder.
+func ListSoundsInSubfolder(subfolder string) ([]string, error) {
+	baseDir := config.GetValueString("general", "sounds_dir", "-")
+	subfolderPath := filepath.Join(baseDir, subfolder)
+	cleanedSubfolderPath := filepath.Clean(subfolderPath)
+	// Ensure the cleaned subfolder path is within the base directory
+	if !strings.HasPrefix(cleanedSubfolderPath, baseDir) {
+		return nil, errors.New("potential path traversal detected")
+	}
+	files, err := ioutil.ReadDir(cleanedSubfolderPath)
+	if err != nil {
+		return nil, err
+	}
+	var soundFiles []string
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".dca" {
+			soundFiles = append(soundFiles, file.Name())
+		}
+	}
+	return soundFiles, nil
 }
