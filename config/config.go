@@ -10,9 +10,10 @@ var Config *mini.Config
 
 func init() {
 	Config = GetConfig()
+	shortToken := GetValueString("general", "token", "WRONG_CONF")[0:10]
 
 	fmt.Println("---------------------------------")
-	fmt.Println(" > TOKEN: ", GetValueString("general", "token", "-"))
+	fmt.Println(" > TOKEN: ", fmt.Sprintf("%s...", shortToken))
 	fmt.Println(" > PREFIX: ", GetValueString("general", "prefix", "."))
 	fmt.Println(" > SOUNDS_DIR: ", GetValueString("general", "sounds_dir", "."))
 	fmt.Println("---------------------------------")
