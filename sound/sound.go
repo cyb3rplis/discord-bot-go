@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -72,7 +71,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	err = LoadSound(soundFile)
 	if err != nil {
 		fmt.Printf("error loading sound %s, %v ", soundFile, err)
-		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Use .list to show all categories")
+		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Sikerim")
 		if err != nil {
 			fmt.Println("error loading sound:", err)
 		}
@@ -197,21 +196,6 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// ListSoundsCategories returns a list of subfolders in the sounds directory.
-func ListSoundsCategories() ([]string, error) {
-	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
-	if err != nil {
-		return nil, err
-	}
-	var subfolders []string
-	for _, file := range files {
-		if file.IsDir() {
-			subfolders = append(subfolders, file.Name())
-		}
-	}
-	return subfolders, nil
-}
-
 // ListSoundsInSubfolder returns a list of sound files in a subfolder.
 func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	baseDir := config.GetValueString("general", "sounds_dir", "-")
@@ -221,7 +205,7 @@ func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	if !strings.HasPrefix(cleanedSubfolderPath, baseDir) {
 		return nil, errors.New("potential path traversal detected")
 	}
-	files, err := ioutil.ReadDir(cleanedSubfolderPath)
+	files, err := os.ReadDir(cleanedSubfolderPath)
 	if err != nil {
 		return nil, err
 	}
@@ -232,4 +216,23 @@ func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 		}
 	}
 	return soundFiles, nil
+}
+
+func WalkSoundFolder() ([]string, error) {
+	soundFolderDir := config.GetValueString("general", "sounds_dir", "-")
+	cleanedSubfolderPath := filepath.Clean(soundFolderDir)
+	folders, err := os.ReadDir(cleanedSubfolderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var subfolders []string
+
+	for _, entry := range folders {
+		if entry.IsDir() {
+			subfolders = append(subfolders, entry.Name())
+		}
+	}
+
+	return subfolders, nil
 }
