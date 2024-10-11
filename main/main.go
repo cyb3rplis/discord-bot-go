@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/config"
-	"github.com/cyb3rplis/discord-bot-go/sound"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/sound"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/message"
@@ -14,6 +15,9 @@ import (
 
 func main() {
 	token := config.GetValueString("general", "token", "-")
+	if token == "-" {
+		panic("Token missing!")
+	}
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
