@@ -30,7 +30,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//if the command starts with the prefix and is not a list or stop command
 	case command == fmt.Sprintf("%shelp", prefix):
 		// Default case: show help message
-		_, err := s.ChannelMessageSend(m.ChannelID, "🧐 Usage: \n > » List Categories: <.list> \n > » List Sounds: <.category_name> <.sound_name> \n > » Play Sound: <.category> <sound_name>")
+		_, err := s.ChannelMessageSend(m.ChannelID, "🧐 Usage: \n > » List Categories: <.list> \n")
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
