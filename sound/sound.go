@@ -20,7 +20,7 @@ var buffer = make([][]byte, 0)
 var botSpeaking = false
 var stopChannel = make(chan struct{})
 
-// loadSound attempts to load an encoded sound file from disk.
+// LoadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
 	var opusLen int16
 	file, err := os.Open(soundName)
@@ -28,6 +28,7 @@ func LoadSound(soundName string) error {
 		fmt.Println("error opening dca file :", err)
 		return err
 	}
+	defer file.Close()
 	for {
 		// Read opus frame length from dca file.
 		err = binary.Read(file, binary.LittleEndian, &opusLen)
@@ -66,7 +67,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
-		_, err := s.ChannelMessageSend(m.ChannelID, "🎉🎉 bot is already playing a sound, please try again later 🎉🎉")
+		_, err := s.ChannelMessageSend(m.ChannelID, "🤫 Bot is already playing a sound, please try again after the sound has finished 🤫")
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
@@ -129,6 +130,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	return nil
 }
 
+// ListSoundsCategories returns a list of subfolders in the sounds directory.
 func ListSoundsCategories() ([]string, error) {
 	files, err := ioutil.ReadDir(config.GetValueString("general", "sounds_dir", "-"))
 	if err != nil {
@@ -143,6 +145,7 @@ func ListSoundsCategories() ([]string, error) {
 	return subfolders, nil
 }
 
+// ListSoundsInSubfolder returns a list of sound files in a subfolder.
 func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	baseDir := config.GetValueString("general", "sounds_dir", "-")
 	subfolderPath := filepath.Join(baseDir, subfolder)
@@ -164,7 +167,7 @@ func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	return soundFiles, nil
 }
 
-// Interaction create event handler (for button clicks)
+// InteractionHandler create event handler (for button clicks)
 func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check if the interaction is a button click
 	if i.Type == discordgo.InteractionMessageComponent {
@@ -187,7 +190,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		default:
 			if strings.HasPrefix(i.MessageComponentData().CustomID, "play_sound_") {
 
-				// Acknowledge the interaction
+				// Acknowledge the interaction (without this the interaction will be marked as failed)
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseDeferredMessageUpdate,
 				})

@@ -2,15 +2,13 @@ package message
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/cyb3rplis/discord-bot-go/config"
-
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/sound"
+	"strings"
 )
 
-// message is created on any channel that the autenticated bot has access to.
+// AudioMessageHandler is created on any channel that the authenticated bot has access to.
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	prefix := config.GetValueString("general", "prefix", ".")
 
