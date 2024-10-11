@@ -161,6 +161,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					fmt.Println("Invalid custom ID format")
 					return
 				}
+				// Get the subfolder and sound name from the custom ID
 				subfolder := parts[0]
 				soundName := parts[1]
 
@@ -196,8 +197,8 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// ListSoundsInSubfolder returns a list of sound files in a subfolder.
-func ListSoundsInSubfolder(subfolder string) ([]string, error) {
+// WalkSoundFiles returns a list of sound files in a subfolder.
+func WalkSoundFiles(subfolder string) ([]string, error) {
 	baseDir := config.GetValueString("general", "sounds_dir", "-")
 	subfolderPath := filepath.Join(baseDir, subfolder)
 	cleanedSubfolderPath := filepath.Clean(subfolderPath)
@@ -218,6 +219,7 @@ func ListSoundsInSubfolder(subfolder string) ([]string, error) {
 	return soundFiles, nil
 }
 
+// WalkSoundFolder returns a list of subfolders in the sound folder.
 func WalkSoundFolder() ([]string, error) {
 	soundFolderDir := config.GetValueString("general", "sounds_dir", "-")
 	cleanedSubfolderPath := filepath.Clean(soundFolderDir)

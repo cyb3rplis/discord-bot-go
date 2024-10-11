@@ -19,17 +19,14 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Println("Error getting sound subfolders")
 		return
 	}
-
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-
-	if len(m.Content) == 0 {
+	if len(m.Content) == 0 { // Ignore empty messages
 		fmt.Println("Empty content..")
 		return
 	}
-
 	// Extract the command and arguments
 	args := strings.Split(m.Content, " ")
 	command := args[0]
@@ -44,7 +41,6 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	// LIST CATEGORIES
 	case command == fmt.Sprintf("%slist", prefix):
-
 		if len(soundFolders) == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "No sound categories found.")
 			if err != nil {
@@ -61,7 +57,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Println("error sending message:", err)
 		}
 
-	// LIST SOUNDS IN SUBFOLDER
+	// LIST SOUNDS IN SUBFOLDER AND CREATE BUTTONS
 	case len(args) == 1 && len(soundFolders) >= 1:
 		category := strings.TrimPrefix(command, prefix)
 		noFolder := true
@@ -74,8 +70,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if noFolder {
 			return
 		}
-
-		sounds, err := sound.ListSoundsInSubfolder(category)
+		// Get all sound files in the subfolder
+		sounds, err := sound.WalkSoundFiles(category)
 		if err != nil {
 			fmt.Println("error listing sounds in subfolder:", err)
 			return
@@ -107,11 +103,20 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			content = append(content, row)
 		}
 
-		_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-			Components: content,
-		})
-		if err != nil {
-			fmt.Println("error sending message:", err)
+		// Split content into multiple messages if it exceeds 5 rows
+		for len(content) > 0 {
+			var messageContent []discordgo.MessageComponent
+			if len(content) > 5 {
+				messageContent, content = content[:5], content[5:]
+			} else {
+				messageContent, content = content, nil
+			}
+			_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+				Components: messageContent,
+			})
+			if err != nil {
+				fmt.Println("error sending message:", err)
+			}
 		}
 	default:
 		return
