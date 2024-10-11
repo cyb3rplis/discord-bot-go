@@ -128,24 +128,9 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check if the interaction is a button click
 	if i.Type == discordgo.InteractionMessageComponent {
 		switch {
-		case i.MessageComponentData().CustomID == "stop_sound":
-			// Handle the stop sound button press
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Content:    "The sound has been stopped.",
-					Components: []discordgo.MessageComponent{}, // Remove the button after it's pressed
-				},
-			})
-			if err != nil {
-				log.Println("Failed to respond to interaction:", err)
-			}
-			// Send stop signal to stopChannel
-			stopChannel <- struct{}{}
-
 		default:
+			// PLAY SOUND
 			if strings.HasPrefix(i.MessageComponentData().CustomID, "play_sound_") {
-
 				// Acknowledge the interaction (without this the interaction will be marked as failed)
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseDeferredMessageUpdate,
@@ -195,9 +180,9 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 	}
-	// Check if the interaction is a button click
 	if i.Type == discordgo.InteractionMessageComponent {
 		switch {
+		// SOUND LIST
 		case strings.HasPrefix(i.MessageComponentData().CustomID, "list_sounds_"):
 			// Acknowledge the interaction
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -210,7 +195,10 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			// Extract the category from the custom ID
 			category := strings.TrimPrefix(i.MessageComponentData().CustomID, "list_sounds_")
-
+			_, err = s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
+			if err != nil {
+				fmt.Println("error sending message:", err)
+			}
 			// List sounds in the selected category
 			listSoundsInCategory(s, i.ChannelID, category)
 		}
@@ -301,7 +289,6 @@ func WalkSoundFolder() ([]string, error) {
 	}
 
 	var subfolders []string
-
 	for _, entry := range folders {
 		if entry.IsDir() {
 			subfolders = append(subfolders, entry.Name())

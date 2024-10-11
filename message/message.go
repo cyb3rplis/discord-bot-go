@@ -67,7 +67,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			content = append(content, row)
 		}
 		_, err = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-			Content:    "Click on a category!",
+			Content:    "➡ Click on a category [blue button]",
 			Components: content,
 		})
 		if err != nil {
