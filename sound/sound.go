@@ -123,86 +123,82 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	return nil
 }
 
-// InteractionHandler create event handler (for button clicks)
+// InteractionHandler handles interaction events (e.g., button clicks)
 func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// Check if the interaction is a button click
-	if i.Type == discordgo.InteractionMessageComponent {
-		switch {
-		default:
-			// PLAY SOUND
-			if strings.HasPrefix(i.MessageComponentData().CustomID, "play_sound_") {
-				// Acknowledge the interaction (without this the interaction will be marked as failed)
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredMessageUpdate,
-				})
-				if err != nil {
-					log.Println("Failed to respond to interaction:", err)
-					return
-				}
+	if i.Type != discordgo.InteractionMessageComponent {
+		return
+	}
+	customID := i.MessageComponentData().CustomID
 
-				// extract the subfolder and sound name from the custom ID
-				parts := strings.SplitN(strings.TrimPrefix(i.MessageComponentData().CustomID, "play_sound_"), "_", 2)
-				if len(parts) != 2 {
-					fmt.Println("Invalid custom ID format")
-					return
-				}
-				// Get the subfolder and sound name from the custom ID
-				subfolder := parts[0]
-				soundName := parts[1]
+	// Acknowledge the interaction
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredMessageUpdate,
+	})
+	if err != nil {
+		log.Println("Failed to respond to interaction:", err)
+		return
+	}
 
-				// Find the channel that the interaction came from
-				c, err := s.State.Channel(i.ChannelID)
-				if err != nil {
-					fmt.Println("error finding channel:", err)
-					return
-				}
+	switch {
+	case strings.HasPrefix(customID, "play_sound_"):
+		handlePlaySoundInteraction(s, i, customID)
+	case strings.HasPrefix(customID, "list_sounds_"):
+		handleListSoundsInteraction(s, i, customID)
+	default:
+		fmt.Println("Unknown interaction:", customID)
+	}
+}
 
-				// Find the guild for that channel
-				g, err := s.State.Guild(c.GuildID)
-				if err != nil {
-					fmt.Println("error finding guild:", err)
-					return
-				}
+func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+	fmt.Println("Playing sound interaction")
 
-				// Look for the interaction user in that guild's current voice states
-				for _, vs := range g.VoiceStates {
-					if vs.UserID == i.Member.User.ID {
-						// Construct the sound file path
-						soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
-						// Play the sound
-						err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundFile, soundName)
-						if err != nil {
-							fmt.Println("error playing sound:", err)
-						}
-						return
-					}
-				}
+	// Extract the subfolder and sound name from the custom ID
+	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
+	if len(parts) != 2 {
+		fmt.Println("Invalid custom ID format")
+		return
+	}
+	subfolder := parts[0]
+	soundName := parts[1]
+
+	// Find the channel that the interaction came from
+	c, err := s.State.Channel(i.ChannelID)
+	if err != nil {
+		fmt.Println("error finding channel:", err)
+		return
+	}
+
+	// Find the guild for that channel
+	g, err := s.State.Guild(c.GuildID)
+	if err != nil {
+		fmt.Println("error finding guild:", err)
+		return
+	}
+
+	// Look for the interaction user in that guild's current voice states
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == i.Member.User.ID {
+			// Construct the sound file path
+			soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
+			// Play the sound
+			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundFile, soundName)
+			if err != nil {
+				fmt.Println("error playing sound:", err)
 			}
+			return
 		}
 	}
-	if i.Type == discordgo.InteractionMessageComponent {
-		switch {
-		// SOUND LIST
-		case strings.HasPrefix(i.MessageComponentData().CustomID, "list_sounds_"):
-			// Acknowledge the interaction
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseDeferredMessageUpdate,
-			})
-			if err != nil {
-				log.Println("Failed to respond to interaction:", err)
-				return
-			}
+}
 
-			// Extract the category from the custom ID
-			category := strings.TrimPrefix(i.MessageComponentData().CustomID, "list_sounds_")
-			_, err = s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
-			if err != nil {
-				fmt.Println("error sending message:", err)
-			}
-			// List sounds in the selected category
-			listSoundsInCategory(s, i.ChannelID, category)
-		}
+func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+	// Extract the category from the custom ID
+	category := strings.TrimPrefix(customID, "list_sounds_")
+	_, err := s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
+	if err != nil {
+		fmt.Println("error sending message:", err)
 	}
+	// List sounds in the selected category
+	listSoundsInCategory(s, i.ChannelID, category)
 }
 
 // listSoundsInCategory lists the sounds in the specified category and sends them as buttons

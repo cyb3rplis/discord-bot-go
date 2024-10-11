@@ -13,12 +13,6 @@ import (
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	prefix := config.GetValueString("general", "prefix", ".")
 
-	// Get all sound folders to use for later
-	soundFolders, err := sound.WalkSoundFolder()
-	if err != nil {
-		fmt.Println("Error getting sound subfolders")
-		return
-	}
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -41,6 +35,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	// LIST CATEGORIES
 	case command == fmt.Sprintf("%slist", prefix):
+		// Get all sound folders to use for later
+		soundFolders, err := sound.WalkSoundFolder()
+		if err != nil {
+			fmt.Println("Error getting sound subfolders")
+			return
+		}
 		if len(soundFolders) == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "No sound categories found.")
 			if err != nil {
