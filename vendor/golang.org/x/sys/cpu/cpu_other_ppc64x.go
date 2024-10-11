@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build loong64
+//go:build !aix && !linux && (ppc64 || ppc64le)
 
 package cpu
 
-const cacheLineSize = 64
-
-func initOptions() {
+func archInit() {
+	PPC64.IsPOWER8 = true
+	Initialized = true
 }
