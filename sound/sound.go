@@ -27,6 +27,9 @@ var mu sync.Mutex
 const maxInteractions = 5              // Maximum allowed interactions before timeout
 const resetDuration = 15 * time.Second // Duration to reset the interaction count
 
+var lastMessageID string
+var lastChannelID string
+
 // LoadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
 	var opusLen int16
@@ -67,10 +70,11 @@ func LoadSound(soundName string) error {
 }
 
 // PlaySound plays the current buffer to the provided channel.
-func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundFile, soundName string) (err error) {
+func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.Message, guildID, channelID, soundFile, soundName string) (err error) {
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
+		s.ChannelMessageDelete(lastChannelID, lastMessageID)
 		stopChannel <- struct{}{}
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
@@ -126,6 +130,8 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	buffer = make([][]byte, 0)
 	botSpeaking = false
 
+	// Delete the initial "Now Playing" message
+	s.ChannelMessageDelete(st.ChannelID, st.ID)
 	return nil
 }
 
@@ -169,9 +175,28 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		handlePlaySoundInteraction(s, i, customID)
 	case strings.HasPrefix(customID, "list_sounds_"):
 		handleListSoundsInteraction(s, i, customID)
+	case strings.HasPrefix(customID, "stop_sound"):
+		handleStopSoundInteraction(s)
 	default:
 		fmt.Println("unknown interaction:", customID)
 	}
+}
+
+func handleStopSoundInteraction(s *discordgo.Session) {
+	// check if the bot is currently speaking, and exit
+	if botSpeaking {
+		stopChannel <- struct{}{}
+
+		// Delete the last "Now Playing"
+		err := s.ChannelMessageDelete(lastChannelID, lastMessageID)
+		if err != nil {
+			return
+		}
+		lastChannelID = ""
+		lastMessageID = ""
+		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
+	}
+
 }
 
 func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
@@ -198,13 +223,33 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		return
 	}
 
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	row.Components = append(row.Components, discordgo.Button{
+		Label:    "Stop Sound",
+		Style:    discordgo.DangerButton,
+		CustomID: "stop_sound",
+	})
+	content = append(content, row)
+	st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+		Content:    "➡ Currently Playing: " + soundName,
+		Components: content,
+	})
+	if err != nil {
+		fmt.Println("error sending message:", err)
+		return
+	}
+
+	lastChannelID = st.ChannelID
+	lastMessageID = st.ID
+
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
 		if vs.UserID == i.Member.User.ID {
 			// Construct the sound file path
 			soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
 			// Play the sound
-			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundFile, soundName)
+			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
 			if err != nil {
 				fmt.Println("error playing sound:", err)
 			}

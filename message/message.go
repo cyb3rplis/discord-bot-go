@@ -111,3 +111,25 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 }
+
+func SendStopButton(s *discordgo.Session, m *discordgo.MessageCreate, soundName string) {
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	row.Components = append(row.Components, discordgo.Button{
+		Label:    "Stop Sound",
+		Style:    discordgo.PrimaryButton,
+		CustomID: "stop_sound",
+	})
+	// Append the last row if it has any components
+	if len(row.Components) > 0 {
+		content = append(content, row)
+	}
+	_, err := s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Content:    "➡ Currently Playing: " + soundName,
+		Components: content,
+	})
+	if err != nil {
+		fmt.Println("error sending message:", err)
+		return
+	}
+}
