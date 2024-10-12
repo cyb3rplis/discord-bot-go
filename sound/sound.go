@@ -24,7 +24,7 @@ var userLastInteraction = make(map[string]time.Time)
 var userInteractionCount = make(map[string]int)
 var mu sync.Mutex
 
-const maxInteractions = 5              // Maximum allowed interactions before timeout
+const maxInteractions = 15             // Maximum allowed interactions before timeout
 const resetDuration = 15 * time.Second // Duration to reset the interaction count
 
 var lastMessageID string
@@ -74,7 +74,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
+		// delete the last message and set the new value to the last sent message
 		s.ChannelMessageDelete(lastChannelID, lastMessageID)
+		lastChannelID = st.ChannelID
+		lastMessageID = st.ID
 		stopChannel <- struct{}{}
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
@@ -237,11 +240,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	})
 	if err != nil {
 		fmt.Println("error sending message:", err)
-		return
 	}
-
-	lastChannelID = st.ChannelID
-	lastMessageID = st.ID
 
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
@@ -253,6 +252,8 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			if err != nil {
 				fmt.Println("error playing sound:", err)
 			}
+
+			s.ChannelMessageDelete(st.ChannelID, st.ID)
 			return
 		}
 	}
