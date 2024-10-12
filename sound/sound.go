@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +19,13 @@ import (
 var buffer = make([][]byte, 0)
 var botSpeaking = false
 var stopChannel = make(chan struct{})
+
+var userLastInteraction = make(map[string]time.Time)
+var userInteractionCount = make(map[string]int)
+var mu sync.Mutex
+
+const maxInteractions = 5              // Maximum allowed interactions before timeout
+const resetDuration = 30 * time.Second // Duration to reset the interaction count
 
 // LoadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
@@ -64,7 +72,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
 		stopChannel <- struct{}{}
-		time.Sleep(250 * time.Millisecond) // Give some time for the current sound to stop
+		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 
 	// Load the sound file.
@@ -78,8 +86,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 		return
 	}
 
-	fmt.Println("> playing sound file: ", soundName)
-
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(guildID, channelID, false, true)
 	if err != nil {
@@ -88,7 +94,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	botSpeaking = true
 
 	// Sleep for a specified amount of time before playing the sound
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
 
 	// Start speaking.
 	_ = vc.Speaking(true)
@@ -139,6 +145,25 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	// Check if the user is spamming the buttons and limit the interactions
+	mu.Lock()
+	lastInteraction, exists := userLastInteraction[i.Member.User.ID] // Get the last interaction time
+	if exists && time.Since(lastInteraction) < resetDuration {       // Check if the user has interacted recently
+		userInteractionCount[i.Member.User.ID]++
+	} else {
+		userInteractionCount[i.Member.User.ID] = 1 // Reset the interaction count
+	}
+	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
+	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
+		mu.Unlock()
+		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.Username)+" ⬅ you fucking idiot!!!")
+		if err != nil {
+			fmt.Println("error sending message:", err)
+		}
+		return
+	}
+	mu.Unlock()
+
 	switch {
 	case strings.HasPrefix(customID, "play_sound_"):
 		handlePlaySoundInteraction(s, i, customID)
@@ -150,8 +175,6 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
-	fmt.Println("Playing sound interaction")
-
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
