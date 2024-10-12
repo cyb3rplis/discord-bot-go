@@ -97,7 +97,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
-	case strings.Contains(strings.ToLower(m.Content), "albanie"):
+	case strings.Contains(strings.ToLower(m.Content), "albani"):
 		_, err := s.ChannelMessageSend(m.ChannelID, "Erfundene Sprache")
 		if err != nil {
 			fmt.Println("error sending message:", err)
