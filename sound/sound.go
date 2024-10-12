@@ -25,7 +25,7 @@ var userInteractionCount = make(map[string]int)
 var mu sync.Mutex
 
 const maxInteractions = 5              // Maximum allowed interactions before timeout
-const resetDuration = 30 * time.Second // Duration to reset the interaction count
+const resetDuration = 15 * time.Second // Duration to reset the interaction count
 
 // LoadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
@@ -156,7 +156,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
 	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.Username)+" ⬅ you fucking idiot!!!")
+		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.GlobalName)+" ⬅ you fucking idiot!!!")
 		if err != nil {
 			fmt.Println("error sending message:", err)
 		}
