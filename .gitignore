@@ -26,3 +26,7 @@ go.work.sum
 
 # dist folder
 dist
+
+# venv's
+.venv
+venv
