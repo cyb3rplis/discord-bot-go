@@ -235,7 +235,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	})
 	content = append(content, row)
 	st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-		Content:    "➡ Currently Playing: " + soundName,
+		Content:    "➡ Currently Playing by " + i.Member.User.GlobalName + ": " + soundName,
 		Components: content,
 	})
 	if err != nil {
