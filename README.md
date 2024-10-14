@@ -1,12 +1,13 @@
 # discord-bot-go
 
+### dca
 use dca in folder sounds to convert mp3 or wav
 ```
 ffmpeg -i saul.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > sounds/songs/saul.dca
 ffmpeg -i tts.wav -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > sounds/tts/tts.dca
 ```
 
-# using piper for tts
+### using piper for tts
 https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.tar.gz
 
 ```
@@ -15,6 +16,6 @@ echo 'Deine Mutter ist so fett, sie piepst beim rückwärtsgehen' | ./piper \
   --output_file welcome.wav
 ```
 
-# To-Do
+### To-Do
 
 - control volume through config file values 0-100
