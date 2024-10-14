@@ -1,0 +1,7 @@
+{
+  "token": "MTI5MzMyOTIyMTEzNzIwNzQxNw.GaHsPi.E23AxUyBtOeFrrnBxa6Iz6tUlgezrT2in-rUmM",
+  "prefix": ".",
+  "sounds_dir": "../sounds",
+  "db": "../db/soundbot.db",
+  "schema": "../db/schema.sql"
+}

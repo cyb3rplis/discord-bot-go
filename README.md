@@ -1,5 +1,7 @@
 # discord-bot-go
 
+copy `config.json` to `config.local.json` and make any modifications you wish not to commit.
+
 ### dca
 use dca in folder sounds to convert mp3 or wav
 ```

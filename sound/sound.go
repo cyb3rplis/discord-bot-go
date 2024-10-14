@@ -203,6 +203,8 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 }
 
 func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+	cfg := config.GetConfig()
+
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
@@ -246,7 +248,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	for _, vs := range g.VoiceStates {
 		if vs.UserID == i.Member.User.ID {
 			// Construct the sound file path
-			soundFile := fmt.Sprintf("%s/%s/%s.dca", config.GetValueString("general", "sounds_dir", "-"), subfolder, soundName)
+			soundFile := fmt.Sprintf("%s/%s/%s.dca", cfg.SoundsDir, subfolder, soundName)
 			// Play the sound
 			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
 			if err != nil {
@@ -330,7 +332,8 @@ func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]di
 
 // WalkSoundFiles returns a list of sound files in a subfolder.
 func WalkSoundFiles(subfolder string) ([]string, error) {
-	baseDir := config.GetValueString("general", "sounds_dir", "-")
+	cfg := config.GetConfig()
+	baseDir := cfg.SoundsDir
 	subfolderPath := filepath.Join(baseDir, subfolder)
 	cleanedSubfolderPath := filepath.Clean(subfolderPath)
 	// Ensure the cleaned subfolder path is within the base directory
@@ -352,7 +355,8 @@ func WalkSoundFiles(subfolder string) ([]string, error) {
 
 // WalkSoundFolder returns a list of subfolders in the sound folder.
 func WalkSoundFolder() ([]string, error) {
-	soundFolderDir := config.GetValueString("general", "sounds_dir", "-")
+	cfg := config.GetConfig()
+	soundFolderDir := cfg.SoundsDir
 	cleanedSubfolderPath := filepath.Clean(soundFolderDir)
 	folders, err := os.ReadDir(cleanedSubfolderPath)
 	if err != nil {

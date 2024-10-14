@@ -1,46 +1,61 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/sasbury/mini"
+	"log"
+	"os"
+	"sync"
 )
 
-var Config *mini.Config
-
-func init() {
-	Config = GetConfig()
-	shortToken := GetValueString("general", "token", "WRONG_CONF")[0:10]
-
-	fmt.Println("---------------------------------")
-	fmt.Println(" > TOKEN: ", fmt.Sprintf("%s...", shortToken))
-	fmt.Println(" > PREFIX: ", GetValueString("general", "prefix", "."))
-	fmt.Println(" > SOUNDS_DIR: ", GetValueString("general", "sounds_dir", "."))
-	fmt.Println("---------------------------------")
+type Config struct {
+	Token     string `json:"token"`
+	Prefix    string `json:"prefix"`
+	SoundsDir string `json:"sounds_dir"`
+	DB        string `json:"db"`
+	Schema    string `json:"schema"`
 }
 
-func GetConfig() *mini.Config {
-	fmt.Println("Loading config file", "file", "../config/config.ini")
-	conf, err := mini.LoadConfiguration("../config/config.ini")
-	if err != nil {
-		fmt.Println("error reading config file config.ini")
-		panic(err)
+var (
+	configInstance *Config
+	once           sync.Once
+)
+
+func LoadConfig() *Config {
+	confVersion := "local"
+	once.Do(func() {
+		configFile := "../config/config.local.json"
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			configFile = "../config/config.json" // Fallback to the default config file
+			confVersion = "production"
+		}
+
+		configInstance = &Config{}
+		file, err := os.ReadFile(configFile)
+		if err != nil {
+			log.Fatalf("Error reading config file: %v", err)
+		}
+
+		err = json.Unmarshal(file, configInstance)
+		if err != nil {
+			log.Fatalf("Error parsing config file: %v", err)
+		}
+	})
+
+	fmt.Println("---------------------------------")
+	fmt.Println(" > CONFIG:\t", confVersion)
+	fmt.Println(" > TOKEN:\t", configInstance.Token[0:10]+"...")
+	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
+	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
+	fmt.Println("---------------------------------")
+
+	return configInstance
+}
+
+// GetConfig provides global access to the configuration instance.
+func GetConfig() *Config {
+	if configInstance == nil {
+		return LoadConfig()
 	}
-	return conf
-}
-
-func GetValueString(section, key, def string) string {
-	value := Config.StringFromSection(section, key, def)
-	return value
-}
-
-func GetValueInt(section, key string, def int64) int64 {
-	value := Config.IntegerFromSection(section, key, def)
-	return value
-}
-
-func GetValueBool(section, key string, def bool) bool {
-	value := Config.BooleanFromSection(section, key, def)
-
-	return value
+	return configInstance
 }

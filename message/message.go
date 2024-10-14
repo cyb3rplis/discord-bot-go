@@ -35,7 +35,8 @@ var mutterWitze = []string{
 
 // AudioMessageHandler is created on any channel that the authenticated bot has access to.
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	prefix := config.GetValueString("general", "prefix", ".")
+	cfg := config.GetConfig()
+	prefix := cfg.Prefix
 
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {

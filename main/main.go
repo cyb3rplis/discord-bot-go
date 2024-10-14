@@ -19,13 +19,11 @@ func init() {
 }
 
 func main() {
-	token := config.GetValueString("general", "token", "-")
-	if token == "-" {
-		panic("Token missing in config!")
-	}
+
+	cfg := config.GetConfig()
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
 		fmt.Println("error creating Discord session: ", err)
 		return

@@ -12,15 +12,9 @@ import (
 
 // InitDB initializes the SQLite database and loads the schema.
 func InitDB() {
-	databaseFile := config.GetValueString("general", "db", "-")
-	if databaseFile == "-" {
-		panic("Database missing in config!")
-	}
-
-	schemaFile := config.GetValueString("general", "schema", "-")
-	if schemaFile == "-" {
-		panic("Schema missing in config!")
-	}
+	cfg := config.GetConfig()
+	databaseFile := cfg.DB
+	schemaFile := cfg.Schema
 
 	// Check if the database file exists
 	if _, err := os.Stat(databaseFile); os.IsNotExist(err) {
