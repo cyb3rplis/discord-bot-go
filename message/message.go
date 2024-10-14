@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 
@@ -43,7 +44,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if len(m.Content) == 0 { // Ignore empty messages
-		fmt.Println("Empty content..")
+		log.Println("Empty content..")
 		return
 	}
 	// Extract the command and arguments
@@ -56,20 +57,20 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Default case: show help message
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐 Usage: \n > » List Categories: <%slist> \n", prefix))
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 	// LIST CATEGORIES
 	case command == fmt.Sprintf("%slist", prefix):
 		// Get all sound folders to use for later
 		soundFolders, err := sound.WalkSoundFolder()
 		if err != nil {
-			fmt.Println("Error getting sound subfolders")
+			log.Println("Error getting sound subfolders")
 			return
 		}
 		if len(soundFolders) == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "No sound categories found.")
 			if err != nil {
-				fmt.Println("error sending message:", err)
+				log.Println("error sending message:", err)
 			}
 			return
 		}
@@ -96,17 +97,17 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Components: content,
 		})
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 	case strings.Contains(strings.ToLower(m.Content), "albani"):
 		_, err := s.ChannelMessageSend(m.ChannelID, "Erfundene Sprache")
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 	case strings.Contains(strings.ToLower(m.Content), "mutter"):
 		_, err := s.ChannelMessageSend(m.ChannelID, mutterWitze[rand.Intn(len(mutterWitze))])
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 	default:
 		return
@@ -130,7 +131,7 @@ func SendStopButton(s *discordgo.Session, m *discordgo.MessageCreate, soundName 
 		Components: content,
 	})
 	if err != nil {
-		fmt.Println("error sending message:", err)
+		log.Println("error sending message:", err)
 		return
 	}
 }

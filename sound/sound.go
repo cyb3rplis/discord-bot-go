@@ -35,7 +35,7 @@ func LoadSound(soundName string) error {
 	var opusLen int16
 	file, err := os.Open(soundName)
 	if err != nil {
-		fmt.Println("error opening dca file :", err)
+		log.Println("error opening dca file :", err)
 		return err
 	}
 	defer file.Close()
@@ -52,7 +52,7 @@ func LoadSound(soundName string) error {
 			return nil
 		}
 		if err != nil {
-			fmt.Println("error reading from dca file :", err)
+			log.Println("error reading from dca file :", err)
 			return err
 		}
 
@@ -60,7 +60,7 @@ func LoadSound(soundName string) error {
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
 		if err != nil {
-			fmt.Println("error reading from dca file :", err)
+			log.Println("error reading from dca file :", err)
 			return err
 		}
 
@@ -85,10 +85,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	// Load the sound file.
 	err = LoadSound(soundFile)
 	if err != nil {
-		fmt.Printf("error loading sound %s, %v ", soundFile, err)
+		log.Printf("error loading sound %s, %v ", soundFile, err)
 		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Sikerim")
 		if err != nil {
-			fmt.Println("error loading sound:", err)
+			log.Println("error loading sound:", err)
 		}
 		return
 	}
@@ -167,7 +167,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		mu.Unlock()
 		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.GlobalName)+" ⬅ you fucking idiot!!!")
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 		return
 	}
@@ -181,7 +181,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case strings.HasPrefix(customID, "stop_sound"):
 		handleStopSoundInteraction(s)
 	default:
-		fmt.Println("unknown interaction:", customID)
+		log.Println("unknown interaction:", customID)
 	}
 }
 
@@ -208,7 +208,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
-		fmt.Println("Invalid custom ID format")
+		log.Println("Invalid custom ID format")
 		return
 	}
 	subfolder := parts[0]
@@ -217,14 +217,14 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(i.ChannelID)
 	if err != nil {
-		fmt.Println("error finding channel:", err)
+		log.Println("error finding channel:", err)
 		return
 	}
 
 	// Find the guild for that channel
 	g, err := s.State.Guild(c.GuildID)
 	if err != nil {
-		fmt.Println("error finding guild:", err)
+		log.Println("error finding guild:", err)
 		return
 	}
 
@@ -241,7 +241,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		Components: content,
 	})
 	if err != nil {
-		fmt.Println("error sending message:", err)
+		log.Println("error sending message:", err)
 	}
 
 	// Look for the interaction user in that guild's current voice states
@@ -252,7 +252,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			// Play the sound
 			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
 			if err != nil {
-				fmt.Println("error playing sound:", err)
+				log.Println("error playing sound:", err)
 			}
 
 			s.ChannelMessageDelete(st.ChannelID, st.ID)
@@ -266,12 +266,12 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	_, err := s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
 	if err != nil {
-		fmt.Println("error sending message:", err)
+		log.Println("error sending message:", err)
 	}
 	// List getSoundsInCategory in the selected category
 	sounds, err := getSoundsInCategory(s, i.ChannelID, category)
 	if err != nil {
-		fmt.Println("error listing sounds in category:", err)
+		log.Println("error listing sounds in category:", err)
 		return
 	}
 
@@ -287,7 +287,7 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 			Components: messageContent,
 		})
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 	}
 }
@@ -297,13 +297,13 @@ func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]di
 	// Get all sound files in the subfolder
 	sounds, err := WalkSoundFiles(category)
 	if err != nil {
-		fmt.Println("error listing sounds in subfolder:", err)
+		log.Println("error listing sounds in subfolder:", err)
 		return nil, err
 	}
 	if len(sounds) == 0 {
 		_, err := s.ChannelMessageSend(channelID, "No sounds found in this category.")
 		if err != nil {
-			fmt.Println("error sending message:", err)
+			log.Println("error sending message:", err)
 		}
 		return nil, errors.New("no sounds found in this category")
 	}
