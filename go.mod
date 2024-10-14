@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/sasbury/mini v0.0.0-20181226232755-dc74af49394b
 )
 

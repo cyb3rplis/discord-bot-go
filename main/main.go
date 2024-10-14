@@ -7,16 +7,21 @@ import (
 	"syscall"
 
 	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/db"
 	"github.com/cyb3rplis/discord-bot-go/sound"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/message"
 )
 
+func init() {
+	db.InitDB()
+}
+
 func main() {
 	token := config.GetValueString("general", "token", "-")
 	if token == "-" {
-		panic("Token missing!")
+		panic("Token missing in config!")
 	}
 
 	// Create a new Discord session using the provided bot token.

@@ -32,3 +32,4 @@ dist
 venv
 
 tts/
+db/soundbot.db
