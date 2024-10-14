@@ -1,9 +1,11 @@
 package sound
 
 import (
+	"database/sql"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/util"
 	"io"
 	"log"
 	"os"
@@ -15,6 +17,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
 )
+
+var cfg = config.GetConfig()
 
 var buffer = make([][]byte, 0)
 var botSpeaking = false
@@ -75,7 +79,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
 		// delete the last message and set the new value to the last sent message
-		s.ChannelMessageDelete(lastChannelID, lastMessageID)
+		err = s.ChannelMessageDelete(lastChannelID, lastMessageID)
+		if err != nil {
+			return err
+		}
 		lastChannelID = st.ChannelID
 		lastMessageID = st.ID
 		stopChannel <- struct{}{}
@@ -134,7 +141,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	botSpeaking = false
 
 	// Delete the initial "Now Playing" message
-	s.ChannelMessageDelete(st.ChannelID, st.ID)
+	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -202,8 +212,6 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 }
 
 func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
-	cfg := config.GetConfig()
-
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
@@ -254,8 +262,10 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			if err != nil {
 				log.Println("error playing sound:", err)
 			}
-
-			s.ChannelMessageDelete(st.ChannelID, st.ID)
+			err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+			if err != nil {
+				log.Println("error deleting message:", err)
+			}
 			return
 		}
 	}
@@ -295,7 +305,7 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 // getSoundsInCategory lists the sounds in the specified category and sends them as buttons
 func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]discordgo.MessageComponent, error) {
 	// Get all sound files in the subfolder
-	sounds, err := WalkSoundFiles(category)
+	sounds, err := util.WalkSoundFiles(category)
 	if err != nil {
 		log.Println("error listing sounds in subfolder:", err)
 		return nil, err
@@ -330,45 +340,110 @@ func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]di
 	return content, nil
 }
 
-// WalkSoundFiles returns a list of sound files in a subfolder.
-func WalkSoundFiles(subfolder string) ([]string, error) {
-	cfg := config.GetConfig()
-	baseDir := cfg.SoundsDir
-	subfolderPath := filepath.Join(baseDir, subfolder)
-	cleanedSubfolderPath := filepath.Clean(subfolderPath)
-	// Ensure the cleaned subfolder path is within the base directory
-	if !strings.HasPrefix(cleanedSubfolderPath, baseDir) {
-		return nil, errors.New("potential path traversal detected")
-	}
-	files, err := os.ReadDir(cleanedSubfolderPath)
+// InsertCategoriesAndSounds inserts sound categories and sounds into the database
+// TODO: remove files from database if no longer exists in folder
+func InsertCategoriesAndSounds() error {
+	db, err := sql.Open("sqlite3", cfg.DB)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to open database: %w", err)
 	}
-	var soundFiles []string
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".dca" {
-			soundFiles = append(soundFiles, file.Name())
+	defer db.Close()
+
+	soundFolders, err := util.WalkSoundFolder()
+	if err != nil {
+		return fmt.Errorf("failed to walk sound folder: %w", err)
+	}
+
+	for _, folder := range soundFolders {
+		// Insert category
+		categoryID, categoryName, err := checkExistingCategory(db, folder)
+		if err != nil {
+			return fmt.Errorf("error checking existing category: %w", err)
+		}
+		// If the category does not exist, insert it
+		if categoryName == "" {
+			categoryID, err = insertCategory(db, folder)
+			if err != nil {
+				return fmt.Errorf("failed to insert category: %w", err)
+			}
+		}
+
+		// Insert sounds
+		soundFiles, err := util.WalkSoundFiles(folder)
+		if err != nil {
+			return fmt.Errorf("failed to walk sound files: %w", err)
+		}
+		// iterate sound files and insert the file as a blob into the database
+		for _, soundFile := range soundFiles {
+			soundPath := filepath.Join(cfg.SoundsDir, folder, soundFile)
+			fileData, err := os.ReadFile(soundPath)
+			if err != nil {
+				return fmt.Errorf("failed to read sound file: %w", err)
+			}
+			// Check if file already exists
+			existingSound, err := checkExistingSound(db, soundFile)
+			if err != nil {
+				return fmt.Errorf("error checking existing sound: %w", err)
+			}
+			soundName := strings.TrimSuffix(soundFile, ".dca")
+			// If the sound does not exist, insert it
+			if existingSound == "" {
+				err = insertSound(db, soundFile, soundName, categoryID, fileData)
+				if err != nil {
+					return fmt.Errorf("error inserting sound: %w", err)
+				}
+			}
 		}
 	}
-	return soundFiles, nil
+
+	return nil
 }
 
-// WalkSoundFolder returns a list of subfolders in the sound folder.
-func WalkSoundFolder() ([]string, error) {
-	cfg := config.GetConfig()
-	soundFolderDir := cfg.SoundsDir
-	cleanedSubfolderPath := filepath.Clean(soundFolderDir)
-	folders, err := os.ReadDir(cleanedSubfolderPath)
+// checkExistingCategory checks if a category already exists in the database
+func checkExistingCategory(db *sql.DB, folder string) (int64, string, error) {
+	var categoryID int64
+	var categoryName string
+	err := db.QueryRow(`SELECT id, name FROM categories WHERE name = ?`, folder).Scan(&categoryID, &categoryName)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, "", err
+	}
+	return categoryID, categoryName, nil
+}
+
+// checkExistingSound checks if a sound already exists in the database
+func checkExistingSound(db *sql.DB, soundFile string) (string, error) {
+	var fileName string
+	err := db.QueryRow("SELECT name FROM sounds WHERE name = ?", soundFile).Scan(&fileName)
+	if err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+	return fileName, nil
+}
+
+// insertCategory inserts a category into the database
+func insertCategory(db *sql.DB, folder string) (int64, error) {
+	res, err := db.Exec("INSERT INTO categories (name) VALUES (?)", folder)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	var subfolders []string
-	for _, entry := range folders {
-		if entry.IsDir() {
-			subfolders = append(subfolders, entry.Name())
-		}
+	categoryID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
 	}
+	return categoryID, nil
+}
 
-	return subfolders, nil
+// insertSound inserts a sound into the database
+func insertSound(db *sql.DB, soundFile, soundName string, categoryID int64, fileData []byte) error {
+	_, err := db.Exec("INSERT INTO sounds (name, alias, category_id, file) VALUES (?, ?, ?, ?)", soundFile, soundName, categoryID, fileData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// deleteSound removes a sound from the database
+func deleteSound(db *sql.DB, soundName string) error {
+	_, err := db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
+	return err
 }

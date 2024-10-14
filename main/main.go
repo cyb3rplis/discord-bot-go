@@ -16,6 +16,7 @@ import (
 
 func init() {
 	db.InitDB()
+
 }
 
 func main() {
@@ -47,6 +48,12 @@ func main() {
 	if err != nil {
 		log.Println("error opening Discord session: ", err)
 		return
+	}
+
+	// Insert categories and sounds into the database
+	err = sound.InsertCategoriesAndSounds()
+	if err != nil {
+		log.Fatalf("error inserting categories and sounds: %v", err)
 	}
 
 	// Wait here until CTRL-C or other term signal is received.

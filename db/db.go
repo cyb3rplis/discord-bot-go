@@ -10,11 +10,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var Config = config.GetConfig()
+
 // InitDB initializes the SQLite database and loads the schema.
 func InitDB() {
-	cfg := config.GetConfig()
-	databaseFile := cfg.DB
-	schemaFile := cfg.Schema
+	databaseFile := Config.DB
+	schemaFile := Config.Schema
 
 	// Check if the database file exists
 	if _, err := os.Stat(databaseFile); os.IsNotExist(err) {
@@ -24,7 +25,11 @@ func InitDB() {
 			log.Fatalf("Failed to create database file: %v", err)
 			return
 		}
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			log.Fatalf("Failed to close database file: %v", err)
+			return
+		}
 		log.Println("Database created successfully!")
 	} else {
 		log.Println("Database already exists.")
@@ -52,7 +57,10 @@ func InitDB() {
 
 	_, err = tx.Exec(string(schema))
 	if err != nil {
-		tx.Rollback() // Rollback in case of an error
+		err = tx.Rollback() // Rollback in case of an error
+		if err != nil {
+			log.Fatalf("Failed to rollback transaction: %v", err)
+		}
 		log.Fatalf("Failed to execute schema: %v", err)
 	}
 

@@ -4,8 +4,16 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS sounds (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    tag TEXT
+    name TEXT NOT NULL UNIQUE,
+    alias TEXT NOT NULL UNIQUE ,
+    category_id INTEGER NOT NULL,
+    file BLOB NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
