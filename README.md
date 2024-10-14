@@ -1,7 +1,10 @@
 # discord-bot-go
 
 use dca in folder sounds to convert mp3 or wav
-ffmpeg -i saul.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > saul.dca
+```
+ffmpeg -i saul.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > sounds/songs/saul.dca
+ffmpeg -i tts.wav -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > sounds/tts/tts.dca
+```
 
 # using piper for tts
 https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.tar.gz
