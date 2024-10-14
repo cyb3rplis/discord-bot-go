@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"log"
 	"os"
 
@@ -12,8 +13,20 @@ import (
 
 var Config = config.GetConfig()
 
-// InitDB initializes the SQLite database and loads the schema.
-func InitDB() {
+// InitModel initializes the SQLite database schema
+func InitModel() (model.Model, func() error, error) {
+	db, dbClose, err := InitDB()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+		return model.Model{}, nil, err
+	}
+	m := model.Model{
+		Db: db,
+	}
+	return m, dbClose, nil
+}
+
+func InitDB() (*sql.DB, func() error, error) {
 	databaseFile := Config.DB
 	schemaFile := Config.Schema
 
@@ -23,12 +36,12 @@ func InitDB() {
 		file, err := os.Create(databaseFile)
 		if err != nil {
 			log.Fatalf("Failed to create database file: %v", err)
-			return
+			return nil, nil, err
 		}
 		err = file.Close()
 		if err != nil {
 			log.Fatalf("Failed to close database file: %v", err)
-			return
+			return nil, nil, err
 		}
 		log.Println("Database created successfully!")
 	} else {
@@ -40,13 +53,12 @@ func InitDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	// Read the schema file
 	schema, err := os.ReadFile(schemaFile)
 	if err != nil {
 		log.Fatalf("Failed to read schema file: %v", err)
-		return
+		return nil, nil, err
 	}
 
 	// Execute the schema file contents within a transaction
@@ -69,4 +81,6 @@ func InitDB() {
 	}
 
 	log.Println("Database schema initialized successfully!")
+
+	return db, db.Close, nil
 }

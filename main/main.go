@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"log"
 	"os"
 	"os/signal"
@@ -15,7 +16,18 @@ import (
 )
 
 func init() {
-	db.InitDB()
+	m, dbClose, err := db.InitModel()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if err := dbClose(); err != nil {
+				log.Fatalf("Failed to close database: %v", err)
+			}
+		}
+	}()
+	model.Bot = model.New(&m)
 
 }
 

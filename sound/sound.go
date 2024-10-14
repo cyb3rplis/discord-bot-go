@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/util"
 	"io"
 	"log"
@@ -343,12 +344,6 @@ func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]di
 // InsertCategoriesAndSounds inserts sound categories and sounds into the database
 // TODO: remove files from database if no longer exists in folder
 func InsertCategoriesAndSounds() error {
-	db, err := sql.Open("sqlite3", cfg.DB)
-	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
-	}
-	defer db.Close()
-
 	soundFolders, err := util.WalkSoundFolder()
 	if err != nil {
 		return fmt.Errorf("failed to walk sound folder: %w", err)
@@ -356,13 +351,13 @@ func InsertCategoriesAndSounds() error {
 
 	for _, folder := range soundFolders {
 		// Insert category
-		categoryID, categoryName, err := checkExistingCategory(db, folder)
+		categoryID, categoryName, err := checkExistingCategory(folder)
 		if err != nil {
 			return fmt.Errorf("error checking existing category: %w", err)
 		}
 		// If the category does not exist, insert it
 		if categoryName == "" {
-			categoryID, err = insertCategory(db, folder)
+			categoryID, err = insertCategory(folder)
 			if err != nil {
 				return fmt.Errorf("failed to insert category: %w", err)
 			}
@@ -381,14 +376,14 @@ func InsertCategoriesAndSounds() error {
 				return fmt.Errorf("failed to read sound file: %w", err)
 			}
 			// Check if file already exists
-			existingSound, err := checkExistingSound(db, soundFile)
+			existingSound, err := checkExistingSound(soundFile)
 			if err != nil {
 				return fmt.Errorf("error checking existing sound: %w", err)
 			}
 			soundName := strings.TrimSuffix(soundFile, ".dca")
 			// If the sound does not exist, insert it
 			if existingSound == "" {
-				err = insertSound(db, soundFile, soundName, categoryID, fileData)
+				err = insertSound(soundFile, soundName, categoryID, fileData)
 				if err != nil {
 					return fmt.Errorf("error inserting sound: %w", err)
 				}
@@ -399,11 +394,31 @@ func InsertCategoriesAndSounds() error {
 	return nil
 }
 
+// GetCategories returns a list of sound categories
+func GetCategories() ([]string, error) {
+	rows, err := model.Bot.Db.Query("SELECT name FROM categories")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query categories: %w", err)
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var category string
+		err := rows.Scan(&category)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan category: %w", err)
+		}
+		categories = append(categories, category)
+	}
+	return categories, nil
+}
+
 // checkExistingCategory checks if a category already exists in the database
-func checkExistingCategory(db *sql.DB, folder string) (int64, string, error) {
+func checkExistingCategory(folder string) (int64, string, error) {
 	var categoryID int64
 	var categoryName string
-	err := db.QueryRow(`SELECT id, name FROM categories WHERE name = ?`, folder).Scan(&categoryID, &categoryName)
+	err := model.Bot.Db.QueryRow(`SELECT id, name FROM categories WHERE name = ?`, folder).Scan(&categoryID, &categoryName)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, "", err
 	}
@@ -411,9 +426,9 @@ func checkExistingCategory(db *sql.DB, folder string) (int64, string, error) {
 }
 
 // checkExistingSound checks if a sound already exists in the database
-func checkExistingSound(db *sql.DB, soundFile string) (string, error) {
+func checkExistingSound(soundFile string) (string, error) {
 	var fileName string
-	err := db.QueryRow("SELECT name FROM sounds WHERE name = ?", soundFile).Scan(&fileName)
+	err := model.Bot.Db.QueryRow("SELECT name FROM sounds WHERE name = ?", soundFile).Scan(&fileName)
 	if err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
@@ -421,8 +436,8 @@ func checkExistingSound(db *sql.DB, soundFile string) (string, error) {
 }
 
 // insertCategory inserts a category into the database
-func insertCategory(db *sql.DB, folder string) (int64, error) {
-	res, err := db.Exec("INSERT INTO categories (name) VALUES (?)", folder)
+func insertCategory(folder string) (int64, error) {
+	res, err := model.Bot.Db.Exec("INSERT INTO categories (name) VALUES (?)", folder)
 	if err != nil {
 		return 0, err
 	}
@@ -434,8 +449,8 @@ func insertCategory(db *sql.DB, folder string) (int64, error) {
 }
 
 // insertSound inserts a sound into the database
-func insertSound(db *sql.DB, soundFile, soundName string, categoryID int64, fileData []byte) error {
-	_, err := db.Exec("INSERT INTO sounds (name, alias, category_id, file) VALUES (?, ?, ?, ?)", soundFile, soundName, categoryID, fileData)
+func insertSound(soundFile, soundName string, categoryID int64, fileData []byte) error {
+	_, err := model.Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, file) VALUES (?, ?, ?, ?)", soundFile, soundName, categoryID, fileData)
 	if err != nil {
 		return err
 	}
@@ -443,7 +458,7 @@ func insertSound(db *sql.DB, soundFile, soundName string, categoryID int64, file
 }
 
 // deleteSound removes a sound from the database
-func deleteSound(db *sql.DB, soundName string) error {
-	_, err := db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
+func deleteSound(soundName string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
 	return err
 }
