@@ -199,7 +199,6 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 		lastMessageID = ""
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
-
 }
 
 func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
@@ -243,6 +242,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	if err != nil {
 		log.Println("error sending message:", err)
 	}
+	log.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
