@@ -46,7 +46,7 @@ func LoadSound(soundName string) error {
 	var opusLen int16
 	file, err := os.Open(soundName)
 	if err != nil {
-		logger.ErrorLog.Println("error opening dca file :", err)
+		logger.ErrorLog.Println("Error opening dca file :", err)
 		return err
 	}
 	defer file.Close()
@@ -63,7 +63,7 @@ func LoadSound(soundName string) error {
 			return nil
 		}
 		if err != nil {
-			logger.ErrorLog.Println("error reading from dca file :", err)
+			logger.ErrorLog.Println("Error reading from dca file :", err)
 			return err
 		}
 
@@ -71,7 +71,7 @@ func LoadSound(soundName string) error {
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
 		if err != nil {
-			logger.ErrorLog.Println("error reading from dca file :", err)
+			logger.ErrorLog.Println("Error reading from dca file :", err)
 			return err
 		}
 
@@ -88,24 +88,25 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 		// delete the last message and set the new value to the last sent message
 		err = s.ChannelMessageDelete(lastChannelID, lastMessageID)
 		if err != nil {
-			logger.ErrorLog.Println("error deleting message:", err)
+			logger.ErrorLog.Println("Error deleting message with command to play new sound:", err)
 			return err
 		}
-		lastChannelID = st.ChannelID
-		lastMessageID = st.ID
 		stopChannel <- struct{}{}
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 
+	lastChannelID = st.ChannelID
+	lastMessageID = st.ID
+
 	// Load the sound file.
 	err = LoadSound(soundFile)
 	if err != nil {
-		logger.ErrorLog.Printf("error loading sound %s, %v ", soundFile, err)
+		logger.ErrorLog.Printf("Error loading sound %s, %v ", soundFile, err)
 		_, err = s.ChannelMessageSend(m.ChannelID, "> Sound does not exist\n> Sikerim")
 		if err != nil {
-			logger.ErrorLog.Println("error loading sound:", err)
+			logger.ErrorLog.Println("Error loading sound:", err)
 		}
-		return
+		return err
 	}
 
 	// Join the provided voice channel.
@@ -151,7 +152,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	// Delete the initial "Now Playing" message
 	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
 	if err != nil {
-		logger.ErrorLog.Println("error deleting message:", err)
+		logger.ErrorLog.Println("Error deleting message after sound finished:", err)
 		return err
 	}
 	return nil
@@ -184,7 +185,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
 	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.GlobalName)+" ⬅ you fucking idiot!!!")
+		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons <@"+i.Member.User.ID+"> you fucking idiot!!!")
 		if err != nil {
 			logger.ErrorLog.Println("Error sending message:", err)
 		}
@@ -212,11 +213,9 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 		// Delete the last "Now Playing"
 		err := s.ChannelMessageDelete(lastChannelID, lastMessageID)
 		if err != nil {
-			logger.ErrorLog.Println("error deleting message:", err)
+			logger.ErrorLog.Println("Error deleting message via stop button:", err)
 			return
 		}
-		lastChannelID = ""
-		lastMessageID = ""
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 }
@@ -234,14 +233,14 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(i.ChannelID)
 	if err != nil {
-		logger.ErrorLog.Println("error finding channel:", err)
+		logger.ErrorLog.Println("Error finding channel:", err)
 		return
 	}
 
 	// Find the guild for that channel
 	g, err := s.State.Guild(c.GuildID)
 	if err != nil {
-		logger.ErrorLog.Println("error finding guild:", err)
+		logger.ErrorLog.Println("Error finding guild:", err)
 		return
 	}
 
@@ -257,7 +256,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			})
 			content = append(content, row)
 			st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-				Content:    "➡ Currently Playing by " + i.Member.User.GlobalName + ": " + soundName,
+				Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
 				Components: content,
 			})
 			if err != nil {
@@ -270,7 +269,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			// Play the sound
 			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
 			if err != nil {
-				logger.ErrorLog.Println("error playing sound:", err)
+				logger.ErrorLog.Println("Error playing sound:", err)
 			}
 			_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
 			return
@@ -279,7 +278,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 
 	// If the user is not in a voice channel, send an error message
 	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
-	_, err = s.ChannelMessageSend(i.ChannelID, "You need to be in a voice channel to play sounds.")
+	_, err = s.ChannelMessageSend(i.ChannelID, "You need to be in a voice channel to play sounds <@"+i.Member.User.ID+">")
 	if err != nil {
 		logger.ErrorLog.Println("Error sending message:", err)
 	}
@@ -366,7 +365,7 @@ func InsertCategoriesAndSounds() error {
 		// Insert category
 		categoryID, categoryName, err := checkExistingCategory(folder)
 		if err != nil {
-			return fmt.Errorf("error checking existing category: %w", err)
+			return fmt.Errorf("Error checking existing category: %w", err)
 		}
 		// If the category does not exist, insert it
 		if categoryName == "" {
@@ -492,7 +491,7 @@ func insertSound(soundFile, soundName string, categoryID int64, fileData []byte)
 }
 
 // deleteSound removes a sound from the database
-func deleteSound(soundName string) error {
-	_, err := model.Bot.Db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
+func deleteSound(id int) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM sounds WHERE id = ?", id)
 	return err
 }
