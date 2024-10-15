@@ -186,7 +186,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		mu.Unlock()
 		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons ➡ "+strings.ToUpper(i.Member.User.GlobalName)+" ⬅ you fucking idiot!!!")
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			logger.ErrorLog.Println("Error sending message:", err)
 		}
 		return
 	}
@@ -245,26 +245,26 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 		return
 	}
 
-	content := []discordgo.MessageComponent{}
-	row := discordgo.ActionsRow{}
-	row.Components = append(row.Components, discordgo.Button{
-		Label:    "Stop Sound",
-		Style:    discordgo.DangerButton,
-		CustomID: "stop_sound",
-	})
-	content = append(content, row)
-	st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-		Content:    "➡ Currently Playing by " + i.Member.User.GlobalName + ": " + soundName,
-		Components: content,
-	})
-	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
-	}
-	logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
-
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
 		if vs.UserID == i.Member.User.ID {
+			content := []discordgo.MessageComponent{}
+			row := discordgo.ActionsRow{}
+			row.Components = append(row.Components, discordgo.Button{
+				Label:    "Stop Sound",
+				Style:    discordgo.DangerButton,
+				CustomID: "stop_sound",
+			})
+			content = append(content, row)
+			st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+				Content:    "➡ Currently Playing by " + i.Member.User.GlobalName + ": " + soundName,
+				Components: content,
+			})
+			if err != nil {
+				logger.ErrorLog.Println("Error sending message:", err)
+			}
+			logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
+
 			// Construct the sound file path
 			soundFile := fmt.Sprintf("%s/%s/%s.dca", cfg.SoundsDir, subfolder, soundName)
 			// Play the sound
@@ -276,6 +276,13 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			return
 		}
 	}
+
+	// If the user is not in a voice channel, send an error message
+	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
+	_, err = s.ChannelMessageSend(i.ChannelID, "You need to be in a voice channel to play sounds.")
+	if err != nil {
+		logger.ErrorLog.Println("Error sending message:", err)
+	}
 }
 
 func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
@@ -283,12 +290,12 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	_, err := s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		logger.ErrorLog.Println("Error sending message:", err)
 	}
 	// List getSoundsInCategory in the selected category
 	sounds, err := getAndSendSoundsInCategory(s, i.ChannelID, category)
 	if err != nil {
-		logger.ErrorLog.Println("error listing sounds in category:", err)
+		logger.ErrorLog.Println("Error listing sounds in category:", err)
 		return
 	}
 
@@ -304,7 +311,7 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 			Components: messageContent,
 		})
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			logger.ErrorLog.Println("Error sending message:", err)
 		}
 	}
 }
@@ -314,13 +321,13 @@ func getAndSendSoundsInCategory(s *discordgo.Session, channelID, category string
 	// Get all sound files in the subfolder
 	sounds, err := getSounds(category)
 	if err != nil {
-		logger.ErrorLog.Println("error listing sounds in subfolder:", err)
+		logger.ErrorLog.Println("Error listing sounds in subfolder:", err)
 		return nil, err
 	}
 	if len(sounds) == 0 {
 		_, err := s.ChannelMessageSend(channelID, "No sounds found in this category.")
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			logger.ErrorLog.Println("Error sending message:", err)
 		}
 		return nil, errors.New("no sounds found in this category")
 	}
