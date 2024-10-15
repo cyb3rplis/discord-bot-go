@@ -34,3 +34,4 @@ venv
 tts/
 db/soundbot.db
 config/config.local.json
+identifier.sqlite

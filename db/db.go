@@ -31,6 +31,15 @@ func InitDB() (*sql.DB, func() error, error) {
 	databaseFile := Config.DB
 	schemaFile := Config.Schema
 
+	// Check if the ../dist path exists
+	if _, err := os.Stat("../dist"); os.IsNotExist(err) {
+		logger.InfoLog.Println("dist path does not exist, trying to create")
+		err = os.Mkdir("../dist", 0774)
+		if err != nil {
+			logger.FatalLog.Fatalln("Could not create ../dist directory")
+		}
+	}
+
 	// Check if the database file exists
 	if _, err := os.Stat(databaseFile); os.IsNotExist(err) {
 		logger.InfoLog.Printf("Database does not exist, creating a new one: %v", databaseFile)

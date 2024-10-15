@@ -9,6 +9,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/cronjob"
 	"github.com/cyb3rplis/discord-bot-go/db"
 	"github.com/cyb3rplis/discord-bot-go/sound"
 
@@ -33,6 +34,7 @@ func init() {
 
 func main() {
 	cfg := config.GetConfig()
+	cronjob.InitCron()
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
