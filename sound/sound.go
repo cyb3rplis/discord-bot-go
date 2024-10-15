@@ -365,7 +365,7 @@ func InsertCategoriesAndSounds() error {
 		// Insert category
 		categoryID, categoryName, err := checkExistingCategory(folder)
 		if err != nil {
-			return fmt.Errorf("Error checking existing category: %w", err)
+			return fmt.Errorf("error checking existing category: %w", err)
 		}
 		// If the category does not exist, insert it
 		if categoryName == "" {
