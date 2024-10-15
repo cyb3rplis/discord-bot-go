@@ -400,7 +400,6 @@ func InsertCategoriesAndSounds() error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -426,7 +425,6 @@ func GetCategories() ([]string, error) {
 
 // getSounds returns a list of sounds in the specified category (from DB)
 func getSounds(category string) ([]string, error) {
-	logger.InfoLog.Printf("Listing category: %v", category)
 	rows, err := model.Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ? ORDER BY sounds.name ASC", category)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sounds in category: %w", err)
@@ -477,6 +475,12 @@ func insertCategory(folder string) (int64, error) {
 		return 0, err
 	}
 	return categoryID, nil
+}
+
+// deleteCategory removes a category from the database
+func deleteCategory(name string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM categories WHERE name = ?", name)
+	return err
 }
 
 // insertSound inserts a sound into the database

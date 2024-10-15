@@ -15,5 +15,8 @@ CREATE TABLE IF NOT EXISTS sounds (
     alias TEXT NOT NULL UNIQUE,
     category_id INTEGER NOT NULL,
     file BLOB NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
+    CONSTRAINT fk_categories
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+        ON DELETE CASCADE
 );
