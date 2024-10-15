@@ -263,10 +263,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 			if err != nil {
 				log.Println("error playing sound:", err)
 			}
-			err = s.ChannelMessageDelete(st.ChannelID, st.ID)
-			if err != nil {
-				log.Println("error deleting message:", err)
-			}
+			_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
 			return
 		}
 	}
@@ -280,7 +277,7 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 		log.Println("error sending message:", err)
 	}
 	// List getSoundsInCategory in the selected category
-	sounds, err := getSoundsInCategory(s, i.ChannelID, category)
+	sounds, err := getAndSendSoundsInCategory(s, i.ChannelID, category)
 	if err != nil {
 		log.Println("error listing sounds in category:", err)
 		return
@@ -304,9 +301,9 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 }
 
 // getSoundsInCategory lists the sounds in the specified category and sends them as buttons
-func getSoundsInCategory(s *discordgo.Session, channelID, category string) ([]discordgo.MessageComponent, error) {
+func getAndSendSoundsInCategory(s *discordgo.Session, channelID, category string) ([]discordgo.MessageComponent, error) {
 	// Get all sound files in the subfolder
-	sounds, err := util.WalkSoundFiles(category)
+	sounds, err := getSounds(category)
 	if err != nil {
 		log.Println("error listing sounds in subfolder:", err)
 		return nil, err
@@ -394,7 +391,7 @@ func InsertCategoriesAndSounds() error {
 	return nil
 }
 
-// GetCategories returns a list of sound categories
+// GetCategories returns a list of sound categories (from DB)
 func GetCategories() ([]string, error) {
 	rows, err := model.Bot.Db.Query("SELECT name FROM categories")
 	if err != nil {
@@ -412,6 +409,27 @@ func GetCategories() ([]string, error) {
 		categories = append(categories, category)
 	}
 	return categories, nil
+}
+
+// getSounds returns a list of sounds in the specified category (from DB)
+func getSounds(category string) ([]string, error) {
+	fmt.Println("category:", category)
+	rows, err := model.Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ?", category)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query sounds in category: %w", err)
+	}
+	defer rows.Close()
+
+	var sounds []string
+	for rows.Next() {
+		var sound string
+		err := rows.Scan(&sound)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan sound: %w", err)
+		}
+		sounds = append(sounds, sound)
+	}
+	return sounds, nil
 }
 
 // checkExistingCategory checks if a category already exists in the database

@@ -2,7 +2,7 @@ package message
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/util"
+	"github.com/cyb3rplis/discord-bot-go/sound"
 	"log"
 	"math/rand"
 	"strings"
@@ -39,12 +39,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// LIST CATEGORIES
 	case command == fmt.Sprintf("%slist", prefix):
 		// Get all sound folders to use for later
-		soundFolders, err := util.WalkSoundFolder()
+		//get categories from database
+		categories, err := sound.GetCategories()
 		if err != nil {
-			log.Println("Error getting sound subfolders")
-			return
+			log.Println("error getting categories:", err)
 		}
-		if len(soundFolders) == 0 {
+		if len(categories) == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "No sound categories found.")
 			if err != nil {
 				log.Println("error sending message:", err)
@@ -53,16 +53,16 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		content := []discordgo.MessageComponent{}
 		row := discordgo.ActionsRow{}
-		for i, folder := range soundFolders {
+		for i, category := range categories {
 			// only 5 buttons per row - discord does not allow more
 			if i > 0 && i%5 == 0 {
 				content = append(content, row)
 				row = discordgo.ActionsRow{}
 			}
 			row.Components = append(row.Components, discordgo.Button{
-				Label:    folder,
+				Label:    category,
 				Style:    discordgo.PrimaryButton,
-				CustomID: fmt.Sprintf("list_sounds_%s", folder),
+				CustomID: fmt.Sprintf("list_sounds_%s", category),
 			})
 		}
 		// Append the last row if it has any components
