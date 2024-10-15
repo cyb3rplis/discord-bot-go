@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS sounds (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    alias TEXT NOT NULL UNIQUE ,
+    alias TEXT NOT NULL UNIQUE,
     category_id INTEGER NOT NULL,
     file BLOB NOT NULL,
     FOREIGN KEY (category_id) REFERENCES categories(id)

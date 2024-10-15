@@ -3,9 +3,10 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"sync"
+
+	"github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 type Config struct {
@@ -14,6 +15,7 @@ type Config struct {
 	SoundsDir string `json:"sounds_dir"`
 	DB        string `json:"db"`
 	Schema    string `json:"schema"`
+	DBCleanup bool   `json:"db_cleanup"`
 }
 
 var (
@@ -33,12 +35,13 @@ func LoadConfig() *Config {
 		configInstance = &Config{}
 		file, err := os.ReadFile(configFile)
 		if err != nil {
-			log.Fatalf("Error reading config file: %v", err)
+			logger.FatalLog.Fatalf("Error reading config file: %v", err)
 		}
 
 		err = json.Unmarshal(file, configInstance)
 		if err != nil {
-			log.Fatalf("Error parsing config file: %v", err)
+			logger.FatalLog.Fatalf("Error parsing config file: %v", err)
+			os.Exit(1)
 		}
 	})
 

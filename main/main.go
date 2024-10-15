@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/cyb3rplis/discord-bot-go/model"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/db"
@@ -18,27 +19,25 @@ import (
 func init() {
 	m, dbClose, err := db.InitModel()
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		logger.FatalLog.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
 		if err != nil {
 			if err := dbClose(); err != nil {
-				log.Fatalf("Failed to close database: %v", err)
+				logger.FatalLog.Fatalf("Failed to close database: %v", err)
 			}
 		}
 	}()
 	model.Bot = model.New(&m)
-
 }
 
 func main() {
-
 	cfg := config.GetConfig()
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
-		log.Println("error creating Discord session: ", err)
+		logger.ErrorLog.Println("error creating Discord session: ", err)
 		return
 	}
 
@@ -58,18 +57,18 @@ func main() {
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		log.Println("error opening Discord session: ", err)
+		logger.ErrorLog.Println("error opening Discord session: ", err)
 		return
 	}
 
 	// Insert categories and sounds into the database
 	err = sound.InsertCategoriesAndSounds()
 	if err != nil {
-		log.Fatalf("error inserting categories and sounds: %v", err)
+		logger.FatalLog.Fatalf("error inserting categories and sounds: %v", err)
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	log.Println("Bot is now running..  Press CTRL-C to exit.")
+	logger.InfoLog.Println("Bot is now running")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc

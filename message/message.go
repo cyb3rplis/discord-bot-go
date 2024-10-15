@@ -2,10 +2,11 @@ package message
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/sound"
-	"log"
 	"math/rand"
 	"strings"
+
+	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/sound"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -21,7 +22,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if len(m.Content) == 0 { // Ignore empty messages
-		log.Println("Empty content..")
+		logger.InfoLog.Println("Empty content in command, ignore")
 		return
 	}
 	// Extract the command and arguments
@@ -34,7 +35,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Default case: show help message
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐 Usage: \n > » List Categories: <%slist> \n", prefix))
 		if err != nil {
-			log.Println("error sending message:", err)
+			logger.ErrorLog.Println("error sending message:", err)
 		}
 	// LIST CATEGORIES
 	case command == fmt.Sprintf("%slist", prefix):
@@ -42,12 +43,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		//get categories from database
 		categories, err := sound.GetCategories()
 		if err != nil {
-			log.Println("error getting categories:", err)
+			logger.ErrorLog.Println("error getting categories:", err)
 		}
 		if len(categories) == 0 {
 			_, err := s.ChannelMessageSend(m.ChannelID, "No sound categories found.")
 			if err != nil {
-				log.Println("error sending message:", err)
+				logger.ErrorLog.Println("error sending message:", err)
 			}
 			return
 		}
@@ -74,12 +75,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Components: content,
 		})
 		if err != nil {
-			log.Println("error sending message:", err)
+			logger.ErrorLog.Println("error sending message:", err)
 		}
 	case strings.Contains(strings.ToLower(m.Content), "mutter"):
 		_, err := s.ChannelMessageSend(m.ChannelID, mutterWitze[rand.Intn(len(mutterWitze))])
 		if err != nil {
-			log.Println("error sending message:", err)
+			logger.ErrorLog.Println("error sending message:", err)
 		}
 	default:
 		return

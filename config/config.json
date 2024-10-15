@@ -3,5 +3,6 @@
   "prefix": ".",
   "sounds_dir": "../sounds",
   "db": "../dist/soundbot.db",
-  "schema": "../db/schema.sql"
+  "schema": "../db/schema.sql",
+  "db_cleanup": false
 }
