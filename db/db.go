@@ -34,7 +34,7 @@ func InitDB() (*sql.DB, func() error, error) {
 	// Check if the ../dist path exists
 	if _, err := os.Stat("../dist"); os.IsNotExist(err) {
 		logger.InfoLog.Println("dist path does not exist, trying to create")
-		err = os.Mkdir("../dist", 0774)
+		err = os.Mkdir("../dist", 0775)
 		if err != nil {
 			logger.FatalLog.Fatalln("Could not create ../dist directory")
 		}
