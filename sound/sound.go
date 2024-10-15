@@ -210,12 +210,10 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 	if botSpeaking {
 		stopChannel <- struct{}{}
 
-		// Delete the last "Now Playing"
-		err := s.ChannelMessageDelete(lastChannelID, lastMessageID)
-		if err != nil {
-			logger.ErrorLog.Println("Error deleting message via stop button:", err)
-			return
-		}
+		// Delete the last "Now Playing" message
+		// This should not be needed, since the actual function will finish normally when emptying the buffer
+		// and this deletes the old message anyway. Keeping it here just to make sure
+		_ = s.ChannelMessageDelete(lastChannelID, lastMessageID)
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 }
@@ -429,7 +427,7 @@ func GetCategories() ([]string, error) {
 // getSounds returns a list of sounds in the specified category (from DB)
 func getSounds(category string) ([]string, error) {
 	logger.InfoLog.Printf("Listing category: %v", category)
-	rows, err := model.Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ?", category)
+	rows, err := model.Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ? ORDER BY sounds.name ASC", category)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sounds in category: %w", err)
 	}
