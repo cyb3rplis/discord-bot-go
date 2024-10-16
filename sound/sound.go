@@ -455,6 +455,7 @@ func GetSoundStatistics() (soundStats map[string]int, err error) {
 			soundStats[sound.String] = int(count.Int64)
 		}
 	}
-
+	//sort map by value
+	soundStats = utils.SortMapByValue(soundStats)
 	return soundStats, err
 }

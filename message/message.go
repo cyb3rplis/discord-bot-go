@@ -41,14 +41,16 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
 	case command == fmt.Sprintf("%sstats", prefix):
+
 		soundStats, err := sound.GetSoundStatistics()
 		if err != nil {
 			logger.ErrorLog.Printf("Error getting sound statistics: %v", err)
 		}
+		sortedKeys := utils.SortMapKeysByValue(soundStats)
 
 		message := "🔥  Top 10 played sounds: \n\n"
-		for s, c := range soundStats {
-			message = message + fmt.Sprintf("> %d:\t%s\n", c, s)
+		for _, c := range sortedKeys {
+			message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
 		}
 
 		_, err = s.ChannelMessageSend(m.ChannelID, message)

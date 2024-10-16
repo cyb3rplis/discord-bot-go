@@ -4,6 +4,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -53,4 +54,30 @@ func ScanDirectory() (map[string][]string, error) {
 // RemoveFileExtension removes the file extension from a given file name.
 func RemoveFileExtension(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+}
+
+func SortMapByValue(m map[string]int) map[string]int {
+	var keys []string
+	var sortedM = make(map[string]int)
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return m[keys[i]] > m[keys[j]]
+	})
+	for _, k := range keys {
+		sortedM[k] = m[k]
+	}
+	return sortedM
+}
+
+func SortMapKeysByValue(m map[string]int) []string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return m[keys[i]] > m[keys[j]]
+	})
+	return keys
 }
