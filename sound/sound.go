@@ -154,6 +154,11 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	buffer = make([][]byte, 0)
 	botSpeaking = false
 
+	err = addSoundStatistics(soundName)
+	if err != nil {
+		logger.ErrorLog.Printf("Error inserting statistics: %v", err)
+	}
+
 	// Delete the initial "Now Playing" message
 	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
 	if err != nil {
@@ -666,4 +671,41 @@ func computeFileHash(filePath string) (string, error) {
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func addSoundStatistics(soundName string) error {
+	_, err := model.Bot.Db.Exec("INSERT OR IGNORE INTO stats_sounds (id) SELECT id FROM sounds WHERE name = ?;", soundName)
+	if err != nil {
+		return err
+	}
+
+	_, err = model.Bot.Db.Exec("UPDATE stats_sounds SET count = count + 1 WHERE id = (SELECT id FROM sounds WHERE alias = ?)", soundName)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetSoundStatistics() (soundStats map[string]int, err error) {
+	rows, err := model.Bot.Db.Query("SELECT sounds.alias, count FROM stats_sounds LEFT JOIN sounds ON sounds.id = stats_sounds.id ORDER BY count DESC LIMIT 5")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	soundStats = make(map[string]int)
+	for rows.Next() {
+		var sound string
+		var count int
+
+		err = rows.Scan(&sound, &count)
+		if err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		soundStats[sound] = count
+	}
+
+	return soundStats, err
 }

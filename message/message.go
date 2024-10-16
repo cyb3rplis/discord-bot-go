@@ -35,10 +35,27 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	switch {
 	case command == fmt.Sprintf("%shelp", prefix):
 		// show help text
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐 Usage: \n> » **Sounds**\t\t\t\t%slist \n> » **Text2Speech**\t%stts ", prefix, prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐  Usage:\n> » **Sounds**\t\t\t\t%slist\n> » **Text2Speech**\t%stts\n> » **Statistics**\t\t\t%sstats\n", prefix, prefix, prefix))
 		if err != nil {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
+	case command == fmt.Sprintf("%sstats", prefix):
+		soundStats, err := sound.GetSoundStatistics()
+		if err != nil {
+			logger.ErrorLog.Printf("Error getting sound statistics: %v", err)
+		}
+
+		message := "🔥  Top 5 played sounds: \n\n"
+		for s, c := range soundStats {
+			message = message + fmt.Sprintf("> » %s - %d\n", s, c)
+		}
+
+		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+		}
+
+		return
 	case command == fmt.Sprintf("%stts", prefix):
 		// Text2Speech
 		ttsText := m.Content[5:len(m.Content)]

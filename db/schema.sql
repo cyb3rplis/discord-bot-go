@@ -21,3 +21,12 @@ CREATE TABLE IF NOT EXISTS sounds (
         REFERENCES categories(id)
         ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS stats_sounds (
+    id INTEGER PRIMARY KEY,
+    count INTEGER DEFAULT 0,
+    CONSTRAINT fk_sounds
+        FOREIGN KEY (id)
+        REFERENCES sounds(id)
+        ON DELETE CASCADE
+);
