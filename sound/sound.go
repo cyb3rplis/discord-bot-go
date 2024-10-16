@@ -697,14 +697,16 @@ func GetSoundStatistics() (soundStats map[string]int, err error) {
 
 	soundStats = make(map[string]int)
 	for rows.Next() {
-		var sound string
-		var count int
+		var sound sql.NullString
+		var count sql.NullInt64
 
 		err = rows.Scan(&sound, &count)
 		if err != nil {
 			logger.FatalLog.Fatal(err)
 		}
-		soundStats[sound] = count
+		if sound.Valid && count.Valid {
+			soundStats[sound.String] = int(count.Int64)
+		}
 	}
 
 	return soundStats, err
