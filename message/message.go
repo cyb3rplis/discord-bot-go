@@ -47,7 +47,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		message := "🔥  Top 10 played sounds: \n\n"
 		for s, c := range soundStats {
-			message = message + fmt.Sprintf("> » %s - %d\n", s, c)
+			message = message + fmt.Sprintf("> %d:\t%s\n", c, s)
 		}
 
 		_, err = s.ChannelMessageSend(m.ChannelID, message)
