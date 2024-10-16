@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,10 +19,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/config"
 )
-
-var cfg = config.GetConfig()
 
 var buffer = make([][]byte, 0)
 var botSpeaking = false
@@ -100,7 +98,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	lastMessageID = st.ID
 
 	if soundName == "tts" {
-		soundFile = cfg.TTSOutput
+		soundFile = model.Bot.Config.TTSOutput
 	}
 
 	// Load the sound file.
@@ -166,195 +164,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 		return err
 	}
 	return nil
-}
-
-// InteractionHandler handles interaction events (e.g., button clicks)
-func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionMessageComponent {
-		return
-	}
-	customID := i.MessageComponentData().CustomID
-
-	// Acknowledge the interaction
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredMessageUpdate,
-	})
-	if err != nil {
-		logger.ErrorLog.Println("Failed to respond to interaction:", err)
-		return
-	}
-
-	// Check if the user is spamming the buttons and limit the interactions
-	mu.Lock()
-	lastInteraction, exists := userLastInteraction[i.Member.User.ID] // Get the last interaction time
-	if exists && time.Since(lastInteraction) < resetDuration {       // Check if the user has interacted recently
-		userInteractionCount[i.Member.User.ID]++
-	} else {
-		userInteractionCount[i.Member.User.ID] = 1 // Reset the interaction count
-	}
-	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
-	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
-		mu.Unlock()
-		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons <@"+i.Member.User.ID+"> you fucking idiot!!!")
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
-		}
-		return
-	}
-	mu.Unlock()
-
-	switch {
-	case strings.HasPrefix(customID, "play_sound_"):
-		HandlePlaySoundInteraction(s, i, customID)
-	case strings.HasPrefix(customID, "list_sounds_"):
-		handleListSoundsInteraction(s, i, customID)
-	case strings.HasPrefix(customID, "stop_sound"):
-		handleStopSoundInteraction(s)
-	default:
-		logger.ErrorLog.Println("unknown interaction:", customID)
-	}
-}
-
-func handleStopSoundInteraction(s *discordgo.Session) {
-	// check if the bot is currently speaking, and exit
-	if botSpeaking {
-		stopChannel <- struct{}{}
-
-		// Delete the last "Now Playing" message
-		// This should not be needed, since the actual function will finish normally when emptying the buffer
-		// and this deletes the old message anyway. Keeping it here just to make sure
-		_ = s.ChannelMessageDelete(lastChannelID, lastMessageID)
-		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
-	}
-}
-
-func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
-	cfg := config.GetConfig()
-	ttsOutput := cfg.TTSOutput
-	// Extract the subfolder and sound name from the custom ID
-	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
-	if len(parts) != 2 {
-		logger.ErrorLog.Println("Invalid custom ID format")
-		return
-	}
-	subfolder := parts[0]
-	soundName := parts[1]
-
-	// Find the channel that the interaction came from
-	c, err := s.State.Channel(i.ChannelID)
-	if err != nil {
-		logger.ErrorLog.Println("Error finding channel:", err)
-		return
-	}
-
-	// Find the guild for that channel
-	g, err := s.State.Guild(c.GuildID)
-	if err != nil {
-		logger.ErrorLog.Println("Error finding guild:", err)
-		return
-	}
-
-	// Look for the interaction user in that guild's current voice states
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == i.Member.User.ID {
-			if customID == "play_sound_temp_tts" {
-				content := []discordgo.MessageComponent{}
-				row := discordgo.ActionsRow{}
-				row.Components = append(row.Components, discordgo.Button{
-					Label:    "Stop Sound",
-					Style:    discordgo.DangerButton,
-					CustomID: "stop_sound",
-				})
-				content = append(content, row)
-				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-					Content:    "➡ Text2Speech playing by <@" + i.Member.User.ID + ">",
-					Components: content,
-				})
-				if err != nil {
-					logger.ErrorLog.Println("Error sending message:", err)
-				}
-				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
-
-				// Play the sound
-				err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, ttsOutput, "tts")
-				if err != nil {
-					logger.ErrorLog.Println("Error playing sound:", err)
-				}
-				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
-				return
-			} else {
-				content := []discordgo.MessageComponent{}
-				row := discordgo.ActionsRow{}
-				row.Components = append(row.Components, discordgo.Button{
-					Label:    "Stop Sound",
-					Style:    discordgo.DangerButton,
-					CustomID: "stop_sound",
-				})
-				content = append(content, row)
-				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-					Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
-					Components: content,
-				})
-				if err != nil {
-					logger.ErrorLog.Println("Error sending message:", err)
-				}
-				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
-				// Construct the sound file path
-				soundFile := fmt.Sprintf("%s/%s/%s.dca", cfg.SoundsDir, subfolder, soundName)
-
-				// Play the sound
-				err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
-				if err != nil {
-					logger.ErrorLog.Println("Error playing sound:", err)
-				}
-				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
-				return
-			}
-
-		}
-
-	}
-
-	// If the user is not in a voice channel, send an error message
-	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
-	_, err = s.ChannelMessageSend(i.ChannelID, "You need to be in a voice channel to play sounds <@"+i.Member.User.ID+">")
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
-	}
-
-}
-
-func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
-	// Extract the category from the custom ID
-	category := strings.TrimPrefix(customID, "list_sounds_")
-	_, err := s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
-	}
-	// List getSoundsInCategory in the selected category
-	sounds, err := getAndSendSoundsInCategory(s, i.ChannelID, category)
-	if err != nil {
-		logger.ErrorLog.Println("Error listing sounds in category:", err)
-		return
-	}
-
-	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
-
-	// Split content into multiple messages if it exceeds 5 rows
-	for len(sounds) > 0 {
-		var messageContent []discordgo.MessageComponent
-		if len(sounds) > 5 {
-			messageContent, sounds = sounds[:5], sounds[5:]
-		} else {
-			messageContent, sounds = sounds, nil
-		}
-		_, err = s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-			Components: messageContent,
-		})
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
-		}
-	}
 }
 
 // getSoundsInCategory lists the sounds in the specified category and sends them as buttons
@@ -435,54 +244,6 @@ func getSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
-// removeFileExtension removes the file extension from a given file name.
-func removeFileExtension(fileName string) string {
-	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
-}
-
-// ScanDirectory scans the sound directory and returns a map of folders and files.
-func ScanDirectory() (map[string][]string, error) {
-	soundsRoot := cfg.SoundsDir
-	folderMap := make(map[string][]string)
-
-	err := filepath.WalkDir(soundsRoot, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			// Skip the root folder
-			if path == soundsRoot {
-				return nil
-			}
-
-			// Get relative folder name (e.g., 'folder1/')
-			relativeFolder, err := filepath.Rel(soundsRoot, path)
-			if err != nil {
-				return err
-			}
-
-			folderMap[relativeFolder] = []string{} // Initialize an entry for this folder
-		} else {
-			// Add file to the folder list
-			folder := filepath.Dir(path)
-			relativeFolder, err := filepath.Rel(soundsRoot, folder)
-			if err != nil {
-				return err
-			}
-
-			// Filter for audio files based on extensions, e.g., ".dca", etc.
-			if ext := filepath.Ext(path); ext == ".dca" {
-				fileNameWithoutExt := removeFileExtension(filepath.Base(path))
-				folderMap[relativeFolder] = append(folderMap[relativeFolder], fileNameWithoutExt)
-			}
-		}
-		return nil
-	})
-
-	return folderMap, err
-}
-
 // syncDatabaseWithFileSystem will sync the database with the filesystem.
 func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	existingCategories := fetchCategories() // Get current folders/categories in DB
@@ -507,7 +268,7 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 
 		// Add new sounds for this category
 		for _, file := range files {
-			soundPath := filepath.Join(cfg.SoundsDir, folder, file+".dca")
+			soundPath := filepath.Join(model.Bot.Config.SoundsDir, folder, file+".dca")
 			fileData, err := os.ReadFile(soundPath)
 			if err != nil {
 				return fmt.Errorf("failed to read sound file: %w", err)
@@ -622,7 +383,7 @@ func addCategory(folderName string) error {
 }
 
 func addSound(categoryID int, fileName, fileHash string, fileData []byte) error {
-	alias := removeFileExtension(fileName) // Or any other default value, e.g., ""
+	alias := utils.RemoveFileExtension(fileName) // Or any other default value, e.g., ""
 	_, err := model.Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
 	return err
 }

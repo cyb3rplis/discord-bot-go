@@ -2,20 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"os"
 	"os/exec"
 
-	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 func TextToSpeech(text string) error {
 	// piper in path ./tts has to be present
 	// also the model
-	cfg := config.GetConfig()
-	ttsOutput := cfg.TTSInput // this is correct, the value gets used twice
-	piperPath := fmt.Sprintf("%s/piper", cfg.TTS)
-	speechFile := fmt.Sprintf("%s/de_DE-thorsten-medium.onnx", cfg.TTS)
+	ttsOutput := model.Bot.Config.TTSInput // this is correct, the value gets used twice
+	piperPath := fmt.Sprintf("%s/piper", model.Bot.Config.TTS)
+	speechFile := fmt.Sprintf("%s/de_DE-thorsten-medium.onnx", model.Bot.Config.TTS)
 
 	// Construct the shell command to echo and pipe it
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo %q | %s --model %s --output_file %s", text, piperPath, speechFile, ttsOutput))
@@ -35,10 +34,9 @@ func TextToSpeech(text string) error {
 }
 
 func WAVtoDCA() error {
-	cfg := config.GetConfig()
-	ttsInput := cfg.TTSInput
-	ttsOutput := cfg.TTSOutput
-	dca := cfg.DCA
+	ttsInput := model.Bot.Config.TTSInput
+	ttsOutput := model.Bot.Config.TTSOutput
+	dca := model.Bot.Config.DCA
 
 	// Construct the shell command to echo and pipe it
 	// ffmpeg -i tta.wav -f s16le -ar 48000 -ac 2 pipe:1 | ./dca > tta.dca
@@ -59,9 +57,8 @@ func WAVtoDCA() error {
 }
 
 func CleanUpSoundFile() error {
-	cfg := config.GetConfig()
-	ttsInput := cfg.TTSInput
-	ttsOutput := cfg.TTSOutput
+	ttsInput := model.Bot.Config.TTSInput
+	ttsOutput := model.Bot.Config.TTSOutput
 
 	err := os.Remove(ttsInput)
 	if err != nil {

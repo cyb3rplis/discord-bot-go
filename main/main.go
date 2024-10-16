@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/cyb3rplis/discord-bot-go/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,11 +65,14 @@ func main() {
 	}
 
 	// Scan the sound directory for sound files. Sync them with the DB.
-	fsSounds, err := sound.ScanDirectory()
+	fsSounds, err := utils.ScanDirectory()
 	if err != nil {
 		logger.FatalLog.Fatalf("error scanning sound directory: %v", err)
 	}
-	sound.SyncDatabaseWithFileSystem(fsSounds)
+	err = sound.SyncDatabaseWithFileSystem(fsSounds)
+	if err != nil {
+		logger.FatalLog.Printf("error syncing sound files: %v", err)
+	}
 
 	// Wait here until CTRL-C or other term signal is received.
 	logger.InfoLog.Println("Bot is now running")

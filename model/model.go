@@ -1,13 +1,18 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+	"github.com/cyb3rplis/discord-bot-go/config"
+)
 
 var Bot *Model
 
 type Model struct {
-	Db *sql.DB
+	Db     *sql.DB
+	Config *config.Config
 }
 
 func New(m *Model) *Model {
-	return &Model{Db: m.Db}
+	cfg := config.GetConfig()
+	return &Model{Db: m.Db, Config: cfg}
 }

@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/config"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -12,12 +13,12 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/config"
 )
+
+var cfg = config.GetConfig()
 
 // AudioMessageHandler is created on any channel that the authenticated bot has access to.
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	cfg := config.GetConfig()
 	prefix := cfg.Prefix
 
 	// Ignore all messages created by the bot itself
