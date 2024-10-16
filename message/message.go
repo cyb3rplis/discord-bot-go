@@ -58,7 +58,6 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	case command == fmt.Sprintf("%stts", prefix):
 		// Text2Speech
-		ttsText := m.Content[5:len(m.Content)]
 
 		if m.Content == fmt.Sprintf("%stts", prefix) {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("📢 Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix))
@@ -70,6 +69,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
+		ttsText := m.Content[5:len(m.Content)]
 		if strings.HasPrefix(ttsText, "\"") && strings.HasSuffix(ttsText, "\"") {
 			pattern := `^\"[öäüÖÄÜa-zA-Z0-9\.!:,? ]+\"$`
 
