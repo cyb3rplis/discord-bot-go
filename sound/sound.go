@@ -297,6 +297,8 @@ func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 		return
 	}
 
+	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
+
 	// Split content into multiple messages if it exceeds 5 rows
 	for len(sounds) > 0 {
 		var messageContent []discordgo.MessageComponent
