@@ -99,6 +99,10 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	lastChannelID = st.ChannelID
 	lastMessageID = st.ID
 
+	if soundName == "tts" {
+		soundFile = cfg.TTSOutput
+	}
+
 	// Load the sound file.
 	err = LoadSound(soundFile)
 	if err != nil {
@@ -196,7 +200,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	switch {
 	case strings.HasPrefix(customID, "play_sound_"):
-		handlePlaySoundInteraction(s, i, customID)
+		HandlePlaySoundInteraction(s, i, customID)
 	case strings.HasPrefix(customID, "list_sounds_"):
 		handleListSoundsInteraction(s, i, customID)
 	case strings.HasPrefix(customID, "stop_sound"):
@@ -219,7 +223,9 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 	}
 }
 
-func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+	cfg := config.GetConfig()
+	ttsOutput := cfg.TTSOutput
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
@@ -246,33 +252,62 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
 		if vs.UserID == i.Member.User.ID {
-			content := []discordgo.MessageComponent{}
-			row := discordgo.ActionsRow{}
-			row.Components = append(row.Components, discordgo.Button{
-				Label:    "Stop Sound",
-				Style:    discordgo.DangerButton,
-				CustomID: "stop_sound",
-			})
-			content = append(content, row)
-			st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-				Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
-				Components: content,
-			})
-			if err != nil {
-				logger.ErrorLog.Println("Error sending message:", err)
-			}
-			logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
+			if customID == "play_sound_temp_tts" {
+				content := []discordgo.MessageComponent{}
+				row := discordgo.ActionsRow{}
+				row.Components = append(row.Components, discordgo.Button{
+					Label:    "Stop Sound",
+					Style:    discordgo.DangerButton,
+					CustomID: "stop_sound",
+				})
+				content = append(content, row)
+				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+					Content:    "➡ Text2Speech playing by <@" + i.Member.User.ID + ">: " + soundName,
+					Components: content,
+				})
+				if err != nil {
+					logger.ErrorLog.Println("Error sending message:", err)
+				}
+				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
-			// Construct the sound file path
-			soundFile := fmt.Sprintf("%s/%s/%s.dca", cfg.SoundsDir, subfolder, soundName)
-			// Play the sound
-			err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
-			if err != nil {
-				logger.ErrorLog.Println("Error playing sound:", err)
+				// Play the sound
+				err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, ttsOutput, "tts")
+				if err != nil {
+					logger.ErrorLog.Println("Error playing sound:", err)
+				}
+				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
+				return
+			} else {
+				content := []discordgo.MessageComponent{}
+				row := discordgo.ActionsRow{}
+				row.Components = append(row.Components, discordgo.Button{
+					Label:    "Stop Sound",
+					Style:    discordgo.DangerButton,
+					CustomID: "stop_sound",
+				})
+				content = append(content, row)
+				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+					Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
+					Components: content,
+				})
+				if err != nil {
+					logger.ErrorLog.Println("Error sending message:", err)
+				}
+				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
+				// Construct the sound file path
+				soundFile := fmt.Sprintf("%s/%s/%s.dca", cfg.SoundsDir, subfolder, soundName)
+
+				// Play the sound
+				err = PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, st, g.ID, vs.ChannelID, soundFile, soundName)
+				if err != nil {
+					logger.ErrorLog.Println("Error playing sound:", err)
+				}
+				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
+				return
 			}
-			_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
-			return
+
 		}
+
 	}
 
 	// If the user is not in a voice channel, send an error message
@@ -281,6 +316,7 @@ func handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	if err != nil {
 		logger.ErrorLog.Println("Error sending message:", err)
 	}
+
 }
 
 func handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {

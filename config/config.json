@@ -4,5 +4,8 @@
   "sounds_dir": "../sounds",
   "db": "../dist/soundbot.db",
   "schema": "../db/schema.sql",
-  "db_cleanup": false
+  "tts": "../tts",
+  "tts_input": "../dist/tts.wav",
+  "tts_output": "../dist/tts.dca",
+  "dca": "../dca"
 }

@@ -3,10 +3,12 @@ package message
 import (
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strings"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/sound"
+	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -30,15 +32,66 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := args[0]
 
 	switch {
-	//if the command starts with the prefix and is not a list or stop command
 	case command == fmt.Sprintf("%shelp", prefix):
-		// Default case: show help message
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐 Usage: \n > » List Categories: <%slist> \n", prefix))
+		// show help text
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐 Usage: \n> » **Sounds**\t\t\t\t%slist \n> » **Text2Speech**\t%stts ", prefix, prefix))
 		if err != nil {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
-	// LIST CATEGORIES
+	case command == fmt.Sprintf("%stts", prefix):
+		// Text2Speech
+		if m.Content == fmt.Sprintf("%stts", prefix) {
+			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("📢 Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix))
+			if err != nil {
+				logger.ErrorLog.Println("error sending message:", err)
+				return
+			}
+
+			return
+		}
+		if strings.HasPrefix(m.Content, fmt.Sprintf("%stts \"", prefix)) {
+			ttsCommand := strings.TrimPrefix(m.Content, fmt.Sprintf("%stts ", prefix))
+			ttsCommandTrimmed := ttsCommand[1 : len(ttsCommand)-1]
+			pattern := `[a-zA-Z0-9\.!:,? ]+`
+
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				logger.ErrorLog.Println("Error compiling regex:", err)
+				return
+			}
+
+			if re.MatchString(ttsCommandTrimmed) {
+				err := utils.TextToSpeech(ttsCommand)
+				if err != nil {
+					logger.ErrorLog.Println("Error converting text to speech:", err)
+					return
+				}
+
+				err = utils.WAVtoDCA()
+				if err != nil {
+					logger.ErrorLog.Println("Error converting wav to dca:", err)
+					return
+				}
+
+				// play sound and clean up files
+				//sound.HandlePlaySoundInteraction(s, nil, "play_sound_temp_tts")
+				//time.Sleep(1 * time.Second)
+				//utils.CleanUpTTS()
+
+			} else {
+				logger.InfoLog.Println("TTS Text does not match regex pattern")
+				return
+			}
+			return
+		}
+
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Text has to be in Quotes\n > » %stts \"This is Text to Speech\"\n", prefix))
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+			return
+		}
 	case command == fmt.Sprintf("%slist", prefix):
+		// List categories
 		// Get all sound folders to use for later
 		//get categories from database
 		categories, err := sound.GetCategories()

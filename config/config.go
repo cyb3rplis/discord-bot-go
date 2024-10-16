@@ -15,7 +15,10 @@ type Config struct {
 	SoundsDir string `json:"sounds_dir"`
 	DB        string `json:"db"`
 	Schema    string `json:"schema"`
-	DBCleanup bool   `json:"db_cleanup"`
+	TTS       string `json:"tts"`
+	TTSInput  string `json:"tts_input"`
+	TTSOutput string `json:"tts_output"`
+	DCA       string `json:"dca"`
 }
 
 var (
