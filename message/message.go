@@ -74,7 +74,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 
 				// play sound and clean up files
-				//sound.HandlePlaySoundInteraction(s, nil, "play_sound_temp_tts")
+				//sound.HandlePlaySoundInteraction(s, i, "play_sound_temp_tts")
 				//time.Sleep(1 * time.Second)
 				//utils.CleanUpTTS()
 
