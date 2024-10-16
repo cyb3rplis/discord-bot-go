@@ -45,7 +45,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			logger.ErrorLog.Printf("Error getting sound statistics: %v", err)
 		}
 
-		message := "🔥  Top 5 played sounds: \n\n"
+		message := "🔥  Top 10 played sounds: \n\n"
 		for s, c := range soundStats {
 			message = message + fmt.Sprintf("> » %s - %d\n", s, c)
 		}

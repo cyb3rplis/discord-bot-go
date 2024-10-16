@@ -689,7 +689,7 @@ func addSoundStatistics(soundName string) error {
 }
 
 func GetSoundStatistics() (soundStats map[string]int, err error) {
-	rows, err := model.Bot.Db.Query("SELECT sounds.alias, count FROM stats_sounds LEFT JOIN sounds ON sounds.id = stats_sounds.id ORDER BY count DESC LIMIT 5")
+	rows, err := model.Bot.Db.Query("SELECT sounds.alias, count FROM stats_sounds LEFT JOIN sounds ON sounds.id = stats_sounds.id ORDER BY count DESC LIMIT 10")
 	if err != nil {
 		logger.FatalLog.Fatal(err)
 	}
