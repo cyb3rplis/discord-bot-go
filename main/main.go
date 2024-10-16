@@ -31,6 +31,14 @@ func init() {
 		}
 	}()
 	model.Bot = model.New(&m)
+	fsSounds, err := utils.ScanDirectory()
+	if err != nil {
+		logger.FatalLog.Printf("cron: error scanning sound directory: %v", err)
+	}
+	err = sound.SyncDatabaseWithFileSystem(fsSounds)
+	if err != nil {
+		logger.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
+	}
 }
 
 func main() {
