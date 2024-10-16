@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"github.com/cyb3rplis/discord-bot-go/utils"
 	"io"
@@ -166,21 +165,8 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	return nil
 }
 
-// getSoundsInCategory lists the sounds in the specified category and sends them as buttons
-func getAndSendSoundsInCategory(s *discordgo.Session, channelID, category string) ([]discordgo.MessageComponent, error) {
-	// Get all sound files in the subfolder
-	sounds, err := getSounds(category)
-	if err != nil {
-		logger.ErrorLog.Println("Error listing sounds in subfolder:", err)
-		return nil, err
-	}
-	if len(sounds) == 0 {
-		_, err := s.ChannelMessageSend(channelID, "No sounds found in this category.")
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
-		}
-		return nil, errors.New("no sounds found in this category")
-	}
+// BuildSoundButtons creates a list of buttons for the provided category
+func BuildSoundButtons(sounds []string, category string) ([]discordgo.MessageComponent, error) {
 	content := []discordgo.MessageComponent{}
 	row := discordgo.ActionsRow{}
 	for i, soundName := range sounds {
@@ -244,10 +230,10 @@ func getSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
-// syncDatabaseWithFileSystem will sync the database with the filesystem.
+// SyncDatabaseWithFileSystem will sync the database with the filesystem.
 func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	existingCategories := fetchCategories() // Get current folders/categories in DB
-	existingSounds := fetchSounds()         // Get current files/sounds in DB
+	existingSounds := getSoundsM()          // Get current files/sounds in DB
 
 	for folder, files := range folderMap {
 		var categoryID int
@@ -355,7 +341,7 @@ func fetchCategoryID(folderName string) int {
 	return categoryID
 }
 
-func fetchSounds() map[int]map[string]string {
+func getSoundsM() map[int]map[string]string {
 	rows, err := model.Bot.Db.Query("SELECT category_id, name, hash FROM sounds")
 	if err != nil {
 		logger.FatalLog.Fatal(err)

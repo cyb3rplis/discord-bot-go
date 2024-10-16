@@ -172,8 +172,21 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	if err != nil {
 		logger.ErrorLog.Println("Error sending message:", err)
 	}
-	// List getSoundsInCategory in the selected category
-	sounds, err := getAndSendSoundsInCategory(s, i.ChannelID, category)
+
+	// Get all sound files in the subfolder
+	sounds, err := getSounds(category)
+	if err != nil {
+		logger.ErrorLog.Println("Error listing sounds in subfolder:", err)
+	}
+	if len(sounds) == 0 {
+		_, err := s.ChannelMessageSend(i.ChannelID, "No sounds found in this category.")
+		if err != nil {
+			logger.ErrorLog.Println("Error sending message:", err)
+		}
+		return
+	}
+
+	buttons, err := BuildSoundButtons(sounds, category)
 	if err != nil {
 		logger.ErrorLog.Println("Error listing sounds in category:", err)
 		return
@@ -182,12 +195,12 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
 
 	// Split content into multiple messages if it exceeds 5 rows
-	for len(sounds) > 0 {
+	for len(buttons) > 0 {
 		var messageContent []discordgo.MessageComponent
-		if len(sounds) > 5 {
-			messageContent, sounds = sounds[:5], sounds[5:]
+		if len(buttons) > 5 {
+			messageContent, buttons = buttons[:5], buttons[5:]
 		} else {
-			messageContent, sounds = sounds, nil
+			messageContent, buttons = buttons, nil
 		}
 		_, err = s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
 			Components: messageContent,
