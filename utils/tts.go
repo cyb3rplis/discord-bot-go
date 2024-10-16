@@ -58,7 +58,7 @@ func WAVtoDCA() error {
 	return nil
 }
 
-func CleanUpTTS() error {
+func CleanUpSoundFile() error {
 	cfg := config.GetConfig()
 	ttsInput := cfg.TTSInput
 	ttsOutput := cfg.TTSOutput
@@ -76,6 +76,8 @@ func CleanUpTTS() error {
 		logger.ErrorLog.Printf("Error deleting file: %v\n", err)
 		return err
 	}
+
+	logger.InfoLog.Println("Deleted temp TTS sound files successfully")
 
 	return nil
 }

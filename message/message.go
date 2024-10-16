@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/sound"
@@ -40,6 +41,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	case command == fmt.Sprintf("%stts", prefix):
 		// Text2Speech
+		ttsText := m.Content[5:len(m.Content)]
+
 		if m.Content == fmt.Sprintf("%stts", prefix) {
 			_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("📢 Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix))
 			if err != nil {
@@ -49,10 +52,9 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 			return
 		}
-		if strings.HasPrefix(m.Content, fmt.Sprintf("%stts \"", prefix)) {
-			ttsCommand := strings.TrimPrefix(m.Content, fmt.Sprintf("%stts ", prefix))
-			ttsCommandTrimmed := ttsCommand[1 : len(ttsCommand)-1]
-			pattern := `[a-zA-Z0-9\.!:,? ]+`
+
+		if strings.HasPrefix(ttsText, "\"") && strings.HasSuffix(ttsText, "\"") {
+			pattern := `^\"[öäüÖÄÜa-zA-Z0-9\.!:,? ]+\"$`
 
 			re, err := regexp.Compile(pattern)
 			if err != nil {
@@ -60,8 +62,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			}
 
-			if re.MatchString(ttsCommandTrimmed) {
-				err := utils.TextToSpeech(ttsCommand)
+			if re.MatchString(ttsText) {
+				err := utils.TextToSpeech(ttsText)
 				if err != nil {
 					logger.ErrorLog.Println("Error converting text to speech:", err)
 					return
@@ -75,11 +77,11 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 				// play sound and clean up files
 				//sound.HandlePlaySoundInteraction(s, i, "play_sound_temp_tts")
-				//time.Sleep(1 * time.Second)
-				//utils.CleanUpTTS()
+				time.Sleep(150 * time.Millisecond)
+				//utils.CleanUpSoundFile()
 
 			} else {
-				logger.InfoLog.Println("TTS Text does not match regex pattern")
+				logger.InfoLog.Println("TTS Text does not match regex pattern: ", ttsText)
 				return
 			}
 			return

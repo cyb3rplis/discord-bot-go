@@ -262,7 +262,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				})
 				content = append(content, row)
 				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-					Content:    "➡ Text2Speech playing by <@" + i.Member.User.ID + ">: " + soundName,
+					Content:    "➡ Text2Speech playing by <@" + i.Member.User.ID + ">",
 					Components: content,
 				})
 				if err != nil {
