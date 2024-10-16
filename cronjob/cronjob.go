@@ -8,8 +8,12 @@ import (
 
 func InitCron() {
 	cron := cron.New()
-	cron.AddFunc("*/5 * * * *", func() {
-		sound.InsertCategoriesAndSounds()
+	cron.AddFunc("*/10 * * * *", func() {
+		fsSounds, err := sound.ScanDirectory()
+		if err != nil {
+			logger.FatalLog.Fatalf("cron: error scanning sound directory: %v", err)
+		}
+		sound.SyncDatabaseWithFileSystem(fsSounds)
 	})
 
 	logger.InfoLog.Println("Initiated Cronjob")

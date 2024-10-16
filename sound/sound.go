@@ -1,8 +1,10 @@
 package sound
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +16,6 @@ import (
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
-	"github.com/cyb3rplis/discord-bot-go/util"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -351,58 +352,6 @@ func getAndSendSoundsInCategory(s *discordgo.Session, channelID, category string
 	return content, nil
 }
 
-// InsertCategoriesAndSounds inserts sound categories and sounds into the database
-// TODO: remove files from database if no longer exists in folder
-func InsertCategoriesAndSounds() error {
-	soundFolders, err := util.WalkSoundFolder()
-	if err != nil {
-		return fmt.Errorf("failed to walk sound folder: %w", err)
-	}
-
-	for _, folder := range soundFolders {
-		// Insert category
-		categoryID, categoryName, err := checkExistingCategory(folder)
-		if err != nil {
-			return fmt.Errorf("error checking existing category: %w", err)
-		}
-		// If the category does not exist, insert it
-		if categoryName == "" {
-			categoryID, err = insertCategory(folder)
-			if err != nil {
-				return fmt.Errorf("failed to insert category: %w", err)
-			}
-		}
-
-		// Insert sounds
-		soundFiles, err := util.WalkSoundFiles(folder)
-		if err != nil {
-			return fmt.Errorf("failed to walk sound files: %w", err)
-		}
-		// iterate sound files and insert the file as a blob into the database
-		for _, soundFile := range soundFiles {
-			soundPath := filepath.Join(cfg.SoundsDir, folder, soundFile)
-			fileData, err := os.ReadFile(soundPath)
-			if err != nil {
-				return fmt.Errorf("failed to read sound file: %w", err)
-			}
-			// Check if file already exists
-			existingSound, err := checkExistingSound(soundFile)
-			if err != nil {
-				return fmt.Errorf("error checking existing sound: %w", err)
-			}
-			soundName := strings.TrimSuffix(soundFile, ".dca")
-			// If the sound does not exist, insert it
-			if existingSound == "" {
-				err = insertSound(soundFile, soundName, categoryID, fileData)
-				if err != nil {
-					return fmt.Errorf("error inserting sound: %w", err)
-				}
-			}
-		}
-	}
-	return nil
-}
-
 // GetCategories returns a list of sound categories (from DB)
 func GetCategories() ([]string, error) {
 	rows, err := model.Bot.Db.Query("SELECT name FROM categories")
@@ -443,57 +392,240 @@ func getSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
-// checkExistingCategory checks if a category already exists in the database
-func checkExistingCategory(folder string) (int64, string, error) {
-	var categoryID int64
-	var categoryName string
-	err := model.Bot.Db.QueryRow(`SELECT id, name FROM categories WHERE name = ?`, folder).Scan(&categoryID, &categoryName)
-	if err != nil && err != sql.ErrNoRows {
-		return 0, "", err
-	}
-	return categoryID, categoryName, nil
+// removeFileExtension removes the file extension from a given file name.
+func removeFileExtension(fileName string) string {
+	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
 }
 
-// checkExistingSound checks if a sound already exists in the database
-func checkExistingSound(soundFile string) (string, error) {
-	var fileName string
-	err := model.Bot.Db.QueryRow("SELECT name FROM sounds WHERE name = ?", soundFile).Scan(&fileName)
-	if err != nil && err != sql.ErrNoRows {
-		return "", err
-	}
-	return fileName, nil
+// ScanDirectory scans the sound directory and returns a map of folders and files.
+func ScanDirectory() (map[string][]string, error) {
+	soundsRoot := cfg.SoundsDir
+	folderMap := make(map[string][]string)
+
+	err := filepath.WalkDir(soundsRoot, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			// Skip the root folder
+			if path == soundsRoot {
+				return nil
+			}
+
+			// Get relative folder name (e.g., 'folder1/')
+			relativeFolder, err := filepath.Rel(soundsRoot, path)
+			if err != nil {
+				return err
+			}
+
+			folderMap[relativeFolder] = []string{} // Initialize an entry for this folder
+		} else {
+			// Add file to the folder list
+			folder := filepath.Dir(path)
+			relativeFolder, err := filepath.Rel(soundsRoot, folder)
+			if err != nil {
+				return err
+			}
+
+			// Filter for audio files based on extensions, e.g., ".dca", etc.
+			if ext := filepath.Ext(path); ext == ".dca" {
+				fileNameWithoutExt := removeFileExtension(filepath.Base(path))
+				folderMap[relativeFolder] = append(folderMap[relativeFolder], fileNameWithoutExt)
+			}
+		}
+		return nil
+	})
+
+	return folderMap, err
 }
 
-// insertCategory inserts a category into the database
-func insertCategory(folder string) (int64, error) {
-	res, err := model.Bot.Db.Exec("INSERT INTO categories (name) VALUES (?)", folder)
-	if err != nil {
-		return 0, err
-	}
-	categoryID, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	return categoryID, nil
-}
+// syncDatabaseWithFileSystem will sync the database with the filesystem.
+func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
+	existingCategories := fetchCategories() // Get current folders/categories in DB
+	existingSounds := fetchSounds()         // Get current files/sounds in DB
 
-// deleteCategory removes a category from the database
-func deleteCategory(name string) error {
-	_, err := model.Bot.Db.Exec("DELETE FROM categories WHERE name = ?", name)
-	return err
-}
+	for folder, files := range folderMap {
+		var categoryID int
 
-// insertSound inserts a sound into the database
-func insertSound(soundFile, soundName string, categoryID int64, fileData []byte) error {
-	_, err := model.Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, file) VALUES (?, ?, ?, ?)", soundFile, soundName, categoryID, fileData)
-	if err != nil {
-		return err
+		// Check if the folder (category) exists in the database
+		if dbCategoryID, exists := existingCategories[folder]; exists {
+			categoryID = dbCategoryID // The folder already exists
+		} else {
+			// The folder doesn't exist in the database, so we need to add it
+			if err := addCategory(folder); err != nil {
+				logger.InfoLog.Printf("Failed to add category %s: %v", folder, err)
+				continue
+			}
+
+			// Fetch the new category ID after insertion
+			categoryID = fetchCategoryID(folder)
+		}
+
+		// Add new sounds for this category
+		for _, file := range files {
+			soundPath := filepath.Join(cfg.SoundsDir, folder, file+".dca")
+			fileData, err := os.ReadFile(soundPath)
+			if err != nil {
+				return fmt.Errorf("failed to read sound file: %w", err)
+			}
+
+			fileHash, err := computeFileHash(soundPath)
+			if err != nil {
+				logger.ErrorLog.Printf("Failed to compute hash for file %s: %v", file, err)
+				continue
+			}
+
+			if fileExistsInDB(existingSounds, categoryID, file, fileHash) {
+				// File exists and hasn't changed, skip
+				continue
+			}
+
+			// File does not exist in the DB, add it
+			if err := addSound(categoryID, file, fileHash, fileData); err != nil {
+				logger.InfoLog.Printf("Failed to add sound %s to category %s: %v", file, folder, err)
+			}
+		}
 	}
+
+	// Remove entries that no longer exist on the filesystem
+	for folder, categoryID := range existingCategories {
+		if _, exists := folderMap[folder]; !exists {
+			// Folder exists in the database but not in the filesystem
+			if err := removeCategory(categoryID); err != nil {
+				logger.InfoLog.Printf("Failed to remove category %s (ID: %d): %v", folder, categoryID, err)
+			}
+
+			logger.InfoLog.Printf("Removed category %s (ID: %d)", folder, categoryID)
+		} else {
+			// For existing folders, remove missing files
+			dbFiles := existingSounds[categoryID] // Files in the DB
+			fsFiles := folderMap[folder]          // Files in the filesystem
+
+			for dbFile := range dbFiles {
+				if !fileExistsInFS(fsFiles, dbFile) {
+					// File exists in the database but not in the filesystem
+					if err := removeSound(categoryID, dbFile); err != nil {
+						logger.InfoLog.Printf("Failed to remove sound %s from category %s: %v", dbFile, folder, err)
+					}
+
+					logger.InfoLog.Printf("Removed sound %s from category %s", dbFile, folder)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
-// deleteSound removes a sound from the database
-func deleteSound(id int) error {
-	_, err := model.Bot.Db.Exec("DELETE FROM sounds WHERE id = ?", id)
+func fetchCategories() map[string]int {
+	rows, err := model.Bot.Db.Query("SELECT id, name FROM categories")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	categories := make(map[string]int)
+	for rows.Next() {
+		var id int
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		categories[name] = id
+	}
+	return categories
+}
+
+func fetchCategoryID(folderName string) int {
+	var categoryID int
+	err := model.Bot.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// This should not happen because the category should exist by this point.
+			logger.InfoLog.Printf("Category %s not found in database", folderName)
+		} else {
+			logger.FatalLog.Fatal(err)
+		}
+	}
+	return categoryID
+}
+
+func fetchSounds() map[int]map[string]string {
+	rows, err := model.Bot.Db.Query("SELECT category_id, name, hash FROM sounds")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	sounds := make(map[int]map[string]string)
+	for rows.Next() {
+		var categoryID int
+		var fileName, fileHash string
+		if err := rows.Scan(&categoryID, &fileName, &fileHash); err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		if sounds[categoryID] == nil {
+			sounds[categoryID] = make(map[string]string)
+		}
+		sounds[categoryID][fileName] = fileHash
+	}
+	return sounds
+}
+
+func addCategory(folderName string) error {
+	_, err := model.Bot.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
 	return err
+}
+
+func addSound(categoryID int, fileName, fileHash string, fileData []byte) error {
+	alias := removeFileExtension(fileName) // Or any other default value, e.g., ""
+	_, err := model.Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
+	return err
+}
+
+func removeCategory(categoryID int) error {
+	// ON DELETE CASCADE - sounds will get deleted automatically when the category is deleted
+	_, err := model.Bot.Db.Exec("DELETE FROM categories WHERE id = ?", categoryID)
+	return err
+}
+
+func removeSound(categoryID int, fileName string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM sounds WHERE category_id = ? AND name = ?", categoryID, fileName)
+	return err
+}
+
+func fileExistsInDB(existingSounds map[int]map[string]string, categoryID int, fileName string, fileHash string) bool {
+	if soundsInCategory, exists := existingSounds[categoryID]; exists {
+		if dbHash, fileExists := soundsInCategory[fileName]; fileExists {
+			// Check if the hash matches
+			return dbHash == fileHash
+		}
+	}
+	return false
+}
+
+func fileExistsInFS(fsFiles []string, fileName string) bool {
+	for _, fsFile := range fsFiles {
+		if fsFile == fileName {
+			return true
+		}
+	}
+	return false
+}
+
+// computeFileHash computes the SHA-256 hash of a given file
+func computeFileHash(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

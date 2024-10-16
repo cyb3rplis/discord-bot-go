@@ -63,11 +63,16 @@ func main() {
 		return
 	}
 
-	// Insert categories and sounds into the database
-	err = sound.InsertCategoriesAndSounds()
+	fsSounds, err := sound.ScanDirectory()
 	if err != nil {
-		logger.FatalLog.Fatalf("error inserting categories and sounds: %v", err)
+		logger.FatalLog.Fatalf("error scanning sound directory: %v", err)
 	}
+	sound.SyncDatabaseWithFileSystem(fsSounds)
+	// Insert categories and sounds into the database
+	// err = sound.InsertCategoriesAndSounds()
+	// if err != nil {
+	// 	logger.FatalLog.Fatalf("error inserting categories and sounds: %v", err)
+	// }
 
 	// Wait here until CTRL-C or other term signal is received.
 	logger.InfoLog.Println("Bot is now running")

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS sounds (
     name TEXT NOT NULL UNIQUE,
     alias TEXT NOT NULL UNIQUE,
     category_id INTEGER NOT NULL,
+    hash TEXT NOT NULL UNIQUE,
     file BLOB NOT NULL,
     CONSTRAINT fk_categories
         FOREIGN KEY (category_id)
