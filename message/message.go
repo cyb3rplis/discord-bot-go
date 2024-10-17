@@ -2,11 +2,11 @@ package message
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/model"
-	"math/rand"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/sound"
@@ -151,7 +151,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
 	case strings.Contains(strings.ToLower(m.Content), "mutter"):
-		_, err := s.ChannelMessageSend(m.ChannelID, mutterWitze[rand.Intn(len(mutterWitze))])
+		_, err := s.ChannelMessageSend(m.ChannelID, MutterWitz())
 		if err != nil {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
