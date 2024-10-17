@@ -152,3 +152,28 @@ func GetUserStatistics(userID string) (soundStats map[string]int, err error) {
 	soundStats = SortMapByValue(soundStats)
 	return soundStats, err
 }
+
+func GetAllUserStatistics() (soundStats map[string]int, err error) {
+	rows, err := model.Bot.Db.Query("SELECT u.username, COALESCE(SUM(su.count), 0) AS total_plays FROM stats_users AS su LEFT JOIN users AS u ON su.user_id = u.id GROUP BY u.id HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	soundStats = make(map[string]int)
+	for rows.Next() {
+		var sound sql.NullString
+		var count sql.NullInt64
+
+		err = rows.Scan(&sound, &count)
+		if err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		if sound.Valid && count.Valid {
+			soundStats[sound.String] = int(count.Int64)
+		}
+	}
+	//sort map by value
+	soundStats = SortMapByValue(soundStats)
+	return soundStats, err
+}

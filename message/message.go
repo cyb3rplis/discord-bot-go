@@ -57,6 +57,26 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		return
+	case command == fmt.Sprintf("%sall", prefix):
+		userStats, err := utils.GetAllUserStatistics()
+		if err != nil {
+			logger.ErrorLog.Printf("Error getting all users statistics: %v", err)
+		}
+		sortedKeys := utils.SortMapKeysByValue(userStats)
+
+		// send table instead of loose lines -> formatting
+		message := "🔥  Top 10 Users: \n\n"
+		for i, c := range sortedKeys {
+			i += 1
+			message = message + fmt.Sprintf("> %d.\t%s\t\tplayed: %d\n", i, c, userStats[c])
+		}
+
+		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+		}
+
+		return
 	case command == fmt.Sprintf("%sme", prefix):
 		userStats, err := utils.GetUserStatistics(m.Author.ID)
 		if err != nil {
