@@ -1,6 +1,6 @@
 -- schema.sql
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INT PRIMARY KEY NOT NULL,
     username TEXT NOT NULL
 );
 
@@ -22,11 +22,18 @@ CREATE TABLE IF NOT EXISTS sounds (
         ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS stats_sounds (
-    id INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS stats_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    sound_id INTEGER NOT NULL,
     count INTEGER DEFAULT 0,
+    UNIQUE(user_id, sound_id),
     CONSTRAINT fk_sounds
-        FOREIGN KEY (id)
+        FOREIGN KEY (sound_id)
         REFERENCES sounds(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_users
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
         ON DELETE CASCADE
 );

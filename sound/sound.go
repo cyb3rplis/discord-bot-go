@@ -6,13 +6,14 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/utils"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -150,11 +151,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	// empty buffer to not play older sounds
 	buffer = make([][]byte, 0)
 	botSpeaking = false
-
-	err = addSoundStatistics(soundName)
-	if err != nil {
-		logger.ErrorLog.Printf("Error inserting statistics: %v", err)
-	}
 
 	// Delete the initial "Now Playing" message
 	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
@@ -418,44 +414,4 @@ func computeFileHash(filePath string) (string, error) {
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-
-func addSoundStatistics(soundName string) error {
-	_, err := model.Bot.Db.Exec("INSERT OR IGNORE INTO stats_sounds (id) SELECT id FROM sounds WHERE name = ?;", soundName)
-	if err != nil {
-		return err
-	}
-
-	_, err = model.Bot.Db.Exec("UPDATE stats_sounds SET count = count + 1 WHERE id = (SELECT id FROM sounds WHERE alias = ?)", soundName)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetSoundStatistics() (soundStats map[string]int, err error) {
-	rows, err := model.Bot.Db.Query("SELECT sounds.alias, count FROM stats_sounds LEFT JOIN sounds ON sounds.id = stats_sounds.id ORDER BY count DESC LIMIT 10")
-	if err != nil {
-		logger.FatalLog.Fatal(err)
-	}
-	defer rows.Close()
-
-	soundStats = make(map[string]int)
-	for rows.Next() {
-		var sound sql.NullString
-		var count sql.NullInt64
-
-		err = rows.Scan(&sound, &count)
-		if err != nil {
-			logger.FatalLog.Fatal(err)
-		}
-		if sound.Valid && count.Valid {
-			soundStats[sound.String] = int(count.Int64)
-		}
-	}
-	//sort map by value
-	soundStats = utils.SortMapByValue(soundStats)
-	return soundStats, err
 }

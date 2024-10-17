@@ -2,11 +2,14 @@ package sound
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
-	"strings"
-	"time"
+	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 // InteractionHandler handles interaction events (e.g., button clicks)
@@ -70,7 +73,6 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 }
 
 func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
-
 	ttsOutput := model.Bot.Config.TTSOutput
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
@@ -108,7 +110,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				})
 				content = append(content, row)
 				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
-					Content:    "➡ Text2Speech playing by <@" + i.Member.User.ID + ">",
+					Content:    "➡ Text2Speech playing by <@" + i.Member.User.GlobalName + ">",
 					Components: content,
 				})
 				if err != nil {
@@ -149,6 +151,23 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					logger.ErrorLog.Println("Error playing sound:", err)
 				}
 				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
+
+				// add user and user statistics
+				userID, err := strconv.Atoi(i.Member.User.ID)
+				if err != nil {
+					logger.ErrorLog.Println("Error converting user ID to int:", err)
+				} else {
+					err = utils.AddUser(userID, i.Member.User.GlobalName)
+					if err != nil {
+						logger.ErrorLog.Println("Error adding user:", err)
+					}
+
+					err = utils.AddUserStatistics(userID, soundName)
+					if err != nil {
+						logger.ErrorLog.Println("Error adding user statistics:", err)
+					}
+				}
+
 				return
 			}
 

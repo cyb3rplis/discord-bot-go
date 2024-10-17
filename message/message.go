@@ -34,13 +34,13 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	switch {
 	case command == fmt.Sprintf("%shelp", prefix):
 		// show help text
-		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐  Usage:\n> » **Sounds**\t\t\t\t%slist\n> » **Text2Speech**\t%stts\n> » **Statistics**\t\t\t%sstats\n", prefix, prefix, prefix))
+		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🧐  Usage:\n> » **Sounds**\t\t\t\t%slist\n> » **Text2Speech**\t%stts\n> » **Global Stats**\t  %sstats\n> » **Your Stats**\t\t  %sme\n", prefix, prefix, prefix, prefix))
 		if err != nil {
 			logger.ErrorLog.Println("error sending message:", err)
 		}
 	case command == fmt.Sprintf("%sstats", prefix):
 
-		soundStats, err := sound.GetSoundStatistics()
+		soundStats, err := utils.GetSoundStatistics()
 		if err != nil {
 			logger.ErrorLog.Printf("Error getting sound statistics: %v", err)
 		}
@@ -49,6 +49,24 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		message := "🔥  Top 10 played sounds: \n\n"
 		for _, c := range sortedKeys {
 			message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
+		}
+
+		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+		}
+
+		return
+	case command == fmt.Sprintf("%sme", prefix):
+		userStats, err := utils.GetUserStatistics(m.Author.ID)
+		if err != nil {
+			logger.ErrorLog.Printf("Error getting user statistics: %v", err)
+		}
+		sortedKeys := utils.SortMapKeysByValue(userStats)
+
+		message := "🔥  <@" + m.Author.ID + ">'s top 10 played sounds: \n\n"
+		for _, c := range sortedKeys {
+			message = message + fmt.Sprintf("> %dx:\t%s\n", userStats[c], c)
 		}
 
 		_, err = s.ChannelMessageSend(m.ChannelID, message)
