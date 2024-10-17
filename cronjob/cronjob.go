@@ -18,6 +18,7 @@ func InitCron() {
 		if err != nil {
 			logger.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
 		}
+		logger.InfoLog.Println("cron: database synced with filesystem")
 	})
 
 	logger.InfoLog.Println("Initiated Cronjob")
