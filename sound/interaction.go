@@ -126,6 +126,22 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
 				return
 			} else {
+				// add user and user statistics
+				userID, err := strconv.Atoi(i.Member.User.ID)
+				if err != nil {
+					logger.ErrorLog.Println("Error converting user ID to int:", err)
+				} else {
+					err = utils.AddUser(userID, i.Member.User.GlobalName)
+					if err != nil {
+						logger.ErrorLog.Println("Error adding user:", err)
+					}
+
+					err = utils.AddUserStatistics(userID, soundName)
+					if err != nil {
+						logger.ErrorLog.Println("Error adding user statistics:", err)
+					}
+				}
+
 				content := []discordgo.MessageComponent{}
 				row := discordgo.ActionsRow{}
 				row.Components = append(row.Components, discordgo.Button{
@@ -151,22 +167,6 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					logger.ErrorLog.Println("Error playing sound:", err)
 				}
 				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
-
-				// add user and user statistics
-				userID, err := strconv.Atoi(i.Member.User.ID)
-				if err != nil {
-					logger.ErrorLog.Println("Error converting user ID to int:", err)
-				} else {
-					err = utils.AddUser(userID, i.Member.User.GlobalName)
-					if err != nil {
-						logger.ErrorLog.Println("Error adding user:", err)
-					}
-
-					err = utils.AddUserStatistics(userID, soundName)
-					if err != nil {
-						logger.ErrorLog.Println("Error adding user statistics:", err)
-					}
-				}
 
 				return
 			}
