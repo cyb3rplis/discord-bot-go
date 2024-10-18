@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/cyb3rplis/discord-bot-go/utils"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"

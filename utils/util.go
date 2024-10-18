@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
@@ -176,4 +177,193 @@ func GetAllUserStatistics() (soundStats map[string]int, err error) {
 	//sort map by value
 	soundStats = SortMapByValue(soundStats)
 	return soundStats, err
+}
+
+func InsertMessageID(channelID, messageID, command string) error {
+	_, err := model.Bot.Db.Exec("INSERT INTO messages (channel_id, message_id, command) VALUES (?, ?, ?);", channelID, messageID, command)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteMessageID(messageID string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM messages WHERE message_id = ?;", messageID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteAllCommandMessages(command string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM messages WHERE command = ?;", command)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteOldCommandMessages(newID, command string) error {
+	_, err := model.Bot.Db.Exec("DELETE FROM messages WHERE message_id != ? AND command = ?;", newID, command)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteAllMessages() error {
+	_, err := model.Bot.Db.Exec("DELETE FROM messages;")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetAllCommandMessages(command string) (messages map[string][]string, err error) {
+	rows, err := model.Bot.Db.Query("SELECT channel_id, message_id FROM messages WHERE command = ?;", command)
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	messages = make(map[string][]string)
+
+	for rows.Next() {
+		var cID sql.NullString
+		var mID sql.NullString
+
+		err = rows.Scan(&cID, &mID)
+		if err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		if cID.Valid && mID.Valid {
+			messages[cID.String] = append(messages[cID.String], mID.String)
+		}
+	}
+
+	return messages, err
+}
+
+func GetAllMessages() (messages map[string][]string, err error) {
+	rows, err := model.Bot.Db.Query("SELECT channel_id, message_id FROM messages;")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	messages = make(map[string][]string)
+
+	for rows.Next() {
+		var cID sql.NullString
+		var mID sql.NullString
+
+		err = rows.Scan(&cID, &mID)
+		if err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		if cID.Valid && mID.Valid {
+			messages[cID.String] = append(messages[cID.String], mID.String)
+		}
+	}
+
+	return messages, err
+}
+
+func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) {
+	// delete the message from the user to keep the chat clean
+	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		logger.ErrorLog.Println("Error deleting initial user message:", m.ID)
+	}
+
+	// get all old messages for this command
+	oldMessages, err := GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("Error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, m := range mID {
+			err := s.ChannelMessageDelete(cID, m)
+			if err != nil {
+				logger.ErrorLog.Println("Error deleting old message:", err)
+			}
+		}
+	}
+	// send our new message
+	st, err := s.ChannelMessageSend(m.ChannelID, message)
+	if err != nil {
+		logger.ErrorLog.Println("Error sending message:", err)
+	}
+
+	// insert the new message id into the database
+	err = InsertMessageID(st.ChannelID, st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("Error inserting message id:", err)
+	}
+}
+
+func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
+	// delete the message from the user to keep the chat clean
+	err := s.ChannelMessageDelete(channelID, msgID)
+
+	if err != nil {
+		logger.ErrorLog.Println("Error deleting initial user message:", msgID)
+	}
+
+	// get all old messages for this command
+	oldMessages, err := GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("Error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, m := range mID {
+			err := s.ChannelMessageDelete(cID, m)
+			if err != nil {
+				logger.ErrorLog.Println("Error deleting old message:", err)
+			}
+		}
+	}
+
+	// send our new message
+	st, err = s.ChannelMessageSendComplex(channelID, msg)
+	if err != nil {
+		logger.ErrorLog.Println("Error sending message:", err)
+	}
+
+	// insert the new message id into the database
+	err = InsertMessageID(st.ChannelID, st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("Error inserting message id:", err)
+	}
+
+	return st
+}
+
+func StopButtonRoutine(command string, s *discordgo.Session) {
+
+	oldMessages, err := GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("Error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, m := range mID {
+			err := s.ChannelMessageDelete(cID, m)
+			if err != nil {
+				logger.ErrorLog.Println("Error deleting old message:", err)
+			}
+		}
+	}
+
+	DeleteAllCommandMessages(command)
 }

@@ -32,9 +32,6 @@ var mu sync.Mutex
 const maxInteractions = 15             // Maximum allowed interactions before timeout
 const resetDuration = 15 * time.Second // Duration to reset the interaction count
 
-var lastMessageID string
-var lastChannelID string
-
 type Entry struct {
 	ID   int
 	Name string
@@ -84,18 +81,9 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
-		// delete the last message and set the new value to the last sent message
-		err = s.ChannelMessageDelete(lastChannelID, lastMessageID)
-		if err != nil {
-			logger.ErrorLog.Println("Error deleting message with command to play new sound:", err)
-			return err
-		}
 		stopChannel <- struct{}{}
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
-
-	lastChannelID = st.ChannelID
-	lastMessageID = st.ID
 
 	if soundName == "tts" {
 		soundFile = model.Bot.Config.TTSOutput
@@ -156,8 +144,8 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
 	if err != nil {
 		logger.ErrorLog.Println("Error deleting message after sound finished:", err)
-		return err
 	}
+
 	return nil
 }
 

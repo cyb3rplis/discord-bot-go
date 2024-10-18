@@ -12,13 +12,13 @@ func InitCron() {
 	cron.AddFunc("*/10 * * * *", func() {
 		fsSounds, err := utils.ScanDirectory()
 		if err != nil {
-			logger.FatalLog.Printf("cron: error scanning sound directory: %v", err)
+			logger.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
 		}
 		err = sound.SyncDatabaseWithFileSystem(fsSounds)
 		if err != nil {
-			logger.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
+			logger.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
 		}
-		logger.InfoLog.Println("cron: database synced with filesystem")
+		logger.InfoLog.Println("Cron: database synced with filesystem")
 	})
 
 	logger.InfoLog.Println("Initiated Cronjob")

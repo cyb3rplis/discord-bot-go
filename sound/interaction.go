@@ -39,10 +39,9 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
 	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		_, err := s.ChannelMessageSend(i.ChannelID, "Stop spamming the buttons <@"+i.Member.User.ID+"> you fucking idiot!!!")
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
-		}
+		message := "Stop spamming the buttons <@" + i.Member.User.ID + "> you fucking idiot!!!"
+
+		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{})
 		return
 	}
 	mu.Unlock()
@@ -64,10 +63,8 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 	if botSpeaking {
 		stopChannel <- struct{}{}
 
-		// Delete the last "Now Playing" message
-		// This should not be needed, since the actual function will finish normally when emptying the buffer
-		// and this deletes the old message anyway. Keeping it here just to make sure
-		_ = s.ChannelMessageDelete(lastChannelID, lastMessageID)
+		utils.StopButtonRoutine(".stopbutton", s)
+
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 }
@@ -109,13 +106,13 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					CustomID: "stop_sound",
 				})
 				content = append(content, row)
-				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+				message := &discordgo.MessageSend{
 					Content:    "➡ Text2Speech playing by <@" + i.Member.User.GlobalName + ">",
 					Components: content,
-				})
-				if err != nil {
-					logger.ErrorLog.Println("Error sending message:", err)
 				}
+
+				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ChannelID, message, s)
+
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
 				// Play the sound
@@ -123,7 +120,6 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				if err != nil {
 					logger.ErrorLog.Println("Error playing sound:", err)
 				}
-				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
 				return
 			} else {
 				// add user and user statistics
@@ -150,13 +146,14 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					CustomID: "stop_sound",
 				})
 				content = append(content, row)
-				st, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+
+				message := &discordgo.MessageSend{
 					Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
 					Components: content,
-				})
-				if err != nil {
-					logger.ErrorLog.Println("Error sending message:", err)
 				}
+
+				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ChannelID, message, s)
+
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 				// Construct the sound file path
 				soundFile := fmt.Sprintf("%s/%s/%s.dca", model.Bot.Config.SoundsDir, subfolder, soundName)
@@ -166,7 +163,6 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				if err != nil {
 					logger.ErrorLog.Println("Error playing sound:", err)
 				}
-				_ = s.ChannelMessageDelete(st.ChannelID, st.ID)
 
 				return
 			}
@@ -177,20 +173,17 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 
 	// If the user is not in a voice channel, send an error message
 	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
-	_, err = s.ChannelMessageSend(i.ChannelID, "You need to be in a voice channel to play sounds <@"+i.Member.User.ID+">")
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
-	}
+	message := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
 
+	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
 }
 
 func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
 	// Extract the category from the custom ID
 	category := strings.TrimPrefix(customID, "list_sounds_")
-	_, err := s.ChannelMessageSend(i.ChannelID, "➡ Sounds in category - "+category)
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
-	}
+	message := "➡ Sounds in category - " + category
+
+	utils.NewMessageRoutine(".list"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
 
 	// Get all sound files in the subfolder
 	sounds, err := getSounds(category)
@@ -198,10 +191,8 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 		logger.ErrorLog.Println("Error listing sounds in subfolder:", err)
 	}
 	if len(sounds) == 0 {
-		_, err := s.ChannelMessageSend(i.ChannelID, "No sounds found in this category.")
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
-		}
+		message := "No sounds found in this category."
+		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
 		return
 	}
 
@@ -221,11 +212,11 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 		} else {
 			messageContent, buttons = buttons, nil
 		}
-		_, err = s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
+
+		message := &discordgo.MessageSend{
 			Components: messageContent,
-		})
-		if err != nil {
-			logger.ErrorLog.Println("Error sending message:", err)
 		}
+
+		utils.NewComplexMessageRoutine(".list"+category, i.ChannelID, i.ChannelID, message, s)
 	}
 }
