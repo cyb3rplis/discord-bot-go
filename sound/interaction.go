@@ -183,7 +183,8 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	message := "➡ Sounds in category - " + category
 
-	utils.NewMessageRoutine(".list"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
+	longCategory := fmt.Sprintf(".list%s", category)
+	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message})
 
 	// Get all sound files in the subfolder
 	sounds, err := getSounds(category)
@@ -205,7 +206,10 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
 
 	// Split content into multiple messages if it exceeds 5 rows
+
+	var idx int
 	for len(buttons) > 0 {
+		idx += 1
 		var messageContent []discordgo.MessageComponent
 		if len(buttons) > 5 {
 			messageContent, buttons = buttons[:5], buttons[5:]
@@ -217,6 +221,8 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 			Components: messageContent,
 		}
 
-		utils.NewComplexMessageRoutine(".list"+category, i.ChannelID, i.ChannelID, message, s)
+		longCategory := fmt.Sprintf(".list%s%d", category, idx)
+
+		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ChannelID, message, s)
 	}
 }

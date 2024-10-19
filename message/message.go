@@ -173,6 +173,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 			return
 		}
+
 		content := []discordgo.MessageComponent{}
 		row := discordgo.ActionsRow{}
 		for i, category := range categories {
