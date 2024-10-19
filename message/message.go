@@ -58,6 +58,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
+		utils.DeleteAllMessages()
 		return
 	case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 		if arg == "sounds" {
