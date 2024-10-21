@@ -43,6 +43,13 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		utils.NewMessageRoutine(command, message, s, m, true)
 		return
 	case command == fmt.Sprintf("%scleanup", prefix):
+		if m.Author.ID != "378670654146478081" && m.Author.ID != "481894532082958346" {
+			s.ChannelMessageDelete(m.ChannelID, m.ID)
+			return
+		}
+
+		logger.InfoLog.Println("Cleanup initiated: ", m.Author)
+
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
 		messages, err := utils.GetAllMessages()
 		if err != nil {
