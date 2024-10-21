@@ -206,7 +206,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Components: content,
 		}
 
-		utils.NewComplexMessageRoutine(".listinit", m.ChannelID, m.ID, message, s)
+		utils.NewComplexMessageRoutine(".listinit", m.ChannelID, m.ID, message, s, true)
 
 		return
 	case strings.Contains(strings.ToLower(m.Content), "mutter"):

@@ -314,12 +314,13 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 	DeleteOldCommandMessages(st.ID, command)
 }
 
-func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
-	//delete the message from the user to keep the chat clean
-	err := s.ChannelMessageDelete(channelID, msgID)
-	if err != nil {
-		logger.ErrorLog.Println("Error deleting initial user message: ", err)
-		DeleteMessageID(msgID)
+func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session, deleteInitial bool) (st *discordgo.Message) {
+	// delete the message from the user to keep the chat clean
+	if deleteInitial {
+		err := s.ChannelMessageDelete(channelID, msgID)
+		if err != nil {
+			logger.ErrorLog.Println("Error deleting initial complex user message: ", err)
+		}
 	}
 
 	// get all old messages for this command
