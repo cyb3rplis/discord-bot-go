@@ -63,7 +63,7 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 	if botSpeaking {
 		stopChannel <- struct{}{}
 
-		utils.StopButtonRoutine(".stopbutton", s)
+		utils.StopButtonRoutine(s)
 
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}

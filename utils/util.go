@@ -356,7 +356,8 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 	return st
 }
 
-func StopButtonRoutine(command string, s *discordgo.Session) {
+func StopButtonRoutine(s *discordgo.Session) {
+	command := ".stopbutton"
 
 	oldMessages, err := GetAllCommandMessages(command)
 	if err != nil {

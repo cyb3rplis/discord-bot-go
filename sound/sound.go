@@ -140,12 +140,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	buffer = make([][]byte, 0)
 	botSpeaking = false
 
-	// Delete the initial "Now Playing" message
-	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
-	if err != nil {
-		logger.ErrorLog.Println("Error deleting message after sound finished:", err)
-	}
-
+	utils.StopButtonRoutine(s)
 	return nil
 }
 
