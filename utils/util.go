@@ -274,11 +274,13 @@ func GetAllMessages() (messages map[string][]string, err error) {
 	return messages, err
 }
 
-func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) {
+func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate, deleteInitial bool) {
 	// delete the message from the user to keep the chat clean
-	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
-	if err != nil {
-		logger.ErrorLog.Println("Error deleting initial user message:", m.ID)
+	if deleteInitial {
+		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			logger.ErrorLog.Println("Error deleting initial user message: ", err)
+		}
 	}
 
 	// get all old messages for this command
@@ -292,7 +294,7 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 		for _, m := range mID {
 			err := s.ChannelMessageDelete(cID, m)
 			if err != nil {
-				logger.ErrorLog.Println("Error deleting old message:", err)
+				logger.ErrorLog.Printf("Error deleting old message - ID: %s, err: %v", m, err)
 				DeleteMessageID(m)
 			}
 		}
@@ -315,9 +317,8 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
 	//delete the message from the user to keep the chat clean
 	err := s.ChannelMessageDelete(channelID, msgID)
-
 	if err != nil {
-		logger.ErrorLog.Println("Error deleting initial user message:", msgID)
+		logger.ErrorLog.Println("Error deleting initial user message: ", err)
 		DeleteMessageID(msgID)
 	}
 
@@ -332,7 +333,7 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 		for _, m := range mID {
 			err := s.ChannelMessageDelete(cID, m)
 			if err != nil {
-				logger.ErrorLog.Println("Error deleting old message:", err)
+				logger.ErrorLog.Printf("Error deleting old message - ID: %s, err: %v", m, err)
 				DeleteMessageID(m)
 			}
 		}
@@ -351,7 +352,6 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 	}
 
 	DeleteOldCommandMessages(st.ID, command)
-
 	return st
 }
 
@@ -367,7 +367,7 @@ func StopButtonRoutine(command string, s *discordgo.Session) {
 		for _, m := range mID {
 			err := s.ChannelMessageDelete(cID, m)
 			if err != nil {
-				logger.ErrorLog.Println("Error deleting old message:", err)
+				logger.ErrorLog.Printf("Error deleting old message - ID: %s - err: %v", m, err)
 			}
 		}
 	}

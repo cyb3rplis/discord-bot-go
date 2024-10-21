@@ -40,7 +40,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// show help text
 		message := fmt.Sprintf("🧐  Help:\n> » **Sounds**\t\t\t\t%slist\n> » **Text2Speech**\t%stts\n> » **Statistics**\t\t  %sstats\n", prefix, prefix, prefix)
 
-		utils.NewMessageRoutine(command, message, s, m)
+		utils.NewMessageRoutine(command, message, s, m, true)
 		return
 	case command == fmt.Sprintf("%scleanup", prefix):
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -53,7 +53,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for _, m := range mID {
 				err := s.ChannelMessageDelete(cID, m)
 				if err != nil {
-					logger.ErrorLog.Println("Error deleting old message:", err)
+					logger.ErrorLog.Printf("Error deleting old message - ID: %s - err: %v", m, err)
 				}
 			}
 		}
@@ -73,7 +73,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
 			}
 
-			utils.NewMessageRoutine(command+arg, message, s, m)
+			utils.NewMessageRoutine(command+arg, message, s, m, true)
 			return
 		} else if arg == "users" {
 			userStats, err := utils.GetAllUserStatistics()
@@ -83,13 +83,13 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			sortedKeys := utils.SortMapKeysByValue(userStats)
 
 			// send table instead of loose lines -> formatting
-			message := "🔥  Top 10 Users: \n\n"
+			message := "🤡  Top 10 Users: \n\n"
 			for i, c := range sortedKeys {
 				i += 1
 				message = message + fmt.Sprintf("> %d.\t%s\t\tplayed: %d\n", i, c, userStats[c])
 			}
 
-			utils.NewMessageRoutine(command+arg, message, s, m)
+			utils.NewMessageRoutine(command+arg, message, s, m, true)
 
 			return
 		} else if arg == "me" {
@@ -104,13 +104,13 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				message = message + fmt.Sprintf("> %dx:\t%s\n", userStats[c], c)
 			}
 
-			utils.NewMessageRoutine(command+m.Author.ID, message, s, m)
+			utils.NewMessageRoutine(command+m.Author.ID, message, s, m, true)
 
 			return
 		} else {
 			message := fmt.Sprintf("🔥  Stats:\n> » **Global Sounds**\t\t%sstats sounds\n> » **Global Users**\t\t%sstats users\n> » **Your Sounds**\t\t\t%sstats me\n", prefix, prefix, prefix)
 
-			utils.NewMessageRoutine(command+"help", message, s, m)
+			utils.NewMessageRoutine(command+"help", message, s, m, false)
 			return
 		}
 
@@ -119,7 +119,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Content == fmt.Sprintf("%stts", prefix) {
 			message := fmt.Sprintf("📢 TTS: Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix)
 
-			utils.NewMessageRoutine(command+"help", message, s, m)
+			utils.NewMessageRoutine(command+"help", message, s, m, true)
 			return
 		}
 
@@ -160,7 +160,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		message := fmt.Sprintf("Text has to be in Quotes\n > » %stts \"This is Text to Speech\"\n", prefix)
 
-		utils.NewMessageRoutine(command+"quote", message, s, m)
+		utils.NewMessageRoutine(command+"quote", message, s, m, true)
 		return
 	case command == fmt.Sprintf("%slist", prefix):
 		// List categories
@@ -170,7 +170,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		if len(categories) == 0 {
 			message := "No sound categories found."
-			utils.NewMessageRoutine(command+"nocategories", message, s, m)
+			utils.NewMessageRoutine(command+"nocategories", message, s, m, true)
 
 			return
 		}
@@ -199,7 +199,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Components: content,
 		}
 
-		utils.NewComplexMessageRoutine(".list"+"init", m.ChannelID, m.ID, message, s)
+		utils.NewComplexMessageRoutine(".listinit", m.ChannelID, m.ID, message, s)
 
 		return
 	case strings.Contains(strings.ToLower(m.Content), "mutter"):

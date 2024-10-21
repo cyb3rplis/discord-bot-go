@@ -41,7 +41,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		mu.Unlock()
 		message := "Stop spamming the buttons <@" + i.Member.User.ID + "> you fucking idiot!!!"
 
-		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{})
+		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{}, false)
 		return
 	}
 	mu.Unlock()
@@ -175,7 +175,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
 	message := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
 
-	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
+	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
 }
 
 func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
@@ -183,8 +183,8 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	message := "➡ Sounds in category - " + category
 
-	longCategory := fmt.Sprintf(".list%s", category)
-	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message})
+	longCategory := fmt.Sprintf(".listAll%s", category)
+	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
 
 	// Get all sound files in the subfolder
 	sounds, err := getSounds(category)
@@ -193,7 +193,7 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	}
 	if len(sounds) == 0 {
 		message := "No sounds found in this category."
-		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
+		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
 		return
 	}
 
@@ -222,7 +222,6 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 		}
 
 		longCategory := fmt.Sprintf(".list%s%d", category, idx)
-
-		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ChannelID, message, s)
+		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ID, message, s)
 	}
 }
