@@ -275,6 +275,12 @@ func GetAllMessages() (messages map[string][]string, err error) {
 }
 
 func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate, deleteInitial bool) {
+	// send our new message
+	st, err := s.ChannelMessageSend(m.ChannelID, message)
+	if err != nil {
+		logger.ErrorLog.Println("Error sending message:", err)
+	}
+
 	// delete the message from the user to keep the chat clean
 	if deleteInitial {
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -299,11 +305,6 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 			}
 		}
 	}
-	// send our new message
-	st, err := s.ChannelMessageSend(m.ChannelID, message)
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
-	}
 
 	// insert the new message id into the database
 	err = InsertMessageID(st.ChannelID, st.ID, command)
@@ -315,6 +316,12 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 }
 
 func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session, deleteInitial bool) (st *discordgo.Message) {
+	// send our new message
+	st, err := s.ChannelMessageSendComplex(channelID, msg)
+	if err != nil {
+		logger.ErrorLog.Println("Error sending message:", err)
+	}
+
 	// delete the message from the user to keep the chat clean
 	if deleteInitial {
 		err := s.ChannelMessageDelete(channelID, msgID)
@@ -338,12 +345,6 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 				DeleteMessageID(m)
 			}
 		}
-	}
-
-	// send our new message
-	st, err = s.ChannelMessageSendComplex(channelID, msg)
-	if err != nil {
-		logger.ErrorLog.Println("Error sending message:", err)
 	}
 
 	// insert the new message id into the database
