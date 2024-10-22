@@ -1,6 +1,7 @@
 package sound
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
@@ -8,12 +9,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/utils"
+	"github.com/kkdai/youtube/v2"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -187,6 +190,129 @@ func GetCategories() ([]string, error) {
 		categories = append(categories, category)
 	}
 	return categories, nil
+}
+
+func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) {
+	guild, err := s.State.Guild(m.GuildID)
+	if err != nil {
+		logger.ErrorLog.Println("Failed to get guild:", err)
+		return
+	}
+
+	var channelID string
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			channelID = vs.ChannelID
+			break
+		}
+	}
+
+	if channelID == "" {
+		s.ChannelMessageSend(m.ChannelID, "You must be in a voice channel to use this command.")
+		return
+	}
+
+	splitMessage := strings.Fields(m.Content)
+	videoURL := splitMessage[1]
+
+	err = loadYouTubeAudio(videoURL)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Error processing YouTube video: "+err.Error())
+		return
+	}
+
+	vc, err := s.ChannelVoiceJoin(m.GuildID, channelID, false, true)
+	if err != nil {
+		logger.ErrorLog.Println("Error joining voice channel:", err)
+		return
+	}
+
+	// Stream the buffered DCA content with 20ms delay
+	for _, chunk := range buffer {
+		vc.OpusSend <- chunk
+		time.Sleep(20 * time.Millisecond) // Discord expects 20ms frames
+	}
+
+	vc.Disconnect()
+}
+
+func loadYouTubeAudio(videoURL string) error {
+	ytClient := youtube.Client{}
+	video, err := ytClient.GetVideo(videoURL)
+	if err != nil {
+		return err
+	}
+
+	format := video.Formats.WithAudioChannels()[0]
+	stream, _, err := ytClient.GetStream(video, &format)
+	if err != nil {
+		return err
+	}
+
+	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
+	cmd := exec.Command("bash", "-c", "ffmpeg -i pipe:0 -f s16le -ar 48000 -ac 2 pipe:1 | ../dca")
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("error getting stdin for ffmpeg: %v", err)
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("error getting stdout for dcaenc: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error starting ffmpeg/dcaenc pipeline: %v", err)
+	}
+
+	// Use bufio for buffered reading of the stdout (dcaenc output)
+	reader := bufio.NewReader(stdout)
+
+	// Feed the YouTube audio stream into ffmpeg
+	go func() {
+		defer stdin.Close()
+		io.Copy(stdin, stream) // Stream YouTube audio into ffmpeg
+	}()
+
+	var opusLen uint32
+	for {
+		// Read 4-byte opus frame length from dcaenc output
+		err = binary.Read(reader, binary.LittleEndian, &opusLen)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error reading frame length: %v", err)
+		}
+
+		// Debugging: log the opus frame length
+		logger.ErrorLog.Printf("Reading opus frame with length: %d\n", opusLen)
+
+		// Read opus frame data based on the frame length
+		frame := make([]byte, opusLen)
+		n, err := io.ReadFull(reader, frame)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error reading opus frame data: %v", err)
+		}
+
+		// Debugging: log if the number of bytes read doesn't match the expected frame length
+		if n != int(opusLen) {
+			logger.ErrorLog.Printf("Warning: expected %d bytes, but read %d bytes\n", opusLen, n)
+		}
+
+		// Append the opus frame to the buffer
+		buffer = append(buffer, frame)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("ffmpeg/dcaenc process failed: %v", err)
+	}
+
+	return nil
 }
 
 // getSounds returns a list of sounds in the specified category (from DB)

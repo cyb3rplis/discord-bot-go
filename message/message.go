@@ -38,7 +38,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	switch {
 	case command == fmt.Sprintf("%shelp", prefix):
 		// show help text
-		message := fmt.Sprintf("🧐  Help:\n> » **Sounds**\t\t\t\t%slist\n> » **Text2Speech**\t%stts\n> » **Statistics**\t\t  %sstats\n", prefix, prefix, prefix)
+		message := fmt.Sprintf("🧐  Help:\n> » **Sounds**\t\t\t\t%slist\n> » **Youtube Audio**\t%syoutube\n> » **Text2Speech**\t%stts\n> » **Statistics**\t\t  %sstats\n", prefix, prefix, prefix, prefix)
 
 		utils.NewMessageRoutine(command, message, s, m, true)
 		return
@@ -66,6 +66,22 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		utils.DeleteAllMessages()
+		return
+	case strings.HasPrefix(command, fmt.Sprintf("%syoutube", prefix)):
+		// Play the sound of a youtube video
+		if len(arg) == 0 {
+			message := fmt.Sprintf("🎥  Youtube: Type the URL of the video you want to play\n > » %syoutube https://...\n", prefix)
+			utils.NewMessageRoutine(command, message, s, m, true)
+			return
+		}
+
+		if !strings.Contains(arg, "https://") {
+			message := fmt.Sprintf("🎥  Youtube: Invalid URL\n > » %syoutube https://...\n", prefix)
+			utils.NewMessageRoutine(command, message, s, m, true)
+			return
+		}
+
+		sound.PlayYoutubeAudio(s, m)
 		return
 	case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 		if arg == "sounds" {
