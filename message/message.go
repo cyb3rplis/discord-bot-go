@@ -35,6 +35,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case len(args) == 2:
 		// Extract the command and arguments
 		arg = args[1]
+	case command == fmt.Sprintf("%stts", prefix):
+		break
 	case len(args) > 2:
 		return
 	}
