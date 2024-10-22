@@ -18,6 +18,8 @@ type Config struct {
 	TTS       string `json:"tts"`
 	TTSInput  string `json:"tts_input"`
 	TTSOutput string `json:"tts_output"`
+	YTOutput  string `json:"yt_output"`
+	YTTemp    string `json:"yt_temp"`
 	DCA       string `json:"dca"`
 }
 

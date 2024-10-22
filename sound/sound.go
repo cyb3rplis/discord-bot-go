@@ -87,10 +87,6 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 
-	if soundName == "tts" {
-		soundFile = model.Bot.Config.TTSOutput
-	}
-
 	// Load the sound file.
 	err = LoadSound(soundFile)
 	if err != nil {
@@ -225,7 +221,7 @@ func LoadYouTubeAudio(videoURL string, s *discordgo.Session, m *discordgo.Messag
 	st := utils.NewMessageRoutine(".youtubedl", message, s, m, true)
 
 	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o ../dist/yt.mp3 %s", videoURL))
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", model.Bot.Config.YTTemp, videoURL))
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)
@@ -243,7 +239,7 @@ func LoadYouTubeAudio(videoURL string, s *discordgo.Session, m *discordgo.Messag
 
 	utils.DeleteMessageRoutine(s, ".youtubedlerr")
 
-	cmd = exec.Command("bash", "-c", "ffmpeg -i ../dist/yt.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ../dca > ../dist/yt.dca")
+	cmd = exec.Command("bash", "-c", fmt.Sprintf("ffmpeg -i %s -f s16le -ar 48000 -ac 2 pipe:1 | ../dca > %s", model.Bot.Config.YTTemp, model.Bot.Config.YTOutput))
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to to convert youtube audio from mp3 to dca: %w", err)
@@ -477,7 +473,21 @@ func computeFileHash(filePath string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
+func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, custom string) (err error) {
+	var soundFile string
+	var customModule string
+
+	if custom == "youtube" {
+		soundFile = model.Bot.Config.YTOutput
+		customModule = "Youtube"
+
+	} else if custom == "tts" {
+		soundFile = model.Bot.Config.TTSOutput
+		customModule = "Text2Speech"
+	} else {
+		logger.ErrorLog.Printf("custom module %s no known!", custom)
+		return
+	}
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -517,17 +527,16 @@ func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err err
 			content = append(content, row)
 
 			message := &discordgo.MessageSend{
-				Content:    "➡ Currently Playing Youtube Audio by <@" + m.Author.ID + "> ",
+				Content:    "➡ Currently Playing " + customModule + " Audio by <@" + m.Author.ID + "> ",
 				Components: content,
 			}
 
 			st := utils.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, message, s, true)
 
-			logger.InfoLog.Printf("User: %s played youtube sound", m.Author.GlobalName)
-			soundFile := "../dist/yt.dca"
+			logger.InfoLog.Printf("User: %s played %s sound", m.Author.GlobalName, customModule)
 
 			// Play the sound
-			err = PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, st, g.ID, vs.ChannelID, soundFile, "youtube")
+			err = PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, st, g.ID, vs.ChannelID, soundFile, custom)
 			if err != nil {
 				logger.ErrorLog.Println("Error playing sound:", err)
 				return err
@@ -538,7 +547,7 @@ func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err err
 	}
 
 	// If the user is not in a voice channel, send an error message
-	logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
+	logger.InfoLog.Printf("User %s tried to play %s sound but is not in a voice channel", m.Author.GlobalName, customModule)
 	message := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
 	utils.NewMessageRoutine(".novc"+m.Author.ID, message, s, &discordgo.MessageCreate{Message: m.Message}, true)

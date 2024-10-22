@@ -2,9 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/model"
-	"os"
 	"os/exec"
+
+	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
@@ -18,13 +18,14 @@ func TextToSpeech(text string) error {
 
 	// Construct the shell command to echo and pipe it
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("echo %q | %s --model %s --output_file %s", text, piperPath, speechFile, ttsOutput))
-
-	// Run the command
-	output, err := cmd.CombinedOutput()
+	err := cmd.Start()
 	if err != nil {
-		logger.ErrorLog.Println("Error:", err)
-		logger.ErrorLog.Println("Output:", string(output))
-		return err
+		return fmt.Errorf("failed to run piper, make sure it is installed (.tts folder): %w", err)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("error creating tts wav audio: %w", err)
 	}
 
 	// Print the output if the command succeeds
@@ -43,38 +44,18 @@ func WAVtoDCA() error {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("ffmpeg -i %s -f s16le -ar 48000 -ac 2 pipe:1 | %s > %s", ttsInput, dca, ttsOutput))
 
 	// Run the command
-	output, err := cmd.CombinedOutput()
+	err := cmd.Start()
 	if err != nil {
-		logger.ErrorLog.Println("Error:", err)
-		logger.ErrorLog.Println("Output:", string(output))
-		return err
+		return fmt.Errorf("failed to run ffmpeg, make sure it is installed: %w", err)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("error creating tts mp3 audio: %w", err)
 	}
 
 	// Print the output if the command succeeds
 	logger.InfoLog.Printf("Successfully converted wav to dca: %s", ttsOutput)
-
-	return nil
-}
-
-func CleanUpSoundFile() error {
-	ttsInput := model.Bot.Config.TTSInput
-	ttsOutput := model.Bot.Config.TTSOutput
-
-	err := os.Remove(ttsInput)
-	if err != nil {
-		// Handle error if file deletion fails
-		logger.ErrorLog.Printf("Error deleting file: %v\n", err)
-		return err
-	}
-
-	err = os.Remove(ttsOutput)
-	if err != nil {
-		// Handle error if file deletion fails
-		logger.ErrorLog.Printf("Error deleting file: %v\n", err)
-		return err
-	}
-
-	logger.InfoLog.Println("Deleted temp TTS sound files successfully")
 
 	return nil
 }

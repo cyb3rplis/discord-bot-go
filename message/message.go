@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/model"
 
@@ -92,11 +91,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		err = sound.PlayYoutubeAudio(s, m)
+		err = sound.PlayCustomAudio(s, m, "youtube")
 		if err != nil {
 			logger.ErrorLog.Println("Error playing youtube audio:", err)
-			return
 		}
+
+		utils.CleanUpSoundFile("youtube")
 
 		return
 	case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
@@ -186,9 +186,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 
 				// play sound and clean up files
-				//sound.HandlePlaySoundInteraction(s, &discordgo.InteractionCreate{}, "play_sound_temp_tts")
-				time.Sleep(150 * time.Millisecond)
-				//utils.CleanUpSoundFile()
+				err = sound.PlayCustomAudio(s, m, "tts")
+				if err != nil {
+					logger.ErrorLog.Println("Error playing youtube audio:", err)
+				}
+
+				utils.CleanUpSoundFile("tts")
 
 			} else {
 				logger.InfoLog.Println("TTS Text does not match regex pattern: ", ttsText)

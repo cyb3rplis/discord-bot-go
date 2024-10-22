@@ -7,5 +7,7 @@
   "tts": "../tts",
   "tts_input": "../dist/tts.wav",
   "tts_output": "../dist/tts.dca",
+  "yt_output": "../dist/yt.dca",
+  "yt_temp": "../dist/yt.mp3",
   "dca": "../dca"
 }
