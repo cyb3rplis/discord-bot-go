@@ -75,24 +75,22 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case strings.HasPrefix(command, fmt.Sprintf("%syoutube", prefix)):
 		// Play the sound of a youtube video
 		if len(arg) == 0 {
-			message := fmt.Sprintf("🎥  Youtube: Type the URL of the video you want to play\n > » %syoutube https://...\n", prefix)
+			message := fmt.Sprintf("🎶  Youtube: Type the URL of the video you want to play\n > » %syoutube https://...\n", prefix)
 			utils.NewMessageRoutine(command, message, s, m, true)
 			return
 		}
 
 		if !strings.Contains(arg, "https://") {
-			message := fmt.Sprintf("🎥  Youtube: Invalid URL\n > » %syoutube https://...\n", prefix)
+			message := fmt.Sprintf("🎶  Youtube: Invalid URL\n > » %syoutube https://...\n", prefix)
 			utils.NewMessageRoutine(command, message, s, m, true)
 			return
 		}
 
-		err := sound.LoadYouTubeAudio(arg)
+		err := sound.LoadYouTubeAudio(arg, s, m)
 		if err != nil {
 			logger.ErrorLog.Println("Error loading youtube audio:", err)
 			return
 		}
-
-		fmt.Println("m: ", m)
 
 		err = sound.PlayYoutubeAudio(s, m)
 		if err != nil {

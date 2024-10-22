@@ -142,7 +142,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, st *discordgo.M
 	buffer = make([][]byte, 0)
 	botSpeaking = false
 
-	utils.StopButtonRoutine(s)
+	utils.DeleteMessageRoutine(s, ".stopbutton")
 	return nil
 }
 
@@ -191,18 +191,57 @@ func GetCategories() ([]string, error) {
 	return categories, nil
 }
 
-func LoadYouTubeAudio(videoURL string) error {
+func LoadYouTubeAudio(videoURL string, s *discordgo.Session, m *discordgo.MessageCreate) error {
+	userInVS := false
+	c, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		logger.ErrorLog.Println("Error finding channel:", err)
+		return err
+	}
+
+	// Find the guild for that channel
+	g, err := s.State.Guild(c.GuildID)
+	if err != nil {
+		logger.ErrorLog.Println("Error finding guild:", err)
+		return err
+	}
+
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			userInVS = true
+		}
+	}
+
+	if !userInVS {
+		// If the user is not in a voice channel, send an error message and avoid processing the youtube audio
+		logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
+		message := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
+
+		utils.NewMessageRoutine(".novc"+m.Author.ID, message, s, &discordgo.MessageCreate{Message: m.Message}, true)
+		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
+	}
+
+	message := "🎶  Preparing Youtube Audio, this might take a few seconds..."
+	st := utils.NewMessageRoutine(".youtubedl", message, s, m, true)
+
 	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
 	cmd := exec.Command("bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o ../dist/yt.mp3 %s", videoURL))
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf("failed to download youtube audio: %w", err)
+		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)
 	}
 
 	err = cmd.Wait()
 	if err != nil {
+		utils.DeleteMessageRoutine(s, ".youtubedl")
+		utils.DeleteMessageRoutine(s, ".youtubedlerr")
+
+		message := "❗  Downloading Youtube Audio failed, did you use the correct link <@" + m.Author.ID + ">?"
+		utils.NewMessageRoutine(".youtubedlerr", message, s, m, false)
 		return fmt.Errorf("error downloading youtube audio: %w", err)
 	}
+
+	utils.DeleteMessageRoutine(s, ".youtubedlerr")
 
 	cmd = exec.Command("bash", "-c", "ffmpeg -i ../dist/yt.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ../dca > ../dist/yt.dca")
 	err = cmd.Start()
@@ -213,6 +252,16 @@ func LoadYouTubeAudio(videoURL string) error {
 	err = cmd.Wait()
 	if err != nil {
 		return fmt.Errorf("error converting youtube audio: %w", err)
+	}
+
+	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+	if err != nil {
+		logger.ErrorLog.Println("Error deleting preparing messages: ", err)
+	}
+
+	err = utils.DeleteMessageID(st.ID)
+	if err != nil {
+		logger.ErrorLog.Printf("error deleting message from DB: %v", err)
 	}
 
 	return nil
@@ -433,36 +482,27 @@ func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err err
 	c, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		logger.ErrorLog.Println("Error finding channel:", err)
-		return
+		return err
 	}
 
 	// Find the guild for that channel
 	g, err := s.State.Guild(c.GuildID)
 	if err != nil {
 		logger.ErrorLog.Println("Error finding guild:", err)
-		return
+		return err
 	}
 
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
-		// Error here with m.Member.User.ID nil pointer dereference
-		if vs.UserID == m.Member.User.ID {
-			fmt.Println("vs: ", vs)
-			// add user and user statistics
-			userID, err := strconv.Atoi(m.Member.User.ID)
+		if vs.UserID == m.Author.ID {
+			userID, err := strconv.Atoi(m.Author.ID)
 			if err != nil {
 				logger.ErrorLog.Println("Error converting user ID to int:", err)
 				return err
 			} else {
-				err = utils.AddUser(userID, m.Member.User.GlobalName)
+				err = utils.AddUser(userID, m.Author.GlobalName)
 				if err != nil {
 					logger.ErrorLog.Println("Error adding user:", err)
-					return err
-				}
-
-				err = utils.AddUserStatistics(userID, "youtube")
-				if err != nil {
-					logger.ErrorLog.Println("Error adding user statistics:", err)
 					return err
 				}
 			}
@@ -477,22 +517,31 @@ func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err err
 			content = append(content, row)
 
 			message := &discordgo.MessageSend{
-				Content:    "➡ Currently Playing Youtube Sound by <@" + m.Member.User.ID + ">: ",
+				Content:    "➡ Currently Playing Youtube Audio by <@" + m.Author.ID + "> ",
 				Components: content,
 			}
 
 			st := utils.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, message, s, true)
 
-			logger.InfoLog.Printf("User: %s played youtube sound", m.Member.User.GlobalName)
+			logger.InfoLog.Printf("User: %s played youtube sound", m.Author.GlobalName)
 			soundFile := "../dist/yt.dca"
 
 			// Play the sound
 			err = PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, st, g.ID, vs.ChannelID, soundFile, "youtube")
 			if err != nil {
 				logger.ErrorLog.Println("Error playing sound:", err)
+				return err
 			}
+
+			return nil
 		}
 	}
 
-	return nil
+	// If the user is not in a voice channel, send an error message
+	logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
+	message := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
+
+	utils.NewMessageRoutine(".novc"+m.Author.ID, message, s, &discordgo.MessageCreate{Message: m.Message}, true)
+
+	return fmt.Errorf("user not in voice channel")
 }

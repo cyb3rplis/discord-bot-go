@@ -274,7 +274,7 @@ func GetAllMessages() (messages map[string][]string, err error) {
 	return messages, err
 }
 
-func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate, deleteInitial bool) {
+func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate, deleteInitial bool) (st *discordgo.Message) {
 	// send our new message
 	st, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
@@ -313,6 +313,8 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 	}
 
 	DeleteOldCommandMessages(st.ID, command)
+
+	return st
 }
 
 func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session, deleteInitial bool) (st *discordgo.Message) {
@@ -357,9 +359,7 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 	return st
 }
 
-func StopButtonRoutine(s *discordgo.Session) {
-	command := ".stopbutton"
-
+func DeleteMessageRoutine(s *discordgo.Session, command string) {
 	oldMessages, err := GetAllCommandMessages(command)
 	if err != nil {
 		logger.ErrorLog.Println("Error getting all command messages:", err)
