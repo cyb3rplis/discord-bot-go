@@ -1,7 +1,6 @@
 package sound
 
 import (
-	"bufio"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
@@ -11,12 +10,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/utils"
-	"github.com/kkdai/youtube/v2"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -192,124 +191,28 @@ func GetCategories() ([]string, error) {
 	return categories, nil
 }
 
-func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := s.State.Guild(m.GuildID)
-	if err != nil {
-		logger.ErrorLog.Println("Failed to get guild:", err)
-		return
-	}
-
-	var channelID string
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			channelID = vs.ChannelID
-			break
-		}
-	}
-
-	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, "You must be in a voice channel to use this command.")
-		return
-	}
-
-	splitMessage := strings.Fields(m.Content)
-	videoURL := splitMessage[1]
-
-	err = loadYouTubeAudio(videoURL)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Error processing YouTube video: "+err.Error())
-		return
-	}
-
-	vc, err := s.ChannelVoiceJoin(m.GuildID, channelID, false, true)
-	if err != nil {
-		logger.ErrorLog.Println("Error joining voice channel:", err)
-		return
-	}
-
-	// Stream the buffered DCA content with 20ms delay
-	for _, chunk := range buffer {
-		vc.OpusSend <- chunk
-		time.Sleep(20 * time.Millisecond) // Discord expects 20ms frames
-	}
-
-	vc.Disconnect()
-}
-
-func loadYouTubeAudio(videoURL string) error {
-	ytClient := youtube.Client{}
-	video, err := ytClient.GetVideo(videoURL)
-	if err != nil {
-		return err
-	}
-
-	format := video.Formats.WithAudioChannels()[0]
-	stream, _, err := ytClient.GetStream(video, &format)
-	if err != nil {
-		return err
-	}
-
+func LoadYouTubeAudio(videoURL string) error {
 	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
-	cmd := exec.Command("bash", "-c", "ffmpeg -i pipe:0 -f s16le -ar 48000 -ac 2 pipe:1 | ../dca")
-
-	stdin, err := cmd.StdinPipe()
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o ../dist/yt.mp3 %s", videoURL))
+	err := cmd.Start()
 	if err != nil {
-		return fmt.Errorf("error getting stdin for ffmpeg: %v", err)
+		return fmt.Errorf("failed to download youtube audio: %w", err)
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	err = cmd.Wait()
 	if err != nil {
-		return fmt.Errorf("error getting stdout for dcaenc: %v", err)
+		return fmt.Errorf("error downloading youtube audio: %w", err)
 	}
 
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("error starting ffmpeg/dcaenc pipeline: %v", err)
+	cmd = exec.Command("bash", "-c", "ffmpeg -i ../dist/yt.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | ../dca > ../dist/yt.dca")
+	err = cmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to to convert youtube audio from mp3 to dca: %w", err)
 	}
 
-	// Use bufio for buffered reading of the stdout (dcaenc output)
-	reader := bufio.NewReader(stdout)
-
-	// Feed the YouTube audio stream into ffmpeg
-	go func() {
-		defer stdin.Close()
-		io.Copy(stdin, stream) // Stream YouTube audio into ffmpeg
-	}()
-
-	var opusLen uint32
-	for {
-		// Read 4-byte opus frame length from dcaenc output
-		err = binary.Read(reader, binary.LittleEndian, &opusLen)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("error reading frame length: %v", err)
-		}
-
-		// Debugging: log the opus frame length
-		logger.ErrorLog.Printf("Reading opus frame with length: %d\n", opusLen)
-
-		// Read opus frame data based on the frame length
-		frame := make([]byte, opusLen)
-		n, err := io.ReadFull(reader, frame)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("error reading opus frame data: %v", err)
-		}
-
-		// Debugging: log if the number of bytes read doesn't match the expected frame length
-		if n != int(opusLen) {
-			logger.ErrorLog.Printf("Warning: expected %d bytes, but read %d bytes\n", opusLen, n)
-		}
-
-		// Append the opus frame to the buffer
-		buffer = append(buffer, frame)
-	}
-
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("ffmpeg/dcaenc process failed: %v", err)
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("error converting youtube audio: %w", err)
 	}
 
 	return nil
@@ -523,4 +426,73 @@ func computeFileHash(filePath string) (string, error) {
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func PlayYoutubeAudio(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
+	// Find the channel that the interaction came from
+	c, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		logger.ErrorLog.Println("Error finding channel:", err)
+		return
+	}
+
+	// Find the guild for that channel
+	g, err := s.State.Guild(c.GuildID)
+	if err != nil {
+		logger.ErrorLog.Println("Error finding guild:", err)
+		return
+	}
+
+	// Look for the interaction user in that guild's current voice states
+	for _, vs := range g.VoiceStates {
+		// Error here with m.Member.User.ID nil pointer dereference
+		if vs.UserID == m.Member.User.ID {
+			fmt.Println("vs: ", vs)
+			// add user and user statistics
+			userID, err := strconv.Atoi(m.Member.User.ID)
+			if err != nil {
+				logger.ErrorLog.Println("Error converting user ID to int:", err)
+				return err
+			} else {
+				err = utils.AddUser(userID, m.Member.User.GlobalName)
+				if err != nil {
+					logger.ErrorLog.Println("Error adding user:", err)
+					return err
+				}
+
+				err = utils.AddUserStatistics(userID, "youtube")
+				if err != nil {
+					logger.ErrorLog.Println("Error adding user statistics:", err)
+					return err
+				}
+			}
+
+			content := []discordgo.MessageComponent{}
+			row := discordgo.ActionsRow{}
+			row.Components = append(row.Components, discordgo.Button{
+				Label:    "Stop Sound",
+				Style:    discordgo.DangerButton,
+				CustomID: "stop_sound",
+			})
+			content = append(content, row)
+
+			message := &discordgo.MessageSend{
+				Content:    "➡ Currently Playing Youtube Sound by <@" + m.Member.User.ID + ">: ",
+				Components: content,
+			}
+
+			st := utils.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, message, s, true)
+
+			logger.InfoLog.Printf("User: %s played youtube sound", m.Member.User.GlobalName)
+			soundFile := "../dist/yt.dca"
+
+			// Play the sound
+			err = PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, st, g.ID, vs.ChannelID, soundFile, "youtube")
+			if err != nil {
+				logger.ErrorLog.Println("Error playing sound:", err)
+			}
+		}
+	}
+
+	return nil
 }

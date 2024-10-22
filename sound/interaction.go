@@ -111,7 +111,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					Components: content,
 				}
 
-				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ChannelID, message, s, false)
+				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s, false)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
@@ -152,7 +152,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					Components: content,
 				}
 
-				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ChannelID, message, s, false)
+				st := utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s, false)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 				// Construct the sound file path

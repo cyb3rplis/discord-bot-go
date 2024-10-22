@@ -86,7 +86,20 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		sound.PlayYoutubeAudio(s, m)
+		err := sound.LoadYouTubeAudio(arg)
+		if err != nil {
+			logger.ErrorLog.Println("Error loading youtube audio:", err)
+			return
+		}
+
+		fmt.Println("m: ", m)
+
+		err = sound.PlayYoutubeAudio(s, m)
+		if err != nil {
+			logger.ErrorLog.Println("Error playing youtube audio:", err)
+			return
+		}
+
 		return
 	case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 		if arg == "sounds" {
