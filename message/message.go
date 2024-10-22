@@ -27,12 +27,17 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logger.InfoLog.Println("Empty content in command, ignore")
 		return
 	}
-	// Extract the command and arguments
+
 	args := strings.Split(m.Content, " ")
 	command := args[0]
 	var arg string
-	if len(args) > 1 {
+
+	switch {
+	case len(args) == 2:
+		// Extract the command and arguments
 		arg = args[1]
+	case len(args) > 2:
+		return
 	}
 
 	switch {
