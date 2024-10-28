@@ -40,7 +40,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		message := fmt.Sprintf("🔥  Sound added to favorites: %s\n", arg2)
 		utils.NewMessageRoutine(command, message, s, m, true)
 		return nil
-	case "remove":
+	case "rm":
 		// remove sound from favorites
 		err := SoundFavoriteRemove(m, arg2)
 		if err != nil {
@@ -55,6 +55,13 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		if err != nil {
 			logger.ErrorLog.Printf("error getting user favorites: %v", err)
 		}
+
+		if len(favorites) == 0 {
+			message := "🔥  You don't have favourites yet <@" + m.Author.ID + ">\nTry adding them with:\t" + model.Bot.Config.Prefix + "add <sound_name>"
+			utils.NewMessageRoutine(command+arg+m.Author.ID, message, s, m, true)
+			return nil
+		}
+
 		var soundNames []string
 		for _, favorite := range favorites {
 			soundNames = append(soundNames, favorite.SoundName)
@@ -69,11 +76,12 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		}
 		return nil
 	default:
-		message := fmt.Sprintf("🔥  Your favorites:\n" +
-			"> » **List sounds**\t\tlist\n" +
-			"> » **Add sound**\t\t add <sound_name>>\n" +
-			"> » **Remove sound**\t\t remove <sound_name>\n")
-		utils.NewMessageRoutine(command+"help", message, s, m, false)
+
+		message := fmt.Sprintf("🔥  Your favorites helper:\n" +
+			"> » **List sounds**\t\t" + model.Bot.Config.Prefix + "list\n" +
+			"> » **Add sound**\t\t " + model.Bot.Config.Prefix + "add <sound_name>\n" +
+			"> » **Remove sound**\t\t " + model.Bot.Config.Prefix + "rm <sound_name>\n")
+		utils.NewMessageRoutine(command+"help", message, s, m, true)
 	}
 	return nil
 }
