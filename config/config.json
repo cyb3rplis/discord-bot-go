@@ -1,0 +1,13 @@
+{
+  "token": "",
+  "prefix": ".",
+  "sounds_dir": "./dist/sounds",
+  "db": "./dist/soundbot.db",
+  "tts": "../tts",
+  "tts_input": "./dist/tts.wav",
+  "tts_output": "./dist/tts.dca",
+  "yt_output": "./dist/yt.dca",
+  "yt_temp": "./dist/yt.mp3",
+  "yt_timeout": 20,
+  "admin_users": []
+}
