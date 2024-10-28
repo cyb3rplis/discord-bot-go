@@ -36,4 +36,4 @@ db/soundbot.db
 config/config.local.json
 config/config.json
 identifier.sqlite
-
+yt-dlp
