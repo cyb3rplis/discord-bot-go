@@ -537,11 +537,13 @@ func BuildListButtons(categories []string, buttonStyle discordgo.ButtonStyle) []
 }
 
 // BuildMessages creates a list of messages for the provided buttons
-func BuildMessages(buttons []discordgo.MessageComponent) []*discordgo.MessageSend {
+func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discordgo.MessageSend) []*discordgo.MessageSend {
 	var messages []*discordgo.MessageSend
-	var idx int
+	if initialMessage != nil {
+		messages = append(messages, initialMessage)
+	}
+
 	for len(buttons) > 0 {
-		idx++
 		var messageContent []discordgo.MessageComponent
 		if len(buttons) > 5 {
 			messageContent, buttons = buttons[:5], buttons[5:]

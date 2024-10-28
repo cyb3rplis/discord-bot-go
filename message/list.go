@@ -19,7 +19,7 @@ func HandleList(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 	}
 
 	content := utils.BuildListButtons(categories, discordgo.PrimaryButton)
-	messages := utils.BuildMessages(content)
+	messages := utils.BuildMessages(content, nil)
 
 	for _, message := range messages {
 		utils.NewComplexMessageRoutine(command, m.ChannelID, m.ID, message, s, true)

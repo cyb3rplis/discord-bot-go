@@ -69,10 +69,14 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		// Build buttons for the favorite sounds
 		buttons := utils.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
 		// Build messages for the favorite sounds
-		messages := utils.BuildMessages(buttons)
+		initialMessage := &discordgo.MessageSend{
+			Content: "Favourites of <@" + m.Author.ID + ">",
+		}
 
-		for _, message := range messages {
-			utils.NewComplexMessageRoutine(command+arg+m.Author.ID, m.ChannelID, m.ID, message, s, true)
+		messages := utils.BuildMessages(buttons, initialMessage)
+
+		for i, message := range messages {
+			utils.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s, true)
 		}
 		return nil
 	default:

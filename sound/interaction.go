@@ -199,7 +199,7 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	//build buttons for each sound
 	buttons := utils.BuildSoundButtons(sounds, category, discordgo.SecondaryButton)
 	//build messages
-	messages := utils.BuildMessages(buttons)
+	messages := utils.BuildMessages(buttons, nil)
 
 	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
 	for idx, message := range messages {
