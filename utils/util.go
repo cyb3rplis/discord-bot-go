@@ -439,22 +439,8 @@ func DeleteMessageRoutine(s *discordgo.Session, command string) {
 }
 
 func CleanUpSoundFile(module string) {
-	if module == "youtube" {
-		err := os.Remove(model.Bot.Config.YTOutput)
-		if err != nil {
-			// Handle error if file deletion fails
-			logger.ErrorLog.Printf("error deleting file: %v\n", err)
-		}
-
-		err = os.Remove(model.Bot.Config.YTTemp)
-		if err != nil {
-			// Handle error if file deletion fails
-			logger.ErrorLog.Printf("error deleting file: %v\n", err)
-		}
-
-		logger.InfoLog.Println("Deleted temp Youtube sound files successfully")
-	} else if module == "tts" {
-		err := os.Remove(model.Bot.Config.TTSInput)
+	if module == "tts" {
+		err := os.Remove(model.Bot.Config.TTSTemp)
 		if err != nil {
 			// Handle error if file deletion fails
 			logger.ErrorLog.Printf("error deleting file: %v\n", err)

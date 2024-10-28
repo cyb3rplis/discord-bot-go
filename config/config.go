@@ -14,8 +14,9 @@ type Config struct {
 	Prefix     string   `json:"prefix"`
 	SoundsDir  string   `json:"sounds_dir"`
 	DB         string   `json:"db"`
+	YTDLP      string   `json:"ytdlp"`
 	TTS        string   `json:"tts"`
-	TTSInput   string   `json:"tts_input"`
+	TTSTemp    string   `json:"tts_temp"`
 	TTSOutput  string   `json:"tts_output"`
 	YTOutput   string   `json:"yt_output"`
 	YTTemp     string   `json:"yt_temp"`

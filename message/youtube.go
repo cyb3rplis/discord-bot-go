@@ -26,7 +26,6 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 		utils.NewMessageRoutine(command, message, s, m, true)
 		return nil
 	}
-	utils.CleanUpSoundFile("youtube")
 	err := utils.VoiceChannelCheck(s, m)
 	if err != nil {
 		logger.ErrorLog.Println("error checking voice channel:", err)
@@ -57,7 +56,7 @@ func DownloadAndConvertYoutubeAudio(videoURL string, s *discordgo.Session, m *di
 	defer cancel()
 
 	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
-	cmd := exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("./yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", model.Bot.Config.YTTemp, videoURL))
+	cmd := exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --force-overwrites -o %s %s", model.Bot.Config.YTDLP, model.Bot.Config.YTTemp, videoURL))
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)

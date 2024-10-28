@@ -453,9 +453,10 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 		soundFile = model.Bot.Config.TTSOutput
 		customModule = "Text2Speech"
 	} else {
-		logger.ErrorLog.Printf("custom module %s no known!", audioType)
+		logger.ErrorLog.Printf("custom module %s not known!", audioType)
 		return
 	}
+	logger.InfoLog.Println("soundfile", soundFile, "customModule", customModule)
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(m.ChannelID)
 	if err != nil {
