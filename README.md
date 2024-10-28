@@ -20,6 +20,12 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Add, Remove and List Favorites
 - [ ] Playlists
 - [ ] Volume Control
+- [ ] Pin New Sounds as Message (with buttons?)
+- [ ] Delete sounds (admins only)
+- [ ] Move sounds (admins only, e.g. ".move fart2 custom")
+- [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName <start> <end>")
+- [ ] Jail users for a specified amount of time (cant use sounds)
+
 
 ## Getting Started
 
