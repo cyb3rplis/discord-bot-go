@@ -59,7 +59,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 			soundNames = append(soundNames, favorite.SoundName)
 		}
 		// Build buttons for the favorite sounds
-		buttons := utils.BuildSoundButtons(soundNames, "favorites")
+		buttons := utils.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
 		// Build messages for the favorite sounds
 		messages := utils.BuildMessages(buttons)
 

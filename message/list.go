@@ -18,7 +18,7 @@ func HandleList(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 		return err
 	}
 
-	content := utils.BuildListButtons(categories)
+	content := utils.BuildListButtons(categories, discordgo.PrimaryButton)
 	messages := utils.BuildMessages(content)
 
 	for _, message := range messages {

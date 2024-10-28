@@ -92,7 +92,10 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	case command == fmt.Sprintf("%sdm", prefix):
 		// Send a DM to the author
-		utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
+		err := utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
+		if err != nil {
+			logger.ErrorLog.Println("error sending DM:", err)
+		}
 	default:
 		return
 	}

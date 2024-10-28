@@ -197,7 +197,7 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	}
 
 	//build buttons for each sound
-	buttons := utils.BuildSoundButtons(sounds, category)
+	buttons := utils.BuildSoundButtons(sounds, category, discordgo.SecondaryButton)
 	//build messages
 	messages := utils.BuildMessages(buttons)
 

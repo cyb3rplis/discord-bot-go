@@ -504,7 +504,7 @@ func VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
 }
 
 // BuildSoundButtons creates a list of buttons for the provided category
-func BuildSoundButtons(sounds []string, category string) []discordgo.MessageComponent {
+func BuildSoundButtons(sounds []string, category string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
 	content := []discordgo.MessageComponent{}
 	row := discordgo.ActionsRow{}
 	for i, soundName := range sounds {
@@ -516,7 +516,7 @@ func BuildSoundButtons(sounds []string, category string) []discordgo.MessageComp
 		}
 		row.Components = append(row.Components, discordgo.Button{
 			Label:    soundName,
-			Style:    discordgo.SecondaryButton,
+			Style:    buttonStyle,
 			CustomID: fmt.Sprintf("play_sound_%s_%s", category, soundName),
 		})
 	}
@@ -528,7 +528,7 @@ func BuildSoundButtons(sounds []string, category string) []discordgo.MessageComp
 }
 
 // BuildListButtons creates a list of buttons for the provided categories
-func BuildListButtons(categories []string) []discordgo.MessageComponent {
+func BuildListButtons(categories []string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
 	content := []discordgo.MessageComponent{}
 	row := discordgo.ActionsRow{}
 	for i, category := range categories {
@@ -539,7 +539,7 @@ func BuildListButtons(categories []string) []discordgo.MessageComponent {
 		}
 		row.Components = append(row.Components, discordgo.Button{
 			Label:    category,
-			Style:    discordgo.SecondaryButton,
+			Style:    buttonStyle,
 			CustomID: fmt.Sprintf("list_sounds_%s", category),
 		})
 	}
