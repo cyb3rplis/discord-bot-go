@@ -90,11 +90,9 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			logger.ErrorLog.Println("error handling list:", err)
 		}
-	case strings.Contains(strings.ToLower(m.Content), "mutter"):
-		_, err := s.ChannelMessageSend(m.ChannelID, MutterWitz())
-		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
-		}
+	case command == fmt.Sprintf("%sdm", prefix):
+		// Send a DM to the author
+		utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
 	default:
 		return
 	}

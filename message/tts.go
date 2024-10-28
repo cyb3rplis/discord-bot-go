@@ -2,13 +2,14 @@ package message
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/sound"
 	"github.com/cyb3rplis/discord-bot-go/utils"
-	"regexp"
-	"strings"
 )
 
 func HandleTTS(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {

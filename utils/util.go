@@ -3,13 +3,14 @@ package utils
 import (
 	"database/sql"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/logger"
-	"github.com/cyb3rplis/discord-bot-go/model"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
 type SoundInfo struct {
@@ -351,6 +352,20 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 	}
 
 	return st
+}
+
+func NewPrivateMessageRoutine(message string, s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
+	// Send a DM to the author
+	channel, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		return fmt.Errorf("error creating private channel with user: %s", m.Author.ID)
+	}
+	_, err = s.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		return fmt.Errorf("error sending private message: %v", err)
+	}
+
+	return nil
 }
 
 func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session, deleteInitial bool) (st *discordgo.Message) {

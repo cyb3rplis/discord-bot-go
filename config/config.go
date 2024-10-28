@@ -31,7 +31,7 @@ var (
 func LoadConfig() *Config {
 	confVersion := "local"
 	once.Do(func() {
-		configFile := "../config/config.local.json"
+		configFile := "./config/config.local.json"
 		if _, err := os.Stat(configFile); os.IsNotExist(err) {
 			configFile = "./config/config.json" // Fallback to the default config file
 			confVersion = "production"

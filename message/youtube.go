@@ -3,14 +3,15 @@ package message
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/sound"
 	"github.com/cyb3rplis/discord-bot-go/utils"
-	"os/exec"
-	"strings"
-	"time"
 )
 
 func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
@@ -48,6 +49,7 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 func DownloadAndConvertYoutubeAudio(videoURL string, s *discordgo.Session, m *discordgo.MessageCreate) error {
 	message := "🎶  Preparing Youtube Audio, this might take a few seconds..."
 	st := utils.NewMessageRoutine(".youtubedl", message, s, m, true)
+	s.ChannelTyping(m.ChannelID)
 
 	// setting up a context to cancel the process after x seconds
 	timeout := time.Duration(model.Bot.Config.YTTimeout) * time.Second

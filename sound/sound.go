@@ -39,6 +39,44 @@ type Entry struct {
 	Name string
 }
 
+func LoadSoundFS(soundName string) error {
+	var opusLen int16
+	file, err := os.Open(soundName)
+	if err != nil {
+		logger.ErrorLog.Println("Error opening dca file :", err)
+		return err
+	}
+	defer file.Close()
+	for {
+		// Read opus frame length from dca file.
+		err = binary.Read(file, binary.LittleEndian, &opusLen)
+
+		// If this is the end of the file, just return.
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err := file.Close()
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		if err != nil {
+			logger.ErrorLog.Println("Error reading from dca file :", err)
+			return err
+		}
+
+		// Read encoded pcm from dca file.
+		InBuf := make([]byte, opusLen)
+		err = binary.Read(file, binary.LittleEndian, &InBuf)
+		if err != nil {
+			logger.ErrorLog.Println("Error reading from dca file :", err)
+			return err
+		}
+
+		// Append encoded pcm data to the buffer.
+		buffer = append(buffer, InBuf)
+	}
+}
+
 // LoadSound attempts to load an encoded sound file from disk.
 func LoadSound(soundName string) error {
 	var opusLen int16
@@ -89,7 +127,12 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	}
 
 	// Load the sound file.
-	err = LoadSound(soundName)
+	if soundName == model.Bot.Config.YTOutput || soundName == model.Bot.Config.TTSOutput {
+		err = LoadSoundFS(soundName)
+	} else {
+		err = LoadSound(soundName)
+	}
+
 	if err != nil {
 		logger.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
 		message := "Sound does not exist\n> Sikerim"
