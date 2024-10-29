@@ -139,8 +139,9 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Handle statistics
 			err := HandleStatistics(s, m, arg, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling statistics:", err)
+				s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			}
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
@@ -153,7 +154,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Handle jail
 			err := HandleUsers(s, m, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling jail:", err)
+				logger.ErrorLog.Println("error handling users:", err)
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sjail", prefix)):
 			// Handle jail
