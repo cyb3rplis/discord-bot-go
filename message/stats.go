@@ -16,21 +16,23 @@ func HandleStatistics(s *discordgo.Session, m *discordgo.MessageCreate, arg, com
 		err := soundStats(s, m, arg, command)
 		if err != nil {
 			logger.ErrorLog.Println("error listing sounds:", err)
+			return err
 		}
 	case "users":
 		err := userStats(s, m, arg, command)
 		if err != nil {
 			logger.ErrorLog.Println("error listing users:", err)
+			return err
 		}
 	case "me":
 		err := meStats(s, m, arg, command)
 		if err != nil {
 			logger.ErrorLog.Println("error listing user sounds:", err)
+			return err
 		}
 	default:
 		message := fmt.Sprintf("🔥  Stats:\n> » **Global Sounds**\t\t%sstats sounds\n> » **Global Users**\t\t%sstats users\n> » **Your Sounds**\t\t\t%sstats me\n", prefix, prefix, prefix)
-		utils.NewMessageRoutine(command+"help", message, s, m, false)
-		return nil
+		utils.NewMessageRoutine(command+"help", message, s, m)
 	}
 	return nil
 }
@@ -53,7 +55,7 @@ func soundStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 		return nil
 	}
 
-	utils.NewMessageRoutine(command+arg, message, s, m, true)
+	utils.NewMessageRoutine(command+arg, message, s, m)
 	return nil
 }
 
@@ -77,7 +79,7 @@ func userStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command st
 		return nil
 	}
 
-	utils.NewMessageRoutine(command+arg, message, s, m, true)
+	utils.NewMessageRoutine(command+arg, message, s, m)
 	return nil
 }
 
@@ -108,6 +110,6 @@ func meStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command stri
 		Content:    "🔥  <@" + m.Author.ID + ">'s top 10 played sounds: \n\n",
 		Components: content,
 	}
-	utils.NewComplexMessageRoutine(command+arg+m.Author.ID, m.ChannelID, m.ID, message2, s, true)
+	utils.NewComplexMessageRoutine(command+arg+m.Author.ID, m.ChannelID, m.ID, message2, s)
 	return nil
 }

@@ -41,7 +41,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		mu.Unlock()
 		message := "Stop spamming the buttons <@" + i.Member.User.ID + "> you fucking idiot!!!"
 
-		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{Message: i.Message}, false)
+		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{Message: i.Message})
 		return
 	}
 	mu.Unlock()
@@ -109,7 +109,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					Components: content,
 				}
 
-				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s, false)
+				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
@@ -150,7 +150,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					Components: content,
 				}
 
-				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s, false)
+				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 				// Construct the sound file path
@@ -173,7 +173,7 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
 	message := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
 
-	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
+	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
 }
 
 // HandleListSoundsInteraction handles the list sounds interaction
@@ -183,7 +183,7 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	message := "➡ Sounds in category - " + category
 
 	longCategory := fmt.Sprintf(".listAll%s", category)
-	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
+	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message})
 
 	// Get all sound files in the subfolder
 	sounds, err := getSounds(category)
@@ -192,7 +192,7 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	}
 	if len(sounds) == 0 {
 		message := "No sounds found in this category."
-		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message}, false)
+		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
 		return
 	}
 
@@ -204,6 +204,6 @@ func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionC
 	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
 	for idx, message := range messages {
 		longCategory := fmt.Sprintf(".list%s%d", category, idx+1)
-		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ID, message, s, false)
+		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ID, message, s)
 	}
 }

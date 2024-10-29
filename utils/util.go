@@ -306,19 +306,11 @@ func GetAllMessages() (messages map[string][]string, err error) {
 	return messages, err
 }
 
-func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate, deleteInitial bool) (st *discordgo.Message) {
+func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) (st *discordgo.Message) {
 	// send our new message
 	st, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
 		logger.ErrorLog.Println("error sending message:", err)
-	}
-
-	// delete the message from the user to keep the chat clean
-	if deleteInitial {
-		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
-		if err != nil {
-			logger.ErrorLog.Println("error deleting initial user message: ", err)
-		}
 	}
 
 	// get all old messages for this command
@@ -369,19 +361,11 @@ func NewPrivateMessageRoutine(message string, s *discordgo.Session, m *discordgo
 	return nil
 }
 
-func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session, deleteInitial bool) (st *discordgo.Message) {
+func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
 	// send our new message
 	st, err := s.ChannelMessageSendComplex(channelID, msg)
 	if err != nil {
 		logger.ErrorLog.Println("error sending message:", err)
-	}
-
-	// delete the message from the user to keep the chat clean
-	if deleteInitial {
-		err := s.ChannelMessageDelete(channelID, msgID)
-		if err != nil {
-			logger.ErrorLog.Println("error deleting initial complex user message: ", err)
-		}
 	}
 
 	// get all old messages for this command
@@ -483,7 +467,7 @@ func VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
 		logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
 		message := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
-		NewMessageRoutine(".novc"+m.Author.ID, message, s, m, true)
+		NewMessageRoutine(".novc"+m.Author.ID, message, s, m)
 		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
 	}
 

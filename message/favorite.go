@@ -55,8 +55,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		}
 
 		if len(favorites) == 0 {
-			message := "🔥  You don't have favourites yet <@" + m.Author.ID + ">\nTry adding them with:\t" + model.Bot.Config.Prefix + "add <sound_name>"
-			utils.NewMessageRoutine(command+arg+m.Author.ID, message, s, m, true)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "🚫")
 			return nil
 		}
 
@@ -74,7 +73,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		messages := utils.BuildMessages(buttons, initialMessage)
 
 		for i, message := range messages {
-			utils.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s, true)
+			utils.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s)
 		}
 		return nil
 	default:
@@ -82,7 +81,8 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 			"> » **List sounds**\t\t" + model.Bot.Config.Prefix + "list\n" +
 			"> » **Add sound**\t\t " + model.Bot.Config.Prefix + "add <sound_name>\n" +
 			"> » **Remove sound**\t\t " + model.Bot.Config.Prefix + "rm <sound_name>\n")
-		utils.NewMessageRoutine(command+"help", message, s, m, true)
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		utils.NewMessageRoutine(command+"help", message, s, m)
 	}
 	return nil
 }

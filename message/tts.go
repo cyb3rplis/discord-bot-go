@@ -15,11 +15,14 @@ import (
 func HandleTTS(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {
 	prefix := model.Bot.Config.Prefix
 	if m.Content == fmt.Sprintf("%stts", prefix) {
-		message := fmt.Sprintf("📢 TTS: Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix)
+		message := fmt.Sprintf("📢  TTS: Type text which will be played via Text to Speech in your Voice Channel\n > » %stts \"This is Text to Speech\"\n", prefix)
 
-		utils.NewMessageRoutine(command+"help", message, s, m, true)
+		utils.NewMessageRoutine(command+"help", message, s, m)
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	}
+
+	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	ttsText := m.Content[5:len(m.Content)]
 	if strings.HasPrefix(ttsText, "\"") && strings.HasSuffix(ttsText, "\"") {
 		pattern := `^\"[öäüÖÄÜa-zA-Z0-9\.!:,? ]+\"$`
@@ -62,6 +65,6 @@ func HandleTTS(s *discordgo.Session, m *discordgo.MessageCreate, command string)
 	}
 
 	message := fmt.Sprintf("Text has to be in Quotes\n > » %stts \"This is Text to Speech\"\n", prefix)
-	utils.NewMessageRoutine(command+"quote", message, s, m, true)
+	utils.NewMessageRoutine(command+"quote", message, s, m)
 	return nil
 }

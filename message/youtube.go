@@ -18,14 +18,17 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 	prefix := model.Bot.Config.Prefix
 	if len(arg) == 0 {
 		message := fmt.Sprintf("🎶  Youtube: Type the URL of the video you want to play\n > » %syoutube https://...\n", prefix)
-		utils.NewMessageRoutine(command, message, s, m, true)
+		utils.NewMessageRoutine(command, message, s, m)
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	}
 	if !strings.Contains(arg, "https://") {
 		message := fmt.Sprintf("🎶  Youtube: Invalid URL\n > » %syoutube https://...\n", prefix)
-		utils.NewMessageRoutine(command, message, s, m, true)
-		return nil
+		utils.NewMessageRoutine(command, message, s, m)
+		return fmt.Errorf("invalid youtube URL: %s", arg)
 	}
+
+	s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
 	err := utils.VoiceChannelCheck(s, m)
 	if err != nil {
 		logger.ErrorLog.Println("error checking voice channel:", err)
@@ -47,7 +50,7 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 
 func DownloadAndConvertYoutubeAudio(videoURL string, s *discordgo.Session, m *discordgo.MessageCreate) error {
 	message := "🎶  Preparing Youtube Audio, this might take a few seconds..."
-	st := utils.NewMessageRoutine(".youtubedl", message, s, m, true)
+	st := utils.NewMessageRoutine(".youtubedl", message, s, m)
 	s.ChannelTyping(m.ChannelID)
 
 	// setting up a context to cancel the process after x seconds
@@ -68,14 +71,14 @@ func DownloadAndConvertYoutubeAudio(videoURL string, s *discordgo.Session, m *di
 		utils.DeleteMessageRoutine(s, ".youtubedlerr")
 
 		message := "❗  Downloading Youtube Audio failed, song is probably too long <@" + m.Author.ID + ">?"
-		utils.NewMessageRoutine(".youtubedlerr", message, s, m, false)
+		utils.NewMessageRoutine(".youtubedlerr", message, s, m)
 		return fmt.Errorf("error downloading youtube audio: %w", err)
 	} else if err != nil {
 		utils.DeleteMessageRoutine(s, ".youtubedl")
 		utils.DeleteMessageRoutine(s, ".youtubedlerr")
 
 		message := "❗  Downloading Youtube Audio failed, did you use the correct link <@" + m.Author.ID + ">?"
-		utils.NewMessageRoutine(".youtubedlerr", message, s, m, false)
+		utils.NewMessageRoutine(".youtubedlerr", message, s, m)
 		return fmt.Errorf("error downloading youtube audio: %w", err)
 	}
 

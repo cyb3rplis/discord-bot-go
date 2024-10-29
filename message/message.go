@@ -54,7 +54,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Text2Speech**\t%stts\n"+
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix, prefix, prefix, prefix)
-			utils.NewMessageRoutine(command, message, s, m, true)
+			utils.NewMessageRoutine(command, message, s, m)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			return
 		case command == fmt.Sprintf("%scleanup", prefix):
 			// Cleanup all messages
@@ -67,13 +68,17 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			err := HandleYoutube(s, m, arg, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling youtube audio:", err)
+				s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				return
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
 			err := HandleStatistics(s, m, arg, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling statistics:", err)
+				s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			}
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
 			err := HandleFavorite(s, m, arg, arg2, command)
@@ -92,7 +97,11 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			err := HandleList(s, m, arg, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling list:", err)
+				s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				return
 			}
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			return
 		case command == fmt.Sprintf("%sdm", prefix):
 			// Delete the authors message
 			err := s.ChannelMessageDelete(m.ChannelID, m.ID)

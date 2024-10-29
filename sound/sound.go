@@ -136,7 +136,7 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	if err != nil {
 		logger.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
 		message := "Sound does not exist\n> Sikerim"
-		utils.NewMessageRoutine(".sounderr", message, s, m, false)
+		utils.NewMessageRoutine(".sounderr", message, s, m)
 		return err
 	}
 
@@ -500,7 +500,7 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 				Components: content,
 			}
 
-			utils.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, message, s, true)
+			utils.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, message, s)
 
 			logger.InfoLog.Printf("User: %s played %s sound", m.Author.GlobalName, customModule)
 
@@ -519,7 +519,7 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 	logger.InfoLog.Printf("User %s tried to play %s sound but is not in a voice channel", m.Author.GlobalName, customModule)
 	message := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
-	utils.NewMessageRoutine(".novc"+m.Author.ID, message, s, m, true)
+	utils.NewMessageRoutine(".novc"+m.Author.ID, message, s, m)
 
 	return fmt.Errorf("user not in voice channel")
 }

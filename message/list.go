@@ -14,7 +14,7 @@ func HandleList(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 	}
 	if len(categories) == 0 {
 		message := "No sound categories found."
-		utils.NewMessageRoutine(command+"nocategories", message, s, m, true)
+		utils.NewMessageRoutine(command+"nocategories", message, s, m)
 		return err
 	}
 
@@ -22,7 +22,7 @@ func HandleList(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 	messages := utils.BuildMessages(content, nil)
 
 	for _, message := range messages {
-		utils.NewComplexMessageRoutine(command, m.ChannelID, m.ID, message, s, true)
+		utils.NewComplexMessageRoutine(command, m.ChannelID, m.ID, message, s)
 	}
 	return nil
 }
