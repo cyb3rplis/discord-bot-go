@@ -1,7 +1,8 @@
 -- schema.sql
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY NOT NULL,
-    username TEXT NOT NULL
+    username TEXT NOT NULL,
+    jailed DATETIME DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories (

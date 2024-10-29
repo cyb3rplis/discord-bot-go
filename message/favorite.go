@@ -80,7 +80,6 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		}
 		return nil
 	default:
-
 		message := fmt.Sprintf("🔥  Your favorites helper:\n" +
 			"> » **List sounds**\t\t" + model.Bot.Config.Prefix + "list\n" +
 			"> » **Add sound**\t\t " + model.Bot.Config.Prefix + "add <sound_name>\n" +

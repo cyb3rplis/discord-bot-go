@@ -1,6 +1,7 @@
 package config
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,6 +23,12 @@ type Config struct {
 	YTTemp     string   `json:"yt_temp"`
 	YTTimeout  int      `json:"yt_timeout"`
 	AdminUsers []string `json:"admin_users"`
+}
+
+type User struct {
+	ID       string       `json:"id"`
+	Username string       `json:"username"`
+	Jailed   sql.NullTime `json:"jailed"`
 }
 
 var (

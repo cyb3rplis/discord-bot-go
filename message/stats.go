@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -45,6 +46,13 @@ func soundStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 	for _, c := range sortedKeys {
 		message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
 	}
+
+	if m.GuildID == "" {
+		// DM
+		utils.NewPrivateMessageRoutine(message, s, m)
+		return nil
+	}
+
 	utils.NewMessageRoutine(command+arg, message, s, m, true)
 	return nil
 }
@@ -62,6 +70,13 @@ func userStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command st
 		i += 1
 		message = message + fmt.Sprintf("> %d.\t%s\t\tplayed: %d\n", i, c, userStats[c])
 	}
+
+	if m.GuildID == "" {
+		// DM
+		utils.NewPrivateMessageRoutine(message, s, m)
+		return nil
+	}
+
 	utils.NewMessageRoutine(command+arg, message, s, m, true)
 	return nil
 }

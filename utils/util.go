@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
@@ -556,4 +557,55 @@ func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discord
 		messages = append(messages, message)
 	}
 	return messages
+}
+
+func GetUsers() (users []config.User, err error) {
+	rows, err := model.Bot.Db.Query("SELECT id, username, jailed FROM users;")
+
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u config.User
+
+		err = rows.Scan(&u.ID, &u.Username, &u.Jailed)
+		if err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+
+		users = append(users, u)
+	}
+
+	return users, err
+}
+
+func JailUser(userID string) error {
+	_, err := model.Bot.Db.Exec("UPDATE users SET jailed = CURRENT_TIMESTAMP WHERE id = ?;", userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ReleaseUser(userID string) error {
+	_, err := model.Bot.Db.Exec("UPDATE users SET jailed = NULL WHERE id = ?;", userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func IsAdmin(userID string) bool {
+	admins := model.Bot.Config.AdminUsers
+	for _, a := range admins {
+		if userID == a {
+			return true
+		}
+	}
+
+	return false
 }
