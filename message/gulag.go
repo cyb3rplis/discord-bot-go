@@ -22,7 +22,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 			}
 
 			logger.InfoLog.Printf("Admin %s gulagged: %s\n", m.Author.GlobalName, user)
-			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 
 			return nil
 		case "release":
@@ -34,7 +34,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 			}
 
 			logger.InfoLog.Printf("Admin %s released: %s\n", m.Author.GlobalName, user)
-			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 
 			return nil
 		case "list":
@@ -69,7 +69,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 				"> » **Release User**\t\t " + model.Bot.Config.Prefix + "gulag release <user_id>\n" +
 				"> » **List Users**\t\t " + model.Bot.Config.Prefix + "gulag list\n")
 			utils.NewPrivateMessageRoutine(message, s, m)
-			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		}
 	}
 

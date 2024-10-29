@@ -103,6 +103,7 @@ func AddUser(userID int, userName string) error {
 	return nil
 }
 
+// AddUserStatistics adds a sound play to the user statistics
 func AddUserStatistics(userID int, soundName string) error {
 	_, err := model.Bot.Db.Exec("INSERT INTO stats_users (user_id, sound_id, count) VALUES (?, (SELECT id FROM sounds WHERE name = ?), 1) ON CONFLICT(user_id, sound_id) DO UPDATE SET count = count + 1;", userID, soundName)
 	if err != nil {
@@ -112,6 +113,7 @@ func AddUserStatistics(userID int, soundName string) error {
 	return nil
 }
 
+// GetSoundStatistics returns the top sounds played
 func GetSoundStatistics() (soundStats map[string]int, err error) {
 	rows, err := model.Bot.Db.Query("SELECT s.alias, COALESCE(SUM(su.count), 0) AS total_plays FROM sounds AS s LEFT JOIN stats_users AS su ON s.id = su.sound_id GROUP BY s.id, s.alias HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
 	if err != nil {
@@ -137,6 +139,7 @@ func GetSoundStatistics() (soundStats map[string]int, err error) {
 	return soundStats, err
 }
 
+// GetUserStatistics returns the top sounds played by a user
 func GetUserStatistics(userID string, limit int) (soundStats []SoundInfo, err error) {
 	// this can be used to create buttons when the user gets their stats
 	rows, err := model.Bot.Db.Query(`

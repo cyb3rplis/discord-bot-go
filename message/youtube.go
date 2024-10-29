@@ -19,7 +19,7 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 	if len(arg) == 0 {
 		message := fmt.Sprintf("🎶  Youtube: Type the URL of the video you want to play\n > » %syoutube https://...\n", prefix)
 		utils.NewMessageRoutine(command, message, s, m)
-		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	}
 	if !strings.Contains(arg, "https://") {
@@ -28,7 +28,7 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 		return fmt.Errorf("invalid youtube URL: %s", arg)
 	}
 
-	s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
+	_ = s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
 	err := utils.VoiceChannelCheck(s, m)
 	if err != nil {
 		logger.ErrorLog.Println("error checking voice channel:", err)

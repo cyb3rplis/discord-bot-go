@@ -26,27 +26,27 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		// check if sound exists
 		soundID, _ := sound.GetFavoriteByNameAndUserID(arg2, m.Author.ID)
 		if soundID != "" {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "❎")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❎")
 			return nil
 		}
 		// add sound to favorites
 		err := SoundFavoriteAdd(m, arg2)
 		if err != nil {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
 
-		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "rm":
 		// remove sound from favorites
 		err := SoundFavoriteRemove(m, arg2)
 		if err != nil {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
 
-		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "list":
 		favorites, err := GetUserFavorites(m.Author.ID)
@@ -55,7 +55,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		}
 
 		if len(favorites) == 0 {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "🚫")
+			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "🚫")
 			return nil
 		}
 
@@ -81,7 +81,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 			"> » **List sounds**\t\t" + model.Bot.Config.Prefix + "list\n" +
 			"> » **Add sound**\t\t " + model.Bot.Config.Prefix + "add <sound_name>\n" +
 			"> » **Remove sound**\t\t " + model.Bot.Config.Prefix + "rm <sound_name>\n")
-		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		utils.NewMessageRoutine(command+"help", message, s, m)
 	}
 	return nil
