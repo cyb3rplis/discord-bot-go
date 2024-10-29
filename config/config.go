@@ -28,7 +28,7 @@ type Config struct {
 type User struct {
 	ID       string       `json:"id"`
 	Username string       `json:"username"`
-	Jailed   sql.NullTime `json:"jailed"`
+	Gulagged sql.NullTime `json:"gulagged"`
 }
 
 var (

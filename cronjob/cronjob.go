@@ -8,6 +8,11 @@ import (
 )
 
 func InitCron() {
+	syncCronjob()
+	jailUserCronjob()
+}
+
+func syncCronjob() {
 	cronJob := cron.New()
 	_, _ = cronJob.AddFunc("*/5 * * * *", func() {
 		fsSounds, err := utils.ScanDirectory()
@@ -21,6 +26,15 @@ func InitCron() {
 		logger.InfoLog.Println("Cron: database synced with filesystem")
 	})
 
-	logger.InfoLog.Println("Initiated Cronjob")
+	logger.InfoLog.Println("Initiated Sync Cronjob")
 	cronJob.Start()
+}
+
+func jailUserCronjob() {
+	// check DB for jailed users
+	// if user is jailed, check if time is up
+	// if time is up, unjail user
+	// if time is not up, do nothing
+	// repeat every 1 minute
+
 }

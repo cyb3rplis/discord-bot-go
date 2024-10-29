@@ -544,7 +544,7 @@ func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discord
 }
 
 func GetUsers() (users []config.User, err error) {
-	rows, err := model.Bot.Db.Query("SELECT id, username, jailed FROM users;")
+	rows, err := model.Bot.Db.Query("SELECT id, username, gulagged FROM users;")
 
 	if err != nil {
 		logger.FatalLog.Fatal(err)
@@ -554,7 +554,7 @@ func GetUsers() (users []config.User, err error) {
 	for rows.Next() {
 		var u config.User
 
-		err = rows.Scan(&u.ID, &u.Username, &u.Jailed)
+		err = rows.Scan(&u.ID, &u.Username, &u.Gulagged)
 		if err != nil {
 			logger.FatalLog.Fatal(err)
 		}
@@ -565,8 +565,8 @@ func GetUsers() (users []config.User, err error) {
 	return users, err
 }
 
-func JailUser(userID string) error {
-	_, err := model.Bot.Db.Exec("UPDATE users SET jailed = CURRENT_TIMESTAMP WHERE id = ?;", userID)
+func GulagUser(userID string) error {
+	_, err := model.Bot.Db.Exec("UPDATE users SET gulagged = CURRENT_TIMESTAMP WHERE id = ?;", userID)
 	if err != nil {
 		return err
 	}

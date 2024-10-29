@@ -10,18 +10,18 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
-func HandleJail(s *discordgo.Session, m *discordgo.MessageCreate, action, user, command string) error {
+func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user, command string) error {
 	if utils.IsAdmin(m.Author.ID) {
 		switch action {
 		case "put":
-			err := utils.JailUser(user)
+			err := utils.GulagUser(user)
 			if err != nil {
-				message := fmt.Sprintf("🧼  Error jailing user: %s\n", user)
+				message := fmt.Sprintf("🧼  Error gulagging user: %s\n", user)
 				utils.NewPrivateMessageRoutine(message, s, m)
 				return err
 			}
 
-			logger.InfoLog.Printf("Admin %s jailed: %s\n", m.Author.GlobalName, user)
+			logger.InfoLog.Printf("Admin %s gulagged: %s\n", m.Author.GlobalName, user)
 			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 
 			return nil
@@ -43,20 +43,20 @@ func HandleJail(s *discordgo.Session, m *discordgo.MessageCreate, action, user, 
 				return err
 			}
 
-			var jailedUsers []config.User
+			var gulaggedUsers []config.User
 
 			for _, u := range users {
-				if u.Jailed.Valid {
-					jailedUsers = append(jailedUsers, u)
+				if u.Gulagged.Valid {
+					gulaggedUsers = append(gulaggedUsers, u)
 				}
 			}
 
 			var message string
-			if len(jailedUsers) == 0 {
-				message = "🧼  No users are jailed\n"
+			if len(gulaggedUsers) == 0 {
+				message = "🧼  No users are gulagged\n"
 			} else {
-				message = "🧼  Jailed Users:\n"
-				for _, u := range jailedUsers {
+				message = "🧼  Gulagged Users:\n"
+				for _, u := range gulaggedUsers {
 					message = message + fmt.Sprintf("> » ID: %s - User: %s\n", u.ID, u.Username)
 				}
 			}
@@ -64,11 +64,12 @@ func HandleJail(s *discordgo.Session, m *discordgo.MessageCreate, action, user, 
 			utils.NewPrivateMessageRoutine(message, s, m)
 			return nil
 		default:
-			message := fmt.Sprintf("🧼  Your jail helper:\n" +
-				"> » **Jail User**\t\t" + model.Bot.Config.Prefix + "jail put <user_id>\n" +
-				"> » **Release User**\t\t " + model.Bot.Config.Prefix + "jail release <user_id>\n" +
-				"> » **List Users**\t\t " + model.Bot.Config.Prefix + "jail list\n")
+			message := fmt.Sprintf("🧼  Your gulag helper:\n" +
+				"> » **Gulag User**\t\t" + model.Bot.Config.Prefix + "gulag put <user_id>\n" +
+				"> » **Release User**\t\t " + model.Bot.Config.Prefix + "gulag release <user_id>\n" +
+				"> » **List Users**\t\t " + model.Bot.Config.Prefix + "gulag list\n")
 			utils.NewPrivateMessageRoutine(message, s, m)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		}
 	}
 

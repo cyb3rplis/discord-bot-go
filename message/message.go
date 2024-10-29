@@ -130,10 +130,11 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 					"> » **Statistics**\t\t  %sstats\n"+
 					"> » **Favorites**\t\t  %sfav\n"+
 					"> » **Users**\t\t  %susers\n"+
-					"> » **Jail**\t\t  %sjail\n", prefix, prefix, prefix, prefix)
+					"> » **Gulag**\t\t  %sgulag\n", prefix, prefix, prefix, prefix)
 			}
 
 			utils.NewPrivateMessageRoutine(message, s, m)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
@@ -151,16 +152,17 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%susers", prefix)):
-			// Handle jail
+			// Handle gulag
 			err := HandleUsers(s, m, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling users:", err)
 			}
-		case strings.HasPrefix(command, fmt.Sprintf("%sjail", prefix)):
-			// Handle jail
-			err := HandleJail(s, m, arg, arg2, command)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+		case strings.HasPrefix(command, fmt.Sprintf("%sgulag", prefix)):
+			// Handle gulag
+			err := HandleGulag(s, m, arg, arg2, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling jail:", err)
+				logger.ErrorLog.Println("error handling gulag:", err)
 			}
 		default:
 			return
