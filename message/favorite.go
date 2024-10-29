@@ -26,29 +26,27 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		// check if sound exists
 		soundID, _ := sound.GetFavoriteByNameAndUserID(arg2, m.Author.ID)
 		if soundID != "" {
-			// Send message to bot
-			utils.NewMessageRoutine(command+"help"+m.Author.ID, fmt.Sprintf("🧐 Sound: '%s' already exists in your favorites\n", arg2), s, m, false)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "❎")
 			return nil
 		}
 		// add sound to favorites
 		err := SoundFavoriteAdd(m, arg2)
 		if err != nil {
-			// Send message to bot
-			utils.NewMessageRoutine(command+"help"+m.Author.ID, fmt.Sprintf("🧐 Error adding sound: '%s'. Check if sound really exists\n", arg2), s, m, false)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
-		message := fmt.Sprintf("🔥  Sound added to favorites: %s\n", arg2)
-		utils.NewMessageRoutine(command, message, s, m, true)
+
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "rm":
 		// remove sound from favorites
 		err := SoundFavoriteRemove(m, arg2)
 		if err != nil {
-			utils.NewMessageRoutine(command+"help"+m.Author.ID, fmt.Sprintf("🧐 Error removing sound: '%s'. Check if sound really exists\n ", arg2), s, m, false)
+			s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
-		message := fmt.Sprintf("🔥  Sound removed from favorites: %s\n", arg2)
-		utils.NewMessageRoutine(command+m.Author.ID, message, s, m, true)
+
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "list":
 		favorites, err := GetUserFavorites(m.Author.ID)
