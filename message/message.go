@@ -25,6 +25,11 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// ignore messages outside the guild - empty when directly messaged
+	if m.GuildID == "" {
+		return
+	}
+
 	args := strings.Split(m.Content, " ")
 	command := args[0]
 	var arg string
@@ -91,8 +96,14 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			logger.ErrorLog.Println("error handling list:", err)
 		}
 	case command == fmt.Sprintf("%sdm", prefix):
+		// Delete the authors message
+		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			logger.ErrorLog.Println("error deleting message:", err)
+		}
+
 		// Send a DM to the author
-		err := utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
+		err = utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
 		if err != nil {
 			logger.ErrorLog.Println("error sending DM:", err)
 		}

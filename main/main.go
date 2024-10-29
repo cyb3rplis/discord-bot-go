@@ -99,4 +99,6 @@ func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
 		return
 	}
+
+	logger.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
 }
