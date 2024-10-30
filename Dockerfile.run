@@ -14,8 +14,7 @@ ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 # Install dependencies and download Go
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y wget build-essential
-RUN apt-get install -y ffmpeg
+RUN apt-get install -y wget build-essential ffmpeg
 RUN wget https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go$GOLANG_VERSION.linux-amd64.tar.gz
 RUN rm go$GOLANG_VERSION.linux-amd64.tar.gz
