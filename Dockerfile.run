@@ -3,7 +3,6 @@ FROM golang:1.23 AS backend
 ENV GOFLAGS="-mod=vendor"
 WORKDIR /app/backend
 COPY backend/ ./
-COPY incoming/* ./dist/sounds
 RUN GOOS=linux GOARCH=amd64 go build -mod vendor -o /dist/discord-bot-go main/main.go
 
 # Stage 2: Set up the runtime environment
@@ -27,13 +26,13 @@ RUN wget https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x
 RUN mkdir -p /app/tts
 RUN tar -xzvf piper_linux_x86_64.tar.gz -C /app/tts
 RUN rm piper_linux_x86_64.tar.gz
-RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true -O /app/de_DE-thorsten-medium.onnx
-RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json -O /app/de_DE-thorsten-medium.onnx.json
+RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true -O /app/tts/de_DE-thorsten-medium.onnx
+RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json -O /app/tts/de_DE-thorsten-medium.onnx.json
+RUN go install github.com/bwmarrin/dca/cmd/dca@latest
 
 WORKDIR /app
-RUN go install github.com/bwmarrin/dca/cmd/dca@latest
+
 COPY --from=backend /dist/discord-bot-go ./
 COPY --from=backend /app/backend/config/config.json ./config/config.json
-COPY --from=backend /app/backend/dist/sounds ./dist/sounds
 RUN mkdir -p /app/dist/sounds
 CMD ["./discord-bot-go"]

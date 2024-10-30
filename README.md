@@ -103,15 +103,16 @@ https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
 
 ## 3. Docker
 
-Place all your sound files in DCA format in `incoming`. They should all be within subfolders, which act as categories for the sound bot.
+Place all your sound files in DCA format in `backend/dist/sounds`.
+They should all be within subfolders, which act as categories for the sound bot.
 
 ```
-$ ls -lR incoming
-incoming:
+$ ls -lR ./backend/dist/sounds
+./backend/dist/sounds
 total 4
 drwxr-xr-x 2 user user 4096 Oct 30 18:56 test
 
-incoming/test:
+./backend/dist/sounds/test:
 total 4
 -rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
 ```
@@ -125,5 +126,5 @@ docker build -t discord-bot-go -f Dockerfile.run .
 Run the container:
 
 ```
-docker run --rm discord-bot-go
+docker run --name luren-bot -d -v ./backend/dist:/app/dist discord-bot-go
 ```
