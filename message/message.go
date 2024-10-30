@@ -110,7 +110,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 
 			// Send a DM to the author
-			err = utils.NewPrivateMessageRoutine("Sie haben gerufen?", s, m)
+			err = utils.NewPrivateMessageRoutine("Ready for some action?", s, m)
 			if err != nil {
 				logger.ErrorLog.Println("error sending DM:", err)
 			}
@@ -156,13 +156,18 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			err := HandleUsers(s, m, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling users:", err)
+				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+			} else {
+				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			}
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		case strings.HasPrefix(command, fmt.Sprintf("%sgulag", prefix)):
 			// Handle gulag
 			err := HandleGulag(s, m, arg, arg2, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling gulag:", err)
+				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+			} else {
+				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			}
 		default:
 			return

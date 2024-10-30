@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
@@ -26,9 +27,10 @@ type Config struct {
 }
 
 type User struct {
-	ID       string       `json:"id"`
-	Username string       `json:"username"`
-	Gulagged sql.NullTime `json:"gulagged"`
+	ID        string        `json:"id"`
+	Username  string        `json:"username"`
+	Gulagged  sql.NullTime  `json:"gulagged"`
+	Remaining time.Duration `json:"remaining"`
 }
 
 var (

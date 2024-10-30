@@ -73,6 +73,8 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		for i, message := range messages {
 			utils.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s)
 		}
+
+		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	default:
 		message := fmt.Sprintf("🔥  Your favorites helper:\n" +

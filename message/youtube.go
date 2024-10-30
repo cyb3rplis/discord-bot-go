@@ -29,7 +29,21 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 	}
 
 	_ = s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
-	err := utils.VoiceChannelCheck(s, m)
+
+	// Check if the user is in the Gulag
+	user, err := utils.GetUserFromUsername(m.Message.Author.GlobalName)
+	if err != nil {
+		logger.ErrorLog.Println("error getting user from username:", err)
+	} else {
+		if remaining, ok := utils.IsUserInGulag(user); ok {
+			user.Remaining = remaining
+			message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+			utils.NewMessageRoutine(".gulag"+user.ID, message, s, &discordgo.MessageCreate{Message: m.Message})
+			return fmt.Errorf("user is in the Gulag: %s", user.ID)
+		}
+	}
+
+	err = utils.VoiceChannelCheck(s, m)
 	if err != nil {
 		logger.ErrorLog.Println("error checking voice channel:", err)
 		return err

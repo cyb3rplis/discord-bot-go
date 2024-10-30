@@ -28,6 +28,19 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	// Check if the user is in the Gulag
+	user, err := utils.GetUserFromUsername(i.Member.User.GlobalName)
+	if err != nil {
+		logger.ErrorLog.Println("error getting user from username:", err)
+	} else {
+		if remaining, ok := utils.IsUserInGulag(user); ok {
+			user.Remaining = remaining
+			message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+			utils.NewMessageRoutine(".gulag"+user.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
+			return
+		}
+	}
+
 	// Check if the user is spamming the buttons and limit the interactions
 	mu.Lock()
 	lastInteraction, exists := userLastInteraction[i.Member.User.ID] // Get the last interaction time

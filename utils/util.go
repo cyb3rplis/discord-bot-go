@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -568,17 +569,39 @@ func GetUsers() (users []config.User, err error) {
 	return users, err
 }
 
+func GetUserFromUsername(username string) (user config.User, err error) {
+	err = model.Bot.Db.QueryRow("SELECT id, username, gulagged FROM users WHERE username = ?;", username).Scan(&user.ID, &user.Username, &user.Gulagged)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, err
+		}
+		logger.FatalLog.Fatal(err)
+	}
+
+	return user, nil
+}
+
 func GulagUser(userID string) error {
-	_, err := model.Bot.Db.Exec("UPDATE users SET gulagged = CURRENT_TIMESTAMP WHERE id = ?;", userID)
+	res, err := model.Bot.Db.Exec("UPDATE users SET gulagged = DATETIME(CURRENT_TIMESTAMP, '+3 minutes') WHERE username = ?;", userID)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found")
 	}
 
 	return nil
 }
 
 func ReleaseUser(userID string) error {
-	_, err := model.Bot.Db.Exec("UPDATE users SET jailed = NULL WHERE id = ?;", userID)
+	_, err := model.Bot.Db.Exec("UPDATE users SET gulagged = NULL WHERE username = ?;", userID)
 	if err != nil {
 		return err
 	}
@@ -595,4 +618,19 @@ func IsAdmin(userID string) bool {
 	}
 
 	return false
+}
+
+func IsUserInGulag(user config.User) (time.Duration, bool) {
+	var remaining time.Duration
+	now := time.Now()
+
+	if user.Gulagged.Valid {
+		rem := user.Gulagged.Time.Sub(now)
+		if rem > 0 {
+			remaining = rem.Truncate(time.Second)
+			return remaining, true
+		}
+	}
+
+	return remaining, false
 }

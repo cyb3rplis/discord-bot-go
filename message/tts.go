@@ -23,6 +23,20 @@ func HandleTTS(s *discordgo.Session, m *discordgo.MessageCreate, command string)
 	}
 
 	_ = s.ChannelMessageDelete(m.ChannelID, m.ID)
+
+	// Check if the user is in the Gulag
+	user, err := utils.GetUserFromUsername(m.Message.Author.GlobalName)
+	if err != nil {
+		logger.ErrorLog.Println("error getting user from username:", err)
+	} else {
+		if remaining, ok := utils.IsUserInGulag(user); ok {
+			user.Remaining = remaining
+			message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+			utils.NewMessageRoutine(".gulag"+user.ID, message, s, &discordgo.MessageCreate{Message: m.Message})
+			return fmt.Errorf("user is in the Gulag: %s", user.ID)
+		}
+	}
+
 	ttsText := m.Content[5:len(m.Content)]
 	if strings.HasPrefix(ttsText, "\"") && strings.HasSuffix(ttsText, "\"") {
 		pattern := `^\"[öäüÖÄÜa-zA-Z0-9\.!:,? ]+\"$`
