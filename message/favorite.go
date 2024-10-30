@@ -35,7 +35,6 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
-
 		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "rm":
@@ -45,7 +44,6 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 			return err
 		}
-
 		_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 		return nil
 	case "list":
