@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -26,10 +27,21 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// add user to DB
+	userID, err := strconv.Atoi(m.Author.ID)
+	if err != nil {
+		logger.ErrorLog.Println("error converting user ID to int:", err)
+	}
+	err = utils.AddUser(userID, m.Author.GlobalName)
+	if err != nil {
+		logger.ErrorLog.Println("error adding user to DB:", err)
+	}
+
 	args := strings.Split(m.Content, " ")
 	command := args[0]
 	var arg string
 	var arg2 string
+	var arg3 string
 	switch {
 	case len(args) == 2:
 		// Extract the command and arguments
@@ -38,9 +50,14 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Extract the command and arguments
 		arg = args[1]
 		arg2 = args[2]
+	case len(args) == 4:
+		// Extract the command and arguments
+		arg = args[1]
+		arg2 = args[2]
+		arg3 = args[3]
 	case command == fmt.Sprintf("%stts", prefix):
 		break
-	case len(args) > 3:
+	case len(args) > 4:
 		return
 	}
 	if !isDM {
@@ -162,10 +179,11 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sgulag", prefix)):
 			// Handle gulag
-			err := HandleGulag(s, m, arg, arg2, command)
+			err := HandleGulag(s, m, arg, arg2, arg3, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling gulag:", err)
 				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				return
 			} else {
 				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			}

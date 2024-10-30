@@ -2,6 +2,7 @@ package message
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -10,20 +11,40 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
-func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user, command string) error {
+func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user, timeOut, command string) error {
 	if utils.IsAdmin(m.Author.ID) {
 		switch action {
 		case "add":
-			err := utils.GulagUser(user)
-			if err != nil {
-				message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
-				utils.NewPrivateMessageRoutine(message, s, m)
+			if timeOut == "" {
+				err := utils.GulagUser(user, 3)
+				if err != nil {
+					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
+					utils.NewPrivateMessageRoutine(message, s, m)
 
-				return err
+					return err
+				}
+
+				logger.InfoLog.Printf("Admin %s gulagged user: %s for 3 Minutes\n", m.Author.GlobalName, user)
+				return nil
+			} else {
+				minutes, err := strconv.Atoi(timeOut)
+				if err != nil {
+					message := fmt.Sprintf("🧱  Invalid time out value: %s\n", timeOut)
+					utils.NewPrivateMessageRoutine(message, s, m)
+					return err
+				}
+
+				err = utils.GulagUser(user, minutes)
+				if err != nil {
+					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
+					utils.NewPrivateMessageRoutine(message, s, m)
+
+					return err
+				}
+
+				logger.InfoLog.Printf("Admin %s gulagged user: %s for %d Minutes\n", m.Author.GlobalName, user, minutes)
+				return nil
 			}
-
-			logger.InfoLog.Printf("Admin %s gulagged user: %s\n", m.Author.GlobalName, user)
-			return nil
 		case "rm":
 			err := utils.ReleaseUser(user)
 			if err != nil {
@@ -62,7 +83,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 			return nil
 		default:
 			message := fmt.Sprintf("🧱  Your gulag helper:\n" +
-				"> » **Gulag User**\t\t" + model.Bot.Config.Prefix + "gulag add <username>\n" +
+				"> » **Gulag User**\t\t" + model.Bot.Config.Prefix + "gulag add <username> <optional: minutes, default 3>\n" +
 				"> » **Release User**\t\t " + model.Bot.Config.Prefix + "gulag rm <username>\n" +
 				"> » **List Users**\t\t " + model.Bot.Config.Prefix + "gulag list\n")
 			utils.NewPrivateMessageRoutine(message, s, m)

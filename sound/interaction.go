@@ -32,6 +32,7 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	user, err := utils.GetUserFromUsername(i.Member.User.GlobalName)
 	if err != nil {
 		logger.ErrorLog.Println("error getting user from username:", err)
+		return
 	} else {
 		if remaining, ok := utils.IsUserInGulag(user); ok {
 			user.Remaining = remaining
@@ -43,16 +44,16 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Check if the user is spamming the buttons and limit the interactions
 	mu.Lock()
-	lastInteraction, exists := userLastInteraction[i.Member.User.ID] // Get the last interaction time
-	if exists && time.Since(lastInteraction) < resetDuration {       // Check if the user has interacted recently
-		userInteractionCount[i.Member.User.ID]++
+	lastInteraction, exists := userLastInteraction[user.ID]    // Get the last interaction time
+	if exists && time.Since(lastInteraction) < resetDuration { // Check if the user has interacted recently
+		userInteractionCount[user.ID]++
 	} else {
-		userInteractionCount[i.Member.User.ID] = 1 // Reset the interaction count
+		userInteractionCount[user.ID] = 1 // Reset the interaction count
 	}
-	userLastInteraction[i.Member.User.ID] = time.Now()            // Update the last interaction time
-	if userInteractionCount[i.Member.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
+	userLastInteraction[user.ID] = time.Now()            // Update the last interaction time
+	if userInteractionCount[user.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		message := "Stop spamming the buttons <@" + i.Member.User.ID + "> you fucking idiot!!!"
+		message := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag."
 
 		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{Message: i.Message})
 		return

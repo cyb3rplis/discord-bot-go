@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -582,8 +583,9 @@ func GetUserFromUsername(username string) (user config.User, err error) {
 	return user, nil
 }
 
-func GulagUser(userID string) error {
-	res, err := model.Bot.Db.Exec("UPDATE users SET gulagged = DATETIME(CURRENT_TIMESTAMP, '+3 minutes') WHERE username = ?;", userID)
+func GulagUser(userID string, minutes int) error {
+	timeout := "+" + strconv.Itoa(minutes) + " minutes"
+	res, err := model.Bot.Db.Exec("UPDATE users SET gulagged = DATETIME(CURRENT_TIMESTAMP, ?) WHERE username = ?;", timeout, userID)
 	if err != nil {
 		return err
 	}

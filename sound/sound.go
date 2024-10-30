@@ -31,7 +31,7 @@ var userLastInteraction = make(map[string]time.Time)
 var userInteractionCount = make(map[string]int)
 var mu sync.Mutex
 
-const maxInteractions = 15             // Maximum allowed interactions before timeout
+const maxInteractions = 3              // Maximum allowed interactions before timeout
 const resetDuration = 15 * time.Second // Duration to reset the interaction count
 
 type Entry struct {
