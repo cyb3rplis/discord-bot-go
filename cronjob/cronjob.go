@@ -9,7 +9,6 @@ import (
 
 func InitCron() {
 	syncCronjob()
-	jailUserCronjob()
 }
 
 func syncCronjob() {
@@ -28,13 +27,4 @@ func syncCronjob() {
 
 	logger.InfoLog.Println("Initiated Sync Cronjob")
 	cronJob.Start()
-}
-
-func jailUserCronjob() {
-	// check DB for jailed users
-	// if user is jailed, check if time is up
-	// if time is up, unjail user
-	// if time is not up, do nothing
-	// repeat every 1 minute
-
 }
