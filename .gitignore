@@ -36,3 +36,4 @@ db/soundbot.db
 backend/config/config.local.json
 identifier.sqlite
 yt-dlp
+incoming/
