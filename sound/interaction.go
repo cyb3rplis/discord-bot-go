@@ -53,9 +53,13 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userLastInteraction[user.ID] = time.Now()            // Update the last interaction time
 	if userInteractionCount[user.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		message := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag."
-
+		message := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag for one minute."
 		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{Message: i.Message})
+		err := utils.GulagUser(user.Username, 1)
+		if err != nil {
+			logger.ErrorLog.Println("error gulagging user:", err)
+		}
+
 		return
 	}
 	mu.Unlock()
