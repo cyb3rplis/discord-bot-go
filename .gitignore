@@ -33,7 +33,6 @@ venv
 
 tts/
 db/soundbot.db
-config/config.local.json
-config/config.json
+backend/config/config.local.json
 identifier.sqlite
 yt-dlp

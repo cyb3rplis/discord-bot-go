@@ -3,7 +3,7 @@
   "prefix": ".",
   "sounds_dir": "./dist/sounds",
   "db": "./dist/soundbot.db",
-  "ytdlp": "/path/to/yt-dlp",
+  "ytdlp": "/usr/local/bin/yt-dlp",
   "tts": "./tts",
   "tts_temp": "./dist/tts.wav",
   "tts_output": "./dist/tts.dca",
