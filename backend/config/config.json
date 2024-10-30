@@ -4,7 +4,7 @@
   "sounds_dir": "./dist/sounds",
   "db": "./dist/soundbot.db",
   "ytdlp": "/usr/local/bin/yt-dlp",
-  "tts": "./tts",
+  "tts": "./piper",
   "tts_temp": "./dist/tts.wav",
   "tts_output": "./dist/tts.dca",
   "yt_output": "./dist/yt.dca",
