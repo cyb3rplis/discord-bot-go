@@ -10,6 +10,7 @@ FROM debian:bookworm AS discord-bot-go
 ENV GOLANG_VERSION=1.23.2
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+WORKDIR /app
 
 # Install dependencies and download Go
 RUN apt-get update
@@ -22,14 +23,11 @@ RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /us
 RUN chmod a+rx /usr/local/bin/yt-dlp
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN wget https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz
-RUN mkdir -p /app/tts
 RUN tar -xzvf piper_linux_x86_64.tar.gz -C /app
 RUN rm piper_linux_x86_64.tar.gz
 RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true -O /app/piper/de_DE-thorsten-medium.onnx
 RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json -O /app/piper/de_DE-thorsten-medium.onnx.json
 RUN go install github.com/bwmarrin/dca/cmd/dca@latest
 
-WORKDIR /app
 COPY --from=backend /dist/discord-bot-go ./
-RUN mkdir -p ./data/sounds
 CMD ["./discord-bot-go"]

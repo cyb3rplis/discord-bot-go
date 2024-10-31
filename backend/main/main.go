@@ -32,6 +32,12 @@ func init() {
 		}
 	}()
 	model.Bot = model.New(&m)
+
+	// Check if the sound directory exists
+	if _, err := os.Stat(model.Bot.Config.SoundsDir); os.IsNotExist(err) {
+		os.Mkdir(model.Bot.Config.SoundsDir, 0755)
+	}
+
 	fsSounds, err := utils.ScanDirectory()
 	if err != nil {
 		logger.FatalLog.Printf("cron: error scanning sound directory: %v", err)
