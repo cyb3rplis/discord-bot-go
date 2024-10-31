@@ -1,6 +1,6 @@
 services:
   luren-bot:
-    image: discord-bot-go:latest
+    image: redteampanda/discord-bot-go:latest
     container_name: luren-bot
     env_file:
       - .env
