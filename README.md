@@ -43,6 +43,8 @@ total 4
 -rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
 ```
 
+IMPORTANT: the `./data` directory will also contain the `soundbot.db` database, so make sure to create a backup of the folder regularly.
+
 Make sure to place your token in the `.env` file in the root directory of the project:
 
 ```
