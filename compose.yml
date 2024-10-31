@@ -1,0 +1,9 @@
+services:
+  luren-bot:
+    image: discord-bot-go:latest
+    container_name: luren-bot
+    env_file:
+      - .env
+    volumes:
+      - ./backend/dist:/app/dist
+    restart: always

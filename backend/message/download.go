@@ -3,12 +3,13 @@ package message
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/utils"
-	"os/exec"
-	"time"
 )
 
 type Download struct {
@@ -32,15 +33,14 @@ func DownloadAndConvertAudio(download Download, s *discordgo.Session, m *discord
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	if download.Start != "" {
-		download.Start = "00:00:00"
-	}
-	if download.End != "" {
-		download.End = "00:00:30"
+	var cmd *exec.Cmd
+
+	if download.Start != "" && download.End != "" {
+		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", model.Bot.Config.YTDLP, download.Start, download.End, model.Bot.Config.YTTemp, download.URL))
+	} else {
+		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --force-overwrites -o %s %s", model.Bot.Config.YTDLP, model.Bot.Config.YTTemp, download.URL))
 	}
 
-	// Create ffmpeg and dcaenc pipeline to convert YouTube stream to DCA format
-	cmd := exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", model.Bot.Config.YTDLP, model.Bot.Config.YTTemp, download.URL))
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)

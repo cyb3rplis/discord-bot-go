@@ -2,12 +2,13 @@ package message
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/sound"
 	"github.com/cyb3rplis/discord-bot-go/utils"
-	"strings"
 )
 
 func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
@@ -44,7 +45,7 @@ func HandleYoutube(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 		logger.ErrorLog.Println("error checking voice channel:", err)
 		return err
 	}
-	download := Download{URL: arg, Start: "00:00:10", End: "00:00:20", Category: "youtube", SoundName: "youtube"}
+	download := Download{URL: arg, Start: "", End: "", Category: "youtube", SoundName: "youtube"}
 	err = DownloadAndConvertAudio(download, s, m)
 	if err != nil {
 		logger.ErrorLog.Println("error loading youtube audio:", err)

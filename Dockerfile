@@ -30,8 +30,6 @@ RUN wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/tho
 RUN go install github.com/bwmarrin/dca/cmd/dca@latest
 
 WORKDIR /app
-
 COPY --from=backend /dist/discord-bot-go ./
-COPY --from=backend /app/backend/config/config.json ./config/config.json
 RUN mkdir -p /app/dist/sounds
 CMD ["./discord-bot-go"]

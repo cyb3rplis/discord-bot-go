@@ -2,7 +2,6 @@ package config
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -39,29 +38,30 @@ var (
 )
 
 func LoadConfig() *Config {
-	confVersion := "local"
 	once.Do(func() {
-		configFile := "./config/config.local.json"
-		if _, err := os.Stat(configFile); os.IsNotExist(err) {
-			configFile = "./config/config.json" // Fallback to the default config file
-			confVersion = "production"
+		// Hardcode all values except the Token
+		configInstance = &Config{
+			Token:      os.Getenv("DISCORD_BOT_TOKEN"), // Read the token from .env
+			Prefix:     ".",
+			SoundsDir:  "./dist//sounds",
+			DB:         "./dist/soundbot.db",
+			YTDLP:      "/usr/local/bin/yt-dlp",
+			TTS:        "./piper",
+			TTSTemp:    "./dist/tts.wav",
+			TTSOutput:  "./dist/tts.mp3",
+			YTOutput:   "./dist/yt.dca",
+			YTTemp:     "./dist/yt.mp3",
+			YTTimeout:  20,
+			AdminUsers: []string{"378670654146478081", "481894532082958346"},
 		}
 
-		configInstance = &Config{}
-		file, err := os.ReadFile(configFile)
-		if err != nil {
-			logger.FatalLog.Fatalf("error reading config file: %v", err)
-		}
-
-		err = json.Unmarshal(file, configInstance)
-		if err != nil {
-			logger.FatalLog.Fatalf("error parsing config file: %v", err)
-			os.Exit(1)
+		// Check if Token is actually set
+		if configInstance.Token == "" {
+			logger.FatalLog.Fatalf("environment variable DISCORD_BOT_TOKEN not set")
 		}
 	})
 
 	fmt.Println("---------------------------------")
-	fmt.Println(" > CONFIG:\t", confVersion)
 	fmt.Println(" > TOKEN:\t", configInstance.Token[0:10]+"...")
 	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
 	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)

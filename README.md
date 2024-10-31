@@ -19,89 +19,15 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Most used sounds (Top 10, Top 20)
 - [x] Add, Remove and List Favorites
 - [ ] Playlists
-- [ ] Volume Control
+- [ ] Volume Control (might only be possible when converting audio)
 - [ ] Pin New Sounds as Message (with buttons?)
 - [ ] Delete sounds (admins only)
 - [ ] Move sounds (admins only, e.g. ".move fart2 custom")
-- [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName <start> <end>")
+- [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName \<start\> \<end\>")
 - [ ] Jail users for a specified amount of time (cant use sounds)
+- [ ] Pull admin users from roles on server (currently hardcored)
 
-# 1 Getting Started
-
-## 1.1 Local Test environment
-
-### 1.1.1 Config File and go
-
-Copy `config.json` to `config.local.json` and make any modifications you wish not to commit.
-
-Make sure your go paths are set correctly (arch example):
-
-```
-export GOROOT=/usr/lib/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin
-export GO111MODULE=on
-```
-
-### 1.1.2 Dependencies
-
-Below dependencies need to be met to make the bot work.
-
-#### 1.1.2.1 sqlite3
-
-```
-sudo pacman -S sqlite3
-```
-
-#### 1.1.2.2 ffmpeg
-
-Install ffmpeg for sound conversion
-
-Example Command to convert mp3 to dca:
-
-```
-ffmpeg -i test.mp3 -filter:a "loudnorm=I=-14:LRA=7:TP=-2, compand=attacks=0:points=-80/-80|-10/-5|0/-1" -f s16le -ar 48000 -ac 2 pipe:1 | dca > test.dca
-```
-
-#### 1.1.2.3 dca
-
-Install dca for decoding audio files
-
-```
-go install github.com/bwmarrin/dca/cmd/dca@latest
-```
-
-Make sure that the `dca` tool is working on your OS, if not it needs manual compiling.
-
-#### 1.1.2.4 piper
-
-Install piper for text2speech
-
-https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.tar.gz
-
-Make sure to place the above files in the `./tts` folder and have the voice model and config installed.
-
-```
-echo 'Deine Mutter ist so fett, sie piepst beim rückwärtsgehen' | ./piper \
-  --model de_DE-thorsten-medium.onnx \
-  --output_file welcome.wav
-```
-
-#### 1.1.2.5 yt-dlp
-
-For youtube support, have yt-dlp. Download somewhere locally and specify in config.json
-
-```
-https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
-```
-
-## 2. Build
-
-```
-./build.sh
-```
-
-## 3. Docker
+## Executing the bot
 
 Place all your sound files in DCA format in `backend/dist/sounds`.
 They should all be within subfolders, which act as categories for the sound bot.
@@ -117,14 +43,20 @@ total 4
 -rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
 ```
 
-Run the following command to build the docker container:
+Make sure to place your token in the `.env` file in the root directory of the project:
 
 ```
-docker build -t discord-bot-go -f Dockerfile.run .
+DISCORD_BOT_TOKEN=your_token_here
+```
+
+Run the following command to build the docker container (in the future hosted on github, modified `compose.yml` to pull up to date image):
+
+```
+$ docker build -t discord-bot-go .
 ```
 
 Run the container:
 
 ```
-docker run --name luren-bot -d -v ./backend/dist:/app/dist discord-bot-go
+$ docker compose up
 ```
