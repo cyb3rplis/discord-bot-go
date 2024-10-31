@@ -60,3 +60,32 @@ Run the container:
 ```
 $ docker compose up
 ```
+
+Or directly send it to the background:
+
+```
+$ docker compose up -d
+$ docker logs luren-bot
+```
+
+When running the container this way, it will automatically start on a reboot (unless it was manually stopped before), as configured in `compose.yml`.
+
+```
+[...]
+    restart: unless-stopped
+```
+
+Potential values can be set to the following:
+
+```
+no (default): Does not automatically restart the container.
+always: Always restarts the container if it stops or the Docker daemon restarts.
+unless-stopped: Restarts the container unless it was manually stopped.
+on-failure: Only restarts the container if it exits with a non-zero exit code.
+```
+
+To stop the container:
+
+```
+$ docker compose down
+```
