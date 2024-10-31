@@ -31,5 +31,5 @@ RUN go install github.com/bwmarrin/dca/cmd/dca@latest
 
 WORKDIR /app
 COPY --from=backend /dist/discord-bot-go ./
-RUN mkdir -p /app/dist/sounds
+RUN mkdir -p ./data/sounds
 CMD ["./discord-bot-go"]

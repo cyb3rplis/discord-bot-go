@@ -29,16 +29,16 @@ The bot also features interactive buttons for a seamless user experience, elimin
 
 ## Executing the bot
 
-Place all your sound files in DCA format in `backend/dist/sounds`.
+Place all your sound files in DCA format in `./data/sounds`.
 They should all be within subfolders, which act as categories for the sound bot.
 
 ```
-$ ls -lR ./backend/dist/sounds
-./backend/dist/sounds
+$ ls -lR ./data/sounds
+./data/sounds
 total 4
 drwxr-xr-x 2 user user 4096 Oct 30 18:56 test
 
-./backend/dist/sounds/test:
+./data/sounds/test:
 total 4
 -rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
 ```

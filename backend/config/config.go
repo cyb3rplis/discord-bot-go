@@ -43,14 +43,14 @@ func LoadConfig() *Config {
 		configInstance = &Config{
 			Token:      os.Getenv("DISCORD_BOT_TOKEN"), // Read the token from .env
 			Prefix:     ".",
-			SoundsDir:  "./dist//sounds",
-			DB:         "./dist/soundbot.db",
+			SoundsDir:  "./data/sounds",
+			DB:         "./data/soundbot.db",
 			YTDLP:      "/usr/local/bin/yt-dlp",
 			TTS:        "./piper",
-			TTSTemp:    "./dist/tts.wav",
-			TTSOutput:  "./dist/tts.mp3",
-			YTOutput:   "./dist/yt.dca",
-			YTTemp:     "./dist/yt.mp3",
+			TTSTemp:    "./data/tts.wav",
+			TTSOutput:  "./data/tts.mp3",
+			YTOutput:   "./data/yt.dca",
+			YTTemp:     "./data/yt.mp3",
 			YTTimeout:  20,
 			AdminUsers: []string{"378670654146478081", "481894532082958346"},
 		}
