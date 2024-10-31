@@ -91,3 +91,13 @@ To stop the container:
 ```
 $ docker compose down
 ```
+
+## Development
+
+Run the container like so:
+
+```
+$ docker compose -f compose.dev.yml up --watch
+```
+
+This will rebuild the image once any changes are made to the backend.
