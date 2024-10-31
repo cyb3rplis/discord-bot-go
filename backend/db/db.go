@@ -35,12 +35,8 @@ func InitDB() (*sql.DB, func() error, error) {
 	databaseFile := Config.DB
 
 	// Check if the ../dist path exists
-	if _, err := os.Stat("../dist"); os.IsNotExist(err) {
-		logger.InfoLog.Println("dist path does not exist, trying to create")
-		err = os.Mkdir("../dist", 0775)
-		if err != nil {
-			logger.FatalLog.Fatalln("Could not create ../dist directory")
-		}
+	if _, err := os.Stat("./data"); os.IsNotExist(err) {
+		logger.FatalLog.Fatalln("./data directory does not exist, make sure it exists before starting the container!")
 	}
 
 	// Check if the database file exists
