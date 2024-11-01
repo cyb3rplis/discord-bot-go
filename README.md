@@ -25,12 +25,11 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [ ] Move sounds (admins only, e.g. ".move fart2 custom")
 - [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName \<start\> \<end\>")
 - [ ] Jail users for a specified amount of time (cant use sounds)
-- [ ] Pull admin users from roles on server (currently hardcored)
+- [x] Pull admin users from roles on server
 
 ## Executing the bot
 
 INFO: Setting ${APP_PATH} is optional. If not set, it will default to the current directory.
-
 
 Place all your sound files in DCA format in `${APP_PATH}/data/sounds`.
 They should all be within subfolders, which act as categories for the sound bot.
@@ -100,7 +99,7 @@ $ docker compose down
 Run the container like so:
 
 ```
-$ docker compose -f compose.dev.yml up --watch
+$ docker compose -f compose.dev.yml up --watch --build
 ```
 
 This will rebuild the image once any changes are made to the backend.
