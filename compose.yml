@@ -5,5 +5,5 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data:/app/data
+      - ${APP_PATH:-./}/data:/app/data #use ./data if APP_PATH is not set
     restart: unless-stopped

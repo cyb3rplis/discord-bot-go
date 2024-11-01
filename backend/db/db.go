@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"os"
+	"path/filepath"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -35,8 +36,8 @@ func InitDB() (*sql.DB, func() error, error) {
 	databaseFile := Config.DB
 
 	// Check if the ../dist path exists
-	if _, err := os.Stat("./data"); os.IsNotExist(err) {
-		logger.FatalLog.Fatalln("./data directory does not exist, make sure it exists before starting the container!")
+	if _, err := os.Stat(filepath.Join(config.AppPath(), "data")); os.IsNotExist(err) {
+		logger.FatalLog.Fatalln(filepath.Join(config.AppPath(), "data") + " directory does not exist, make sure it exists before starting the container!")
 	}
 
 	// Check if the database file exists

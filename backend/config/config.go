@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -37,35 +38,49 @@ var (
 	once           sync.Once
 )
 
+var AppPath = func() string {
+	if path := os.Getenv("APP_PATH"); path != "" { //use for local development
+		return path
+	}
+	return "./"
+}
+
 func LoadConfig() *Config {
 	once.Do(func() {
-		// Hardcode all values except the Token
+
 		configInstance = &Config{
-			Token:      os.Getenv("DISCORD_BOT_TOKEN"), // Read the token from .env
+			Token:      os.Getenv("TOKEN"), // Read the token from .env
 			Prefix:     ".",
-			SoundsDir:  "./data/sounds",
-			DB:         "./data/soundbot.db",
+			SoundsDir:  filepath.Join(AppPath(), "data", "sounds"),
+			DB:         filepath.Join(AppPath(), "data", "soundbot.db"),
 			YTDLP:      "/usr/local/bin/yt-dlp",
-			TTS:        "./piper",
-			TTSTemp:    "./data/tts.wav",
-			TTSOutput:  "./data/tts.mp3",
-			YTOutput:   "./data/yt.dca",
-			YTTemp:     "./data/yt.mp3",
+			TTS:        filepath.Join(AppPath(), "piper"),
+			TTSTemp:    filepath.Join(AppPath(), "data", "tts.wav"),
+			TTSOutput:  filepath.Join(AppPath(), "data", "tts.mp3"),
+			YTOutput:   filepath.Join(AppPath(), "data", "yt.dca"),
+			YTTemp:     filepath.Join(AppPath(), "data", "yt.mp3"),
 			YTTimeout:  20,
 			AdminUsers: []string{"378670654146478081", "481894532082958346"},
 		}
-
 		// Check if Token is actually set
 		if configInstance.Token == "" {
-			logger.FatalLog.Fatalf("environment variable DISCORD_BOT_TOKEN not set")
+			logger.FatalLog.Fatalf("environment variable TOKEN not set")
 		}
 	})
 
-	fmt.Println("---------------------------------")
+	fmt.Println("---------------------------------------------------")
 	fmt.Println(" > TOKEN:\t", configInstance.Token[0:10]+"...")
 	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
 	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
-	fmt.Println("---------------------------------")
+	fmt.Println(" > DB:\t\t", configInstance.DB)
+	fmt.Println(" > YTDLP:\t", configInstance.YTDLP)
+	fmt.Println(" > TTS:\t\t", configInstance.TTS)
+	fmt.Println(" > TTS_TEMP:\t", configInstance.TTSTemp)
+	fmt.Println(" > TTS_OUTPUT:\t", configInstance.TTSOutput)
+	fmt.Println(" > YT_OUTPUT:\t", configInstance.YTOutput)
+	fmt.Println(" > YT_TEMP:\t", configInstance.YTTemp)
+	fmt.Println(" > YTTimeout:\t", configInstance.YTTimeout)
+	fmt.Println("---------------------------------------------------")
 
 	return configInstance
 }

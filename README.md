@@ -29,16 +29,19 @@ The bot also features interactive buttons for a seamless user experience, elimin
 
 ## Executing the bot
 
-Place all your sound files in DCA format in `./data/sounds`.
+INFO: Setting ${APP_PATH} is optional. If not set, it will default to the current directory.
+
+
+Place all your sound files in DCA format in `${APP_PATH}/data/sounds`.
 They should all be within subfolders, which act as categories for the sound bot.
 
 ```
-$ ls -lR ./data/sounds
-./data/sounds
+$ ls -lR ${APP_PATH}/data/sounds
+${APP_PATH}/data/sounds
 total 4
 drwxr-xr-x 2 user user 4096 Oct 30 18:56 test
 
-./data/sounds/test:
+${APP_PATH}/data/sounds/test:
 total 4
 -rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
 ```
@@ -48,7 +51,7 @@ IMPORTANT: the `./data` directory will also contain the `soundbot.db` database, 
 Make sure to place your token in the `.env` file in the root directory of the project:
 
 ```
-DISCORD_BOT_TOKEN=your_token_here
+TOKEN=your_token_here
 ```
 
 Run the following command to build the docker container (in the future hosted on github, modified `compose.yml` to pull up to date image):
