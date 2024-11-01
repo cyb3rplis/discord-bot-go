@@ -142,7 +142,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix)
 
-			if utils.IsAdmin(m.Author.ID) {
+			memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+			if err != nil {
+				logger.ErrorLog.Println("error getting member roles:", err)
+			}
+
+			if utils.IsAdmin(memberRoles) {
 				message = fmt.Sprintf("🧙🏻‍♂️  Help:\n"+
 					"> » **Statistics**\t\t  %sstats\n"+
 					"> » **Favorites**\t\t  %sfav\n"+

@@ -611,15 +611,38 @@ func ReleaseUser(userID string) error {
 	return nil
 }
 
-func IsAdmin(userID string) bool {
-	admins := model.Bot.Config.AdminUsers
-	for _, a := range admins {
-		if userID == a {
+func IsAdmin(roleNames []string) bool {
+	adminRole := model.Bot.Config.AdminRole
+	for _, r := range roleNames {
+		if r == adminRole {
 			return true
 		}
 	}
 
 	return false
+}
+
+func GetMemberRoles(s *discordgo.Session, guildID, userID string) ([]string, error) {
+	var roleNames []string
+	member, err := s.GuildMember(guildID, userID)
+	if err != nil {
+		return roleNames, err
+	}
+
+	if len(member.Roles) == 0 {
+		return roleNames, nil
+	}
+
+	for _, roleID := range member.Roles {
+		role, err := s.State.Role(guildID, roleID)
+		if err != nil {
+			logger.ErrorLog.Printf("Error retrieving role %s: %v", roleID, err)
+			continue
+		}
+		roleNames = append(roleNames, role.Name)
+	}
+
+	return roleNames, nil
 }
 
 func IsUserInGulag(user config.User) (time.Duration, bool) {

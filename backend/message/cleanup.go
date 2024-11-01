@@ -7,7 +7,12 @@ import (
 )
 
 func HandleCleanUp(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	if utils.IsAdmin(m.Author.ID) {
+	memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+	if err != nil {
+		return err
+	}
+
+	if utils.IsAdmin(memberRoles) {
 		logger.InfoLog.Println("Cleanup initiated: ", m.Author)
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
@@ -32,7 +37,7 @@ func HandleCleanUp(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 		return nil
 	}
 
-	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
 		logger.ErrorLog.Println("error deleting message:", err)
 	}

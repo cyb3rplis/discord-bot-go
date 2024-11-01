@@ -8,7 +8,12 @@ import (
 )
 
 func HandleUsers(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {
-	if utils.IsAdmin(m.Author.ID) {
+	memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+	if err != nil {
+		return err
+	}
+
+	if utils.IsAdmin(memberRoles) {
 		users, err := utils.GetUsers()
 		if err != nil {
 			return err

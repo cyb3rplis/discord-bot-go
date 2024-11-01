@@ -12,7 +12,12 @@ import (
 )
 
 func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user, timeOut, command string) error {
-	if utils.IsAdmin(m.Author.ID) {
+	memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+	if err != nil {
+		return err
+	}
+
+	if utils.IsAdmin(memberRoles) {
 		switch action {
 		case "add":
 			if timeOut == "" {
