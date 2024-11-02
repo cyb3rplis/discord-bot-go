@@ -51,7 +51,10 @@ func soundStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 
 	if m.GuildID == "" {
 		// DM
-		utils.NewPrivateMessageRoutine(message, s, m)
+		err = utils.NewPrivateMessageRoutine(message, s, m)
+		if err != nil {
+			logger.ErrorLog.Println("error sending private message:", err)
+		}
 		return nil
 	}
 
@@ -75,7 +78,10 @@ func userStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command st
 
 	if m.GuildID == "" {
 		// DM
-		utils.NewPrivateMessageRoutine(message, s, m)
+		err = utils.NewPrivateMessageRoutine(message, s, m)
+		if err != nil {
+			logger.ErrorLog.Println("error sending private message:", err)
+		}
 		return nil
 	}
 

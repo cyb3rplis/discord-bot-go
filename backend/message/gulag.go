@@ -25,7 +25,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 				err := utils.GulagUser(user, 3)
 				if err != nil {
 					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
-					utils.NewPrivateMessageRoutine(message, s, m)
+					err = utils.NewPrivateMessageRoutine(message, s, m)
 
 					return err
 				}
@@ -36,15 +36,14 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 				minutes, err := strconv.Atoi(timeOut)
 				if err != nil {
 					message := fmt.Sprintf("🧱  Invalid time out value: %s\n", timeOut)
-					utils.NewPrivateMessageRoutine(message, s, m)
+					err = utils.NewPrivateMessageRoutine(message, s, m)
 					return err
 				}
 
 				err = utils.GulagUser(user, minutes)
 				if err != nil {
 					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
-					utils.NewPrivateMessageRoutine(message, s, m)
-
+					err = utils.NewPrivateMessageRoutine(message, s, m)
 					return err
 				}
 
@@ -55,7 +54,7 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 			err := utils.ReleaseUser(user)
 			if err != nil {
 				message := fmt.Sprintf("🧱  Error releasing user %s from gulag\n", user)
-				utils.NewPrivateMessageRoutine(message, s, m)
+				err = utils.NewPrivateMessageRoutine(message, s, m)
 				return err
 			}
 
@@ -84,15 +83,20 @@ func HandleGulag(s *discordgo.Session, m *discordgo.MessageCreate, action, user,
 					message = message + fmt.Sprintf("> » User: %s - Remaining: %s\n", u.Username, u.Remaining)
 				}
 			}
-
-			utils.NewPrivateMessageRoutine(message, s, m)
+			err = utils.NewPrivateMessageRoutine(message, s, m)
+			if err != nil {
+				return err
+			}
 			return nil
 		default:
 			message := fmt.Sprintf("🧱  Your gulag helper:\n" +
 				"> » **Gulag User**\t\t" + model.Bot.Config.Prefix + "gulag add <username> <optional: minutes, default 3>\n" +
 				"> » **Release User**\t\t " + model.Bot.Config.Prefix + "gulag rm <username>\n" +
 				"> » **List Users**\t\t " + model.Bot.Config.Prefix + "gulag list\n")
-			utils.NewPrivateMessageRoutine(message, s, m)
+			err = utils.NewPrivateMessageRoutine(message, s, m)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

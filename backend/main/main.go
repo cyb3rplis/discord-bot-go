@@ -35,7 +35,11 @@ func init() {
 
 	// Check if the sound directory exists
 	if _, err := os.Stat(model.Bot.Config.SoundsDir); os.IsNotExist(err) {
-		os.Mkdir(model.Bot.Config.SoundsDir, 0755)
+		err = os.Mkdir(model.Bot.Config.SoundsDir, 0755)
+		if err != nil {
+			logger.FatalLog.Fatalf("Failed to create sound directory: %v", err)
+			return
+		}
 	}
 
 	fsSounds, err := utils.ScanDirectory()

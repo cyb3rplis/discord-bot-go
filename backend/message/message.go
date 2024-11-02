@@ -74,7 +74,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix, prefix, prefix, prefix)
 			utils.NewMessageRoutine(command, message, s, m)
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = logger.ReactionLogSuccess(s, m, "help message sent", "")
 			return
 		case command == fmt.Sprintf("%scleanup", prefix):
 			// Cleanup all messages
@@ -83,21 +83,19 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				logger.ErrorLog.Println("error handling cleanup:", err)
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%syoutube", prefix)):
-			// Play the sound of a youtube video
+			// Play the sound of a YouTube video
 			err := HandleYoutube(s, m, arg, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling youtube audio:", err)
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling youtube audio", err)
 				return
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
 			err := HandleStatistics(s, m, arg, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling statistics:", err)
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling statistics", err)
 			}
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = logger.ReactionLogSuccess(s, m, "statistics action successful", "")
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
 			err := HandleFavorite(s, m, arg, arg2, command)
@@ -115,11 +113,10 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// List categories
 			err := HandleList(s, m, arg, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling list:", err)
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling list", err)
 				return
 			}
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = logger.ReactionLogSuccess(s, m, "list action successful", "")
 			return
 		case command == fmt.Sprintf("%sdm", prefix):
 			// Delete the authors message
@@ -159,16 +156,20 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 					"> » **Gulag**\t\t  %sgulag\n", prefix, prefix, prefix, prefix)
 			}
 
-			utils.NewPrivateMessageRoutine(message, s, m)
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			err = utils.NewPrivateMessageRoutine(message, s, m)
+			if err != nil {
+				logger.ErrorLog.Println("error sending DM:", err)
+			}
+			_ = logger.ReactionLogSuccess(s, m, "help message sent", "")
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
 			err := HandleStatistics(s, m, arg, command)
 			if err != nil {
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling statistics", err)
+				return
 			}
-			_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+			_ = logger.ReactionLogSuccess(s, m, "statistics action successful", "")
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
@@ -181,21 +182,18 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Handle gulag
 			err := HandleUsers(s, m, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling users:", err)
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling users", err)
 			} else {
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			}
+			_ = logger.ReactionLogSuccess(s, m, "users action successful", "")
 		case strings.HasPrefix(command, fmt.Sprintf("%sgulag", prefix)):
 			// Handle gulag
 			err := HandleGulag(s, m, arg, arg2, arg3, command)
 			if err != nil {
-				logger.ErrorLog.Println("error handling gulag:", err)
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
+				_ = logger.ReactionLogError(s, m, "error handling gulag", err)
 				return
-			} else {
-				_ = s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 			}
+			_ = logger.ReactionLogSuccess(s, m, "gulag action successful", "")
 		default:
 			return
 		}
