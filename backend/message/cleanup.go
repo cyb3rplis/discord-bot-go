@@ -3,11 +3,13 @@ package message
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 func HandleCleanUp(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+	meta := model.Meta
+	memberRoles, err := utils.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 	if err != nil {
 		return err
 	}

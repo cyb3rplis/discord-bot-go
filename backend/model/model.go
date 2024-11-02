@@ -7,13 +7,23 @@ import (
 )
 
 var Bot *Model
+var Meta *Info
 
 type Model struct {
 	Db     *sql.DB
 	Config *config.Config
 }
 
-func New(m *Model) *Model {
+type Info struct {
+	Guild *config.Guild
+}
+
+func NewBot(m *Model) *Model {
 	cfg := config.GetConfig()
 	return &Model{Db: m.Db, Config: cfg}
+}
+
+func NewInfo() *Info {
+	guild := config.GetGuild()
+	return &Info{Guild: guild}
 }

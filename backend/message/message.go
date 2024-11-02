@@ -15,7 +15,7 @@ import (
 
 // AudioMessageHandler is created on any channel that the authenticated bot has access to.
 func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	isDM := m.GuildID == ""
+	meta := model.Meta
 	prefix := model.Bot.Config.Prefix
 
 	// Ignore all messages created by the bot itself
@@ -60,7 +60,9 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case len(args) > 4:
 		return
 	}
-	if !isDM {
+
+	// check if the message originated from the same Guild ID as the bot's Guild ID when he was started
+	if m.GuildID == meta.Guild.ID {
 		// we only want to enable the below commands in Servers
 		switch {
 		case command == fmt.Sprintf("%shelp", prefix):
@@ -135,6 +137,8 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	} else {
+		// This else block is only being used when the bot received a message from outside the Guild ID he initially joined
+		// This will only happen if a user with the admin role DM'ed the bot
 		switch {
 		case command == fmt.Sprintf("%shelp", prefix):
 			// show help text
@@ -142,7 +146,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix)
 
-			memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+			memberRoles, err := utils.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 			if err != nil {
 				logger.ErrorLog.Println("error getting member roles:", err)
 			}

@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 func HandleUsers(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {
-	memberRoles, err := utils.GetMemberRoles(s, m.GuildID, m.Author.ID)
+	meta := model.Meta
+	memberRoles, err := utils.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 	if err != nil {
 		return err
 	}

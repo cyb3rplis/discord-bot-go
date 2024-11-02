@@ -31,7 +31,7 @@ func init() {
 			}
 		}
 	}()
-	model.Bot = model.New(&m)
+	model.Bot = model.NewBot(&m)
 
 	// Check if the sound directory exists
 	if _, err := os.Stat(model.Bot.Config.SoundsDir); os.IsNotExist(err) {
@@ -105,6 +105,10 @@ func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
 		return
 	}
+
+	// load the guild into the
+	config.LoadGuild(event)
+	model.Meta = model.NewInfo()
 
 	logger.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
 }

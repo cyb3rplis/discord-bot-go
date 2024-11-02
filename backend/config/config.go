@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
 
@@ -33,9 +34,19 @@ type User struct {
 	Remaining time.Duration `json:"remaining"`
 }
 
+type Guild struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 var (
 	configInstance *Config
-	once           sync.Once
+	configOnce     sync.Once
+)
+
+var (
+	guildInstance *Guild
+	guildOnce     sync.Once
 )
 
 var AppPath = func() string {
@@ -46,7 +57,7 @@ var AppPath = func() string {
 }
 
 func LoadConfig() *Config {
-	once.Do(func() {
+	configOnce.Do(func() {
 
 		configInstance = &Config{
 			Token:     os.Getenv("TOKEN"), // Read the token from .env
@@ -95,4 +106,19 @@ func GetConfig() *Config {
 		return LoadConfig()
 	}
 	return configInstance
+}
+
+func LoadGuild(event *discordgo.GuildCreate) *Guild {
+	guildOnce.Do(func() {
+		guildInstance = &Guild{
+			ID:   event.Guild.ID,
+			Name: event.Guild.Name,
+		}
+	})
+
+	return guildInstance
+}
+
+func GetGuild() *Guild {
+	return guildInstance
 }
