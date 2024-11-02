@@ -1,11 +1,10 @@
 package main
 
 import (
+	"github.com/cyb3rplis/discord-bot-go/view"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
@@ -13,10 +12,8 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/cronjob"
 	"github.com/cyb3rplis/discord-bot-go/db"
-	"github.com/cyb3rplis/discord-bot-go/sound"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/message"
 )
 
 func init() {
@@ -42,11 +39,11 @@ func init() {
 		}
 	}
 
-	fsSounds, err := utils.ScanDirectory()
+	fsSounds, err := model.ScanDirectory()
 	if err != nil {
 		logger.FatalLog.Printf("cron: error scanning sound directory: %v", err)
 	}
-	err = sound.SyncDatabaseWithFileSystem(fsSounds)
+	err = view.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
 		logger.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
 	}
@@ -64,10 +61,10 @@ func main() {
 	}
 
 	// Register messageCreate as a callback for the messageCreate events.
-	dg.AddHandler(message.AudioMessageHandler)
+	dg.AddHandler(view.AudioMessageHandler)
 
 	// Register interaction handler for button clicks
-	dg.AddHandler(sound.InteractionHandler)
+	dg.AddHandler(view.InteractionHandler)
 
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandler(guildCreate)
@@ -84,11 +81,11 @@ func main() {
 	}
 
 	// Scan the sound directory for sound files. Sync them with the DB.
-	fsSounds, err := utils.ScanDirectory()
+	fsSounds, err := model.ScanDirectory()
 	if err != nil {
 		logger.FatalLog.Fatalf("error scanning sound directory: %v", err)
 	}
-	err = sound.SyncDatabaseWithFileSystem(fsSounds)
+	err = view.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
 		logger.FatalLog.Printf("error syncing sound files: %v", err)
 	}

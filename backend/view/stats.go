@@ -1,4 +1,4 @@
-package message
+package view
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
-	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 func HandleStatistics(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
@@ -32,17 +31,17 @@ func HandleStatistics(s *discordgo.Session, m *discordgo.MessageCreate, arg, com
 		}
 	default:
 		message := fmt.Sprintf("🔥  Stats:\n> » **Global Sounds**\t\t%sstats sounds\n> » **Global Users**\t\t%sstats users\n> » **Your Sounds**\t\t\t%sstats me\n", prefix, prefix, prefix)
-		utils.NewMessageRoutine(command+"help", message, s, m)
+		NewMessageRoutine(command+"help", message, s, m)
 	}
 	return nil
 }
 
 func soundStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	soundStats, err := utils.GetSoundStatistics()
+	soundStats, err := model.GetSoundStatistics()
 	if err != nil {
 		logger.ErrorLog.Printf("error getting sound statistics: %v", err)
 	}
-	sortedKeys := utils.SortMapKeysByValue(soundStats)
+	sortedKeys := model.SortMapKeysByValue(soundStats)
 
 	message := "🔥  Top 10 played sounds: \n\n"
 	for _, c := range sortedKeys {
@@ -51,23 +50,23 @@ func soundStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command s
 
 	if m.GuildID == "" {
 		// DM
-		err = utils.NewPrivateMessageRoutine(message, s, m)
+		err = NewPrivateMessageRoutine(message, s, m)
 		if err != nil {
 			logger.ErrorLog.Println("error sending private message:", err)
 		}
 		return nil
 	}
 
-	utils.NewMessageRoutine(command+arg, message, s, m)
+	NewMessageRoutine(command+arg, message, s, m)
 	return nil
 }
 
 func userStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	userStats, err := utils.GetAllUserStatistics()
+	userStats, err := model.GetAllUserStatistics()
 	if err != nil {
 		logger.ErrorLog.Printf("error getting all users statistics: %v", err)
 	}
-	sortedKeys := utils.SortMapKeysByValue(userStats)
+	sortedKeys := model.SortMapKeysByValue(userStats)
 
 	// send table instead of loose lines -> formatting
 	message := "🤡  Top 10 Users: \n\n"
@@ -78,19 +77,19 @@ func userStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command st
 
 	if m.GuildID == "" {
 		// DM
-		err = utils.NewPrivateMessageRoutine(message, s, m)
+		err = NewPrivateMessageRoutine(message, s, m)
 		if err != nil {
 			logger.ErrorLog.Println("error sending private message:", err)
 		}
 		return nil
 	}
 
-	utils.NewMessageRoutine(command+arg, message, s, m)
+	NewMessageRoutine(command+arg, message, s, m)
 	return nil
 }
 
 func meStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	userStats, err := utils.GetUserStatistics(m.Author.ID, 10)
+	userStats, err := model.GetUserStatistics(m.Author.ID, 10)
 	if err != nil {
 		logger.ErrorLog.Printf("error getting user statistics: %v", err)
 	}
@@ -116,6 +115,6 @@ func meStats(s *discordgo.Session, m *discordgo.MessageCreate, arg, command stri
 		Content:    "🔥  <@" + m.Author.ID + ">'s top 10 played sounds: \n\n",
 		Components: content,
 	}
-	utils.NewComplexMessageRoutine(command+arg+m.Author.ID, m.ChannelID, m.ID, message2, s)
+	NewComplexMessageRoutine(command+arg+m.Author.ID, m.ChannelID, m.ID, message2, s)
 	return nil
 }

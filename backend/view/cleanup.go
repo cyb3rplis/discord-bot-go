@@ -1,26 +1,25 @@
-package message
+package view
 
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
-	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 func HandleCleanUp(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
 	meta := model.Meta
-	memberRoles, err := utils.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
+	memberRoles, err := model.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 	if err != nil {
 		return err
 	}
 
-	if utils.IsAdmin(memberRoles) {
+	if model.IsAdmin(memberRoles) {
 		logger.InfoLog.Println("Cleanup initiated: ", m.Author)
 		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
 			logger.ErrorLog.Println("error deleting message:", err)
 		}
-		messages, err := utils.GetAllMessages()
+		messages, err := model.GetAllMessages()
 		if err != nil {
 			logger.ErrorLog.Println("error getting all messages:", err)
 		}
@@ -32,7 +31,7 @@ func HandleCleanUp(s *discordgo.Session, m *discordgo.MessageCreate, arg, comman
 				}
 			}
 		}
-		err = utils.DeleteAllMessages()
+		err = model.DeleteAllMessages()
 		if err != nil {
 			logger.ErrorLog.Println("error deleting all messages:", err)
 		}

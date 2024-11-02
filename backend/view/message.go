@@ -1,4 +1,4 @@
-package message
+package view
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/cyb3rplis/discord-bot-go/logger"
-	"github.com/cyb3rplis/discord-bot-go/utils"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -32,7 +31,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		logger.ErrorLog.Println("error converting user ID to int:", err)
 	}
-	err = utils.AddUser(userID, m.Author.GlobalName)
+	err = model.AddUser(userID, m.Author.GlobalName)
 	if err != nil {
 		logger.ErrorLog.Println("error adding user to DB:", err)
 	}
@@ -73,7 +72,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Text2Speech**\t%stts\n"+
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix, prefix, prefix, prefix)
-			utils.NewMessageRoutine(command, message, s, m)
+			NewMessageRoutine(command, message, s, m)
 			_ = logger.ReactionLogSuccess(s, m, "help message sent", "")
 			return
 		case command == fmt.Sprintf("%scleanup", prefix):
@@ -126,7 +125,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 
 			// Send a DM to the author
-			err = utils.NewPrivateMessageRoutine("Ready for some action?", s, m)
+			err = NewPrivateMessageRoutine("Ready for some action?", s, m)
 			if err != nil {
 				logger.ErrorLog.Println("error sending DM:", err)
 			}
@@ -143,12 +142,12 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix)
 
-			memberRoles, err := utils.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
+			memberRoles, err := model.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 			if err != nil {
 				logger.ErrorLog.Println("error getting member roles:", err)
 			}
 
-			if utils.IsAdmin(memberRoles) {
+			if model.IsAdmin(memberRoles) {
 				message = fmt.Sprintf("🧙🏻‍♂️  Help:\n"+
 					"> » **Statistics**\t\t  %sstats\n"+
 					"> » **Favorites**\t\t  %sfav\n"+
@@ -156,7 +155,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 					"> » **Gulag**\t\t  %sgulag\n", prefix, prefix, prefix, prefix)
 			}
 
-			err = utils.NewPrivateMessageRoutine(message, s, m)
+			err = NewPrivateMessageRoutine(message, s, m)
 			if err != nil {
 				logger.ErrorLog.Println("error sending DM:", err)
 			}
@@ -197,5 +196,122 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		default:
 			return
 		}
+	}
+}
+
+func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) (st *discordgo.Message) {
+	// send our new message
+	st, err := s.ChannelMessageSend(m.ChannelID, message)
+	if err != nil {
+		logger.ErrorLog.Println("error sending message:", err)
+	}
+
+	// get all old messages for this command
+	oldMessages, err := model.GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, msg := range mID {
+			err := s.ChannelMessageDelete(cID, msg)
+			if err != nil {
+				logger.ErrorLog.Printf("error deleting old message - ID: %s, err: %v", msg, err)
+				err = model.DeleteMessageID(msg)
+				if err != nil {
+					logger.ErrorLog.Printf("error deleting message from DB: %v", err)
+				}
+			}
+		}
+	}
+
+	// insert the new message id into the database
+	err = model.InsertMessageID(st.ChannelID, st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("error inserting message id:", err)
+	}
+
+	err = model.DeleteOldCommandMessages(st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("error deleting old message:", err)
+	}
+
+	return st
+}
+
+func NewPrivateMessageRoutine(message string, s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
+	// Send a DM to the author
+	channel, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		return fmt.Errorf("error creating private channel with user: %s", m.Author.ID)
+	}
+	_, err = s.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		return fmt.Errorf("error sending private message: %v", err)
+	}
+
+	return nil
+}
+
+func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
+	// send our new message
+	st, err := s.ChannelMessageSendComplex(channelID, msg)
+	if err != nil {
+		logger.ErrorLog.Println("error sending message:", err)
+	}
+
+	// get all old messages for this command
+	oldMessages, err := model.GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, msg := range mID {
+			err := s.ChannelMessageDelete(cID, msg)
+			if err != nil {
+				logger.ErrorLog.Printf("error deleting old message - ID: %s, err: %v", msg, err)
+				err = model.DeleteMessageID(msg)
+				if err != nil {
+					logger.ErrorLog.Printf("error deleting message from DB: %v", err)
+				}
+			}
+		}
+	}
+
+	// insert the new message id into the database
+	err = model.InsertMessageID(st.ChannelID, st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("error inserting message id:", err)
+	}
+
+	err = model.DeleteOldCommandMessages(st.ID, command)
+	if err != nil {
+		logger.ErrorLog.Println("error deleting old message:", err)
+	}
+	return st
+}
+
+func DeleteMessageRoutine(s *discordgo.Session, command string) {
+	oldMessages, err := model.GetAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("error getting all command messages:", err)
+	}
+
+	// iterate over all the old messages and delete them from discord
+	for cID, mID := range oldMessages {
+		for _, msg := range mID {
+			err := s.ChannelMessageDelete(cID, msg)
+			if err != nil {
+				logger.ErrorLog.Printf("error deleting old message - ID: %s - err: %v", msg, err)
+			}
+		}
+	}
+
+	err = model.DeleteAllCommandMessages(command)
+	if err != nil {
+		logger.ErrorLog.Println("error deleting all command messages:", err)
 	}
 }

@@ -1,0 +1,211 @@
+package model
+
+import (
+	"bytes"
+	"database/sql"
+	"encoding/binary"
+	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/logger"
+	"io"
+	"os"
+)
+
+var Buffer = make([][]byte, 0)
+
+func AddSound(categoryID int, fileName, fileHash string, fileData []byte) error {
+	// Check if the sound with the same hash already exists
+	var existingID int
+	err := Bot.Db.QueryRow("SELECT id FROM sounds WHERE hash = ?", fileHash).Scan(&existingID)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check existing sound: %w", err)
+	}
+	// If the sound already exists, skip the insertion
+	if existingID != 0 {
+		//logger.InfoLog.Printf("Sound with hash %s already exists, skipping insertion", fileHash)
+		return nil
+	}
+	alias := RemoveFileExtension(fileName) // Or any other default value, e.g., ""
+	_, err = Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
+	return err
+}
+
+func RemoveCategory(categoryID int) error {
+	// ON DELETE CASCADE - sounds will get deleted automatically when the category is deleted
+	_, err := Bot.Db.Exec("DELETE FROM categories WHERE id = ?", categoryID)
+	return err
+}
+
+func RemoveSound(categoryID int, fileName string) error {
+	_, err := Bot.Db.Exec("DELETE FROM sounds WHERE category_id = ? AND name = ?", categoryID, fileName)
+	return err
+}
+
+// LoadSound attempts to load an encoded sound file from disk.
+func LoadSound(soundName string) error {
+	var opusLen int16
+	var fileData []byte
+
+	// get sounds from database
+	err := Bot.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("sound not found: %s", soundName)
+		}
+		logger.ErrorLog.Println("error querying sound file from database:", err)
+		return err
+	}
+	// Create a reader for the file data
+	file := bytes.NewReader(fileData)
+	for {
+		// Read opus frame length from the file data.
+		err = binary.Read(file, binary.LittleEndian, &opusLen)
+
+		// If this is the end of the file, just return.
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			return nil
+		}
+		if err != nil {
+			logger.ErrorLog.Println("error reading from file data:", err)
+			return err
+		}
+		// Read encoded PCM from the file data.
+		InBuf := make([]byte, opusLen)
+		err = binary.Read(file, binary.LittleEndian, &InBuf)
+		if err != nil {
+			logger.ErrorLog.Println("error reading from file data:", err)
+			return err
+		}
+		// Append encoded PCM data to the buffer.
+		Buffer = append(Buffer, InBuf)
+	}
+}
+
+// GetSounds returns a list of sounds in the specified category (from DB)
+func GetSounds(category string) ([]string, error) {
+	rows, err := Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ? ORDER BY sounds.name ASC", category)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query sounds in category: %w", err)
+	}
+	defer rows.Close()
+
+	var sounds []string
+	for rows.Next() {
+		var sound string
+		err := rows.Scan(&sound)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan sound: %w", err)
+		}
+		sounds = append(sounds, sound)
+	}
+	return sounds, nil
+}
+
+func GetCategoryByID(folderName string) int {
+	var categoryID int
+	err := Bot.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// This should not happen because the category should exist by this point.
+			logger.InfoLog.Printf("Category %s not found in database", folderName)
+		} else {
+			logger.FatalLog.Fatal(err)
+		}
+	}
+	return categoryID
+}
+
+func GetSoundsM() map[int]map[string]string {
+	rows, err := Bot.Db.Query("SELECT category_id, name, hash FROM sounds")
+	if err != nil {
+		logger.FatalLog.Fatal(err)
+	}
+	defer rows.Close()
+
+	sounds := make(map[int]map[string]string)
+	for rows.Next() {
+		var categoryID int
+		var fileName, fileHash string
+		if err := rows.Scan(&categoryID, &fileName, &fileHash); err != nil {
+			logger.FatalLog.Fatal(err)
+		}
+		if sounds[categoryID] == nil {
+			sounds[categoryID] = make(map[string]string)
+		}
+		sounds[categoryID][fileName] = fileHash
+	}
+	return sounds
+}
+
+func AddCategory(folderName string) error {
+	// Check if the category with the same name already exists
+	var existingID int
+	err := Bot.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&existingID)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check existing category: %w", err)
+	}
+	// If the category already exists, skip the insertion
+	if existingID != 0 {
+		//logger.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
+		return nil
+	}
+	_, err = Bot.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
+	return err
+}
+
+// LoadSoundFS loads the sound file from the filesystem.
+func LoadSoundFS(soundName string) error {
+	var opusLen int16
+	file, err := os.Open(soundName)
+	if err != nil {
+		logger.ErrorLog.Println("error opening dca file :", err)
+		return err
+	}
+	defer file.Close()
+	for {
+		// Read opus frame length from dca file.
+		err = binary.Read(file, binary.LittleEndian, &opusLen)
+
+		// If this is the end of the file, just return.
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err := file.Close()
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		if err != nil {
+			logger.ErrorLog.Println("Error reading from dca file :", err)
+			return err
+		}
+
+		// Read encoded pcm from dca file.
+		InBuf := make([]byte, opusLen)
+		err = binary.Read(file, binary.LittleEndian, &InBuf)
+		if err != nil {
+			logger.ErrorLog.Println("Error reading from dca file :", err)
+			return err
+		}
+
+		// Append encoded pcm data to the buffer.
+		Buffer = append(Buffer, InBuf)
+	}
+}
+
+// CleanUpSoundFile deletes the sound files created during the TTS process.
+func CleanUpSoundFile(module string) {
+	if module == "tts" {
+		err := os.Remove(Bot.Config.TTSTemp)
+		if err != nil {
+			// Handle error if file deletion fails
+			logger.ErrorLog.Printf("error deleting file: %v\n", err)
+		}
+
+		err = os.Remove(Bot.Config.TTSOutput)
+		if err != nil {
+			// Handle error if file deletion fails
+			logger.ErrorLog.Printf("error deleting file: %v\n", err)
+		}
+
+		logger.InfoLog.Println("Deleted temp TTS sound files successfully")
+	}
+}

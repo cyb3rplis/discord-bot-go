@@ -1,4 +1,4 @@
-package sound
+package view
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
-	"github.com/cyb3rplis/discord-bot-go/utils"
 )
 
 // InteractionHandler handles interaction events (e.g., button clicks)
@@ -29,15 +28,15 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	// Check if the user is in the Gulag
-	user, err := utils.GetUserFromUsername(i.Member.User.GlobalName)
+	user, err := model.GetUserFromUsername(i.Member.User.GlobalName)
 	if err != nil {
 		logger.ErrorLog.Println("error getting user from username:", err)
 		return
 	} else {
-		if remaining, ok := utils.IsUserInGulag(user); ok {
+		if remaining, ok := IsUserInGulag(user); ok {
 			user.Remaining = remaining
-			message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
-			utils.NewMessageRoutine(".gulag"+user.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
+			msg := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+			NewMessageRoutine(".gulag"+user.ID, msg, s, &discordgo.MessageCreate{Message: i.Message})
 			return
 		}
 	}
@@ -53,9 +52,9 @@ func InteractionHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userLastInteraction[user.ID] = time.Now()            // Update the last interaction time
 	if userInteractionCount[user.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		message := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag for one minute."
-		utils.NewMessageRoutine(".idiot", message, s, &discordgo.MessageCreate{Message: i.Message})
-		err := utils.GulagUser(user.Username, 1)
+		msg := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag for one minute."
+		NewMessageRoutine(".idiot", msg, s, &discordgo.MessageCreate{Message: i.Message})
+		err := model.GulagUser(user.Username, 1)
 		if err != nil {
 			logger.ErrorLog.Println("error gulagging user:", err)
 		}
@@ -80,7 +79,7 @@ func handleStopSoundInteraction(s *discordgo.Session) {
 	// check if the bot is currently speaking, and exit
 	if botSpeaking {
 		stopChannel <- struct{}{}
-		utils.DeleteMessageRoutine(s, ".stopbutton")
+		DeleteMessageRoutine(s, ".stopbutton")
 		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
 	}
 }
@@ -122,12 +121,12 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 					CustomID: "stop_sound",
 				})
 				content = append(content, row)
-				message := &discordgo.MessageSend{
+				msg := &discordgo.MessageSend{
 					Content:    "➡ Text2Speech playing by <@" + i.Member.User.GlobalName + ">",
 					Components: content,
 				}
 
-				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s)
+				NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, msg, s)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 
@@ -143,12 +142,12 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				if err != nil {
 					logger.ErrorLog.Println("error converting user ID to int:", err)
 				} else {
-					err = utils.AddUser(userID, i.Member.User.GlobalName)
+					err = model.AddUser(userID, i.Member.User.GlobalName)
 					if err != nil {
 						logger.ErrorLog.Println("error adding user:", err)
 					}
 
-					err = utils.AddUserStatistics(userID, soundName)
+					err = model.AddUserStatistics(userID, soundName)
 					if err != nil {
 						logger.ErrorLog.Println("error adding user statistics:", err)
 					}
@@ -163,12 +162,12 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 				})
 				content = append(content, row)
 
-				message := &discordgo.MessageSend{
+				msg := &discordgo.MessageSend{
 					Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
 					Components: content,
 				}
 
-				utils.NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, message, s)
+				NewComplexMessageRoutine(".stopbutton", i.ChannelID, i.ID, msg, s)
 
 				logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 				// Construct the sound file path
@@ -189,39 +188,39 @@ func HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCr
 
 	// If the user is not in a voice channel, send an error message
 	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
-	message := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
+	msg := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
 
-	utils.NewMessageRoutine(".novc"+i.Member.User.ID, message, s, &discordgo.MessageCreate{Message: i.Message})
+	NewMessageRoutine(".novc"+i.Member.User.ID, msg, s, &discordgo.MessageCreate{Message: i.Message})
 }
 
 // HandleListSoundsInteraction handles the list sounds interaction
 func HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
 	// Extract the category from the custom ID
 	category := strings.TrimPrefix(customID, "list_sounds_")
-	message := "➡ Sounds in category - " + category
+	msg := "➡ Sounds in category - " + category
 
 	longCategory := fmt.Sprintf(".listAll%s", category)
-	utils.NewMessageRoutine(longCategory, message, s, &discordgo.MessageCreate{Message: i.Message})
+	NewMessageRoutine(longCategory, msg, s, &discordgo.MessageCreate{Message: i.Message})
 
 	// Get all sound files in the subfolder
-	sounds, err := getSounds(category)
+	sounds, err := model.GetSounds(category)
 	if err != nil {
 		logger.ErrorLog.Println("error listing sounds in subfolder:", err)
 	}
 	if len(sounds) == 0 {
-		message := "No sounds found in this category."
-		utils.NewMessageRoutine(".list"+"no"+category, message, s, &discordgo.MessageCreate{Message: i.Message})
+		msg := "No sounds found in this category."
+		NewMessageRoutine(".list"+"no"+category, msg, s, &discordgo.MessageCreate{Message: i.Message})
 		return
 	}
 
 	//build buttons for each sound
-	buttons := utils.BuildSoundButtons(sounds, category, discordgo.SecondaryButton)
+	buttons := model.BuildSoundButtons(sounds, category, discordgo.SecondaryButton)
 	//build messages
-	messages := utils.BuildMessages(buttons, nil)
+	messages := model.BuildMessages(buttons, nil)
 
 	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
-	for idx, message := range messages {
+	for idx, msg := range messages {
 		longCategory := fmt.Sprintf(".list%s%d", category, idx+1)
-		utils.NewComplexMessageRoutine(longCategory, i.ChannelID, i.ID, message, s)
+		NewComplexMessageRoutine(longCategory, i.ChannelID, i.ID, msg, s)
 	}
 }

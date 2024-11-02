@@ -26,7 +26,10 @@ func ReactionLogError(s *discordgo.Session, m *discordgo.MessageCreate, errorMes
 	err = s.MessageReactionAdd(m.ChannelID, m.ID, "☹️")
 	//send message with error to the user
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("> %s", errorMessage))
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func ReactionLogSuccess(s *discordgo.Session, m *discordgo.MessageCreate, message string, icon string) error {
@@ -36,5 +39,26 @@ func ReactionLogSuccess(s *discordgo.Session, m *discordgo.MessageCreate, messag
 	}
 	InfoLog.Println(message)
 	err := s.MessageReactionAdd(m.ChannelID, m.ID, reactionIcon)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReactionLogSuccessWithFeedback(s *discordgo.Session, m *discordgo.MessageCreate, message string, icon string) error {
+	reactionIcon := "👍"
+	if icon != "" {
+		reactionIcon = icon
+	}
+	InfoLog.Println(message)
+	err := s.MessageReactionAdd(m.ChannelID, m.ID, reactionIcon)
+	if err != nil {
+		return err
+	}
+	//send message with feedback to the user
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("> %s", message))
+	if err != nil {
+		return err
+	}
+	return nil
 }

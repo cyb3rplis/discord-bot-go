@@ -1,0 +1,225 @@
+package model
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/logger"
+	"io"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+// ScanDirectory scans the sound directory and returns a map of folders and files.
+func ScanDirectory() (map[string][]string, error) {
+	soundsRoot := Bot.Config.SoundsDir
+	folderMap := make(map[string][]string)
+
+	err := filepath.WalkDir(soundsRoot, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			// Skip the root folder
+			if path == soundsRoot {
+				return nil
+			}
+
+			// Get relative folder name (e.g., 'folder1/')
+			relativeFolder, err := filepath.Rel(soundsRoot, path)
+			if err != nil {
+				return err
+			}
+
+			folderMap[relativeFolder] = []string{} // Initialize an entry for this folder
+		} else {
+			// Add file to the folder list
+			folder := filepath.Dir(path)
+			relativeFolder, err := filepath.Rel(soundsRoot, folder)
+			if err != nil {
+				return err
+			}
+
+			// Filter for audio files based on extensions, e.g., ".dca", etc.
+			if ext := filepath.Ext(path); ext == ".dca" {
+				fileNameWithoutExt := RemoveFileExtension(filepath.Base(path))
+				folderMap[relativeFolder] = append(folderMap[relativeFolder], fileNameWithoutExt)
+			}
+		}
+		return nil
+	})
+
+	return folderMap, err
+}
+
+// RemoveFileExtension removes the file extension from a given file name.
+func RemoveFileExtension(fileName string) string {
+	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+}
+
+func SortMapByValue(m map[string]int) map[string]int {
+	var keys []string
+	var sortedM = make(map[string]int)
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return m[keys[i]] > m[keys[j]]
+	})
+	for _, k := range keys {
+		sortedM[k] = m[k]
+	}
+	return sortedM
+}
+
+func SortMapKeysByValue(m map[string]int) []string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return m[keys[i]] > m[keys[j]]
+	})
+	return keys
+}
+
+// BuildSoundButtons creates a list of buttons for the provided category
+func BuildSoundButtons(sounds []string, category string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	for i, soundName := range sounds {
+		soundName = strings.TrimSuffix(soundName, ".dca")
+		// only 5 buttons per row - discord does not allow more
+		if i > 0 && i%5 == 0 {
+			content = append(content, row)
+			row = discordgo.ActionsRow{}
+		}
+		row.Components = append(row.Components, discordgo.Button{
+			Label:    soundName,
+			Style:    buttonStyle,
+			CustomID: fmt.Sprintf("play_sound_%s_%s", category, soundName),
+		})
+	}
+	// Append the last row if it has any components
+	if len(row.Components) > 0 {
+		content = append(content, row)
+	}
+	return content
+}
+
+// BuildListButtons creates a list of buttons for the provided categories
+func BuildListButtons(categories []string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	for i, category := range categories {
+		// only 5 buttons per row - discord does not allow more
+		if i > 0 && i%5 == 0 {
+			content = append(content, row)
+			row = discordgo.ActionsRow{}
+		}
+		row.Components = append(row.Components, discordgo.Button{
+			Label:    category,
+			Style:    buttonStyle,
+			CustomID: fmt.Sprintf("list_sounds_%s", category),
+		})
+	}
+	// Append the last row if it has any components
+	if len(row.Components) > 0 {
+		content = append(content, row)
+	}
+	return content
+}
+
+// BuildMessages creates a list of messages for the provided buttons
+func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discordgo.MessageSend) []*discordgo.MessageSend {
+	var messages []*discordgo.MessageSend
+	if initialMessage != nil {
+		messages = append(messages, initialMessage)
+	}
+	for len(buttons) > 0 {
+		var messageContent []discordgo.MessageComponent
+		if len(buttons) > 5 {
+			messageContent, buttons = buttons[:5], buttons[5:]
+		} else {
+			messageContent, buttons = buttons, nil
+		}
+		message := &discordgo.MessageSend{
+			Components: messageContent,
+		}
+		messages = append(messages, message)
+	}
+	return messages
+}
+
+func IsAdmin(roleNames []string) bool {
+	adminRole := Bot.Config.AdminRole
+	for _, r := range roleNames {
+		if r == adminRole {
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetMemberRoles(s *discordgo.Session, guildID, userID string) ([]string, error) {
+	var roleNames []string
+	member, err := s.GuildMember(guildID, userID)
+	if err != nil {
+		return roleNames, err
+	}
+
+	if len(member.Roles) == 0 {
+		return roleNames, nil
+	}
+
+	for _, roleID := range member.Roles {
+		role, err := s.State.Role(guildID, roleID)
+		if err != nil {
+			logger.ErrorLog.Printf("Error retrieving role %s: %v", roleID, err)
+			continue
+		}
+		roleNames = append(roleNames, role.Name)
+	}
+
+	return roleNames, nil
+}
+
+// ComputeFileHash computes the SHA-256 hash of a given file
+func ComputeFileHash(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func FileExistsInDB(existingSounds map[int]map[string]string, categoryID int, fileName string, fileHash string) bool {
+	if soundsInCategory, exists := existingSounds[categoryID]; exists {
+		if dbHash, fileExists := soundsInCategory[fileName]; fileExists {
+			// Check if the hash matches
+			return dbHash == fileHash
+		}
+	}
+	return false
+}
+
+func FileExistsInFS(fsFiles []string, fileName string) bool {
+	for _, fsFile := range fsFiles {
+		if fsFile == fileName {
+			return true
+		}
+	}
+	return false
+}

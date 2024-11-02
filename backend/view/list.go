@@ -1,28 +1,27 @@
-package message
+package view
 
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
-	"github.com/cyb3rplis/discord-bot-go/sound"
-	"github.com/cyb3rplis/discord-bot-go/utils"
+	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
 func HandleList(s *discordgo.Session, m *discordgo.MessageCreate, arg, command string) error {
-	categories, err := sound.GetCategories()
+	categories, err := model.GetCategories()
 	if err != nil {
 		logger.ErrorLog.Println("error getting categories:", err)
 	}
 	if len(categories) == 0 {
 		message := "No sound categories found."
-		utils.NewMessageRoutine(command+"nocategories", message, s, m)
+		NewMessageRoutine(command+"nocategories", message, s, m)
 		return err
 	}
 
-	content := utils.BuildListButtons(categories, discordgo.PrimaryButton)
-	messages := utils.BuildMessages(content, nil)
+	content := model.BuildListButtons(categories, discordgo.PrimaryButton)
+	messages := model.BuildMessages(content, nil)
 
 	for _, message := range messages {
-		utils.NewComplexMessageRoutine(command, m.ChannelID, m.ID, message, s)
+		NewComplexMessageRoutine(command, m.ChannelID, m.ID, message, s)
 	}
 	return nil
 }
