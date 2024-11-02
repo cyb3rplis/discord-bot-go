@@ -17,7 +17,6 @@ type Config struct {
 	Prefix    string `json:"prefix"`
 	SoundsDir string `json:"sounds_dir"`
 	DB        string `json:"db"`
-	YTDLP     string `json:"ytdlp"`
 	TTS       string `json:"tts"`
 	TTSTemp   string `json:"tts_temp"`
 	TTSOutput string `json:"tts_output"`
@@ -64,7 +63,6 @@ func LoadConfig() *Config {
 			Prefix:    ".",
 			SoundsDir: filepath.Join(AppPath(), "data", "sounds"),
 			DB:        filepath.Join(AppPath(), "data", "soundbot.db"),
-			YTDLP:     "/usr/local/bin/yt-dlp",
 			TTS:       filepath.Join(AppPath(), "piper"),
 			TTSTemp:   filepath.Join(AppPath(), "data", "tts.wav"),
 			TTSOutput: filepath.Join(AppPath(), "data", "tts.mp3"),
@@ -87,7 +85,6 @@ func LoadConfig() *Config {
 	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
 	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
 	fmt.Println(" > DB:\t\t", configInstance.DB)
-	fmt.Println(" > YTDLP:\t", configInstance.YTDLP)
 	fmt.Println(" > TTS:\t", configInstance.TTS)
 	fmt.Println(" > TTS_TEMP:\t", configInstance.TTSTemp)
 	fmt.Println(" > TTS_OUTPUT:\t", configInstance.TTSOutput)
