@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -77,6 +78,15 @@ func LoadConfig() *Config {
 		}
 		if configInstance.AdminRole == "" {
 			logger.FatalLog.Fatalf("environment variable ADMIN_ROLE not set")
+		}
+
+		// check if necessary binaries are on the system
+		binaries := []string{"dca", "ffmpeg"}
+		for _, bin := range binaries {
+			_, err := exec.LookPath(bin)
+			if err != nil {
+				logger.FatalLog.Fatalf("%s not in PATH", bin)
+			}
 		}
 	})
 

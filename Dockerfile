@@ -7,7 +7,7 @@ COPY backend/ ./
 RUN GOOS=linux GOARCH=amd64 go build -mod vendor -o /dist/discord-bot-go main/main.go
 
 # Stage 2: Set up the runtime environment
-FROM debian:bookworm AS discord-bot-go
+FROM debian:bookworm-slim AS discord-bot-go
 WORKDIR /app
 
 # Install dependencies and download Go
