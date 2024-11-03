@@ -19,8 +19,8 @@ type Download struct {
 }
 
 func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, m *discordgo.MessageCreate) error {
-	message := "🎶  Preparing Youtube Audio, this might take a few seconds..."
-	st := a.NewMessageRoutine(".youtubedl", message, s, m)
+	message := "🎶  Preparing Audio, this might take a few seconds..."
+	st := a.NewMessageRoutine(".audio-dl", message, s, m)
 	err := s.ChannelTyping(m.ChannelID)
 	if err != nil {
 		logger.ErrorLog.Println("error setting typing status:", err)
@@ -46,32 +46,32 @@ func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, m
 
 	err = cmd.Wait()
 	if ctx.Err() == context.DeadlineExceeded {
-		a.DeleteMessageRoutine(s, ".youtubedl")
-		a.DeleteMessageRoutine(s, ".youtubedlerr")
+		a.DeleteMessageRoutine(s, ".audio-dl")
+		a.DeleteMessageRoutine(s, ".audio-dl-err")
 
-		message := "❗  Downloading Youtube Audio failed, song is probably too long <@" + m.Author.ID + ">?"
-		a.NewMessageRoutine(".youtubedlerr", message, s, m)
-		return fmt.Errorf("error downloading youtube audio: %w", err)
+		message := "❗  Downloading audio failed, song is probably too long <@" + m.Author.ID + ">?"
+		a.NewMessageRoutine(".audio-dl-err", message, s, m)
+		return fmt.Errorf("error downloading audio: %w", err)
 	} else if err != nil {
-		a.DeleteMessageRoutine(s, ".youtubedl")
-		a.DeleteMessageRoutine(s, ".youtubedlerr")
+		a.DeleteMessageRoutine(s, ".audio-dl")
+		a.DeleteMessageRoutine(s, ".audio-dl-err")
 
-		message := "❗  Downloading Youtube Audio failed, did you use the correct link <@" + m.Author.ID + ">?"
-		a.NewMessageRoutine(".youtubedlerr", message, s, m)
-		return fmt.Errorf("error downloading youtube audio: %w", err)
+		message := "❗  Downloading audio failed, did you use the correct link <@" + m.Author.ID + ">?"
+		a.NewMessageRoutine(".audio-dl-err", message, s, m)
+		return fmt.Errorf("error downloading audio: %w", err)
 	}
 
-	a.DeleteMessageRoutine(s, ".youtubedlerr")
+	a.DeleteMessageRoutine(s, ".audio-dl-err")
 
 	cmd = exec.Command("bash", "-c", fmt.Sprintf("ffmpeg -i %s -filter:a \"loudnorm=I=-14:LRA=7:TP=-2, compand=attacks=0:points=-80/-80|-10/-5|0/-1\" -f s16le -ar 48000 -ac 2 pipe:1 | dca > %s", a.model.Config.YTTemp, a.model.Config.YTOutput))
 	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf("failed to to convert youtube audio from mp3 to dca: %w", err)
+		return fmt.Errorf("failed to to convert audio from mp3 to dca: %w", err)
 	}
 
 	err = cmd.Wait()
 	if err != nil {
-		return fmt.Errorf("error converting youtube audio: %w", err)
+		return fmt.Errorf("error converting audio: %w", err)
 	}
 
 	err = s.ChannelMessageDelete(st.ChannelID, st.ID)

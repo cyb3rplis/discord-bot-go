@@ -67,7 +67,7 @@ func (a *API) HandleTTS(s *discordgo.Session, m *discordgo.MessageCreate, comman
 			// play sound and clean up files
 			err = a.PlayCustomAudio(s, m, "tts")
 			if err != nil {
-				logger.ErrorLog.Println("error playing youtube audio:", err)
+				logger.ErrorLog.Println("error playing audio:", err)
 			}
 		} else {
 			logger.InfoLog.Println("TTS Text does not match regex pattern: ", ttsText)

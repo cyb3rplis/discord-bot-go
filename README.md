@@ -13,7 +13,7 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Categories
 - [x] Sync and Play music from local files
 - [x] Interact with buttons to play music (no need to type commands)
-- [x] Play music from youtube
+- [x] Play music from video platform
 - [x] Text2Speech
 - [x] Statistics (Sounds, User)
 - [x] Most used sounds (Top 10, Top 20)

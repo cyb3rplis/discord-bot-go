@@ -101,7 +101,7 @@ func (a *API) PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, 
 	var soundFile string
 	var customModule string
 
-	if audioType == "youtube" {
+	if audioType == "audio" {
 		soundFile = a.model.Config.YTOutput
 		customModule = "Youtube"
 
@@ -202,8 +202,8 @@ func (a *API) VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate
 	}
 
 	if !userInVS {
-		// If the user is not in a voice channel, send an error message and avoid processing the youtube audio
-		logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
+		// If the user is not in a voice channel, send an error message and avoid processing the audio
+		logger.InfoLog.Printf("User %s tried to play sound but is not in a voice channel", m.Author.GlobalName)
 		msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
 		a.NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)

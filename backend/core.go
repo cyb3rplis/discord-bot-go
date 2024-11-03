@@ -59,7 +59,7 @@ func Init() {
 		logger.ErrorLog.Println("error creating Discord session: ", err)
 		return
 	}
-
+	
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(viewInstance.AudioMessageHandler)
 
@@ -97,7 +97,7 @@ func Init() {
 	<-sc
 
 	// Cleanly close down the Discord session.
-	dg.Close()
+	_ = dg.Close()
 
 	ctrl.Run()
 }

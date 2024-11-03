@@ -67,7 +67,7 @@ func (a *API) AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCrea
 			// show help text
 			message := fmt.Sprintf("🧐  Help:\n"+
 				"> » **Sounds**\t\t\t\t%slist\n"+
-				"> » **Youtube Audio**\t%syoutube\n"+
+				"> » **Audio**\t\t\t\t%saudio\n"+
 				"> » **Text2Speech**\t%stts\n"+
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix, prefix, prefix, prefix)
@@ -80,11 +80,11 @@ func (a *API) AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCrea
 			if err != nil {
 				logger.ErrorLog.Println("error handling cleanup:", err)
 			}
-		case strings.HasPrefix(command, fmt.Sprintf("%syoutube", prefix)):
-			// Play the sound of a YouTube video
-			err := a.HandleYoutube(s, m, arg, command)
+		case strings.HasPrefix(command, fmt.Sprintf("%saudio", prefix)):
+			// Play the sound of a video streaming platform
+			err := a.HandleAudio(s, m, arg, command)
 			if err != nil {
-				_ = logger.ReactionLogError(s, m, "error handling youtube audio", err)
+				_ = logger.ReactionLogError(s, m, "error handling audio", err)
 				return
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
