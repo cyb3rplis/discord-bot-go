@@ -7,15 +7,15 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
-func HandleUsers(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {
+func (a *API) HandleUsers(s *discordgo.Session, m *discordgo.MessageCreate, command string) error {
 	meta := model.Meta
 	memberRoles, err := model.GetMemberRoles(s, meta.Guild.ID, m.Author.ID)
 	if err != nil {
 		return err
 	}
 
-	if model.IsAdmin(memberRoles) {
-		users, err := model.GetUsers()
+	if a.model.IsAdmin(memberRoles) {
+		users, err := a.model.GetUsers()
 		if err != nil {
 			return err
 		}

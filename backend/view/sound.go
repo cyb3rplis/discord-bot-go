@@ -31,7 +31,7 @@ type Entry struct {
 }
 
 // PlaySound plays the current buffer to the provided channel.
-func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
+func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
@@ -40,16 +40,16 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	}
 
 	// Load the sound file.
-	if soundName == model.Bot.Config.YTOutput || soundName == model.Bot.Config.TTSOutput {
-		err = model.LoadSoundFS(soundName)
+	if soundName == a.model.Config.YTOutput || soundName == a.model.Config.TTSOutput {
+		err = a.model.LoadSoundFS(soundName)
 	} else {
-		err = model.LoadSound(soundName)
+		err = a.model.LoadSound(soundName)
 	}
 
 	if err != nil {
 		logger.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
 		msg := "Sound does not exist\n> Sikerim"
-		NewMessageRoutine(".sounderr", msg, s, m)
+		a.NewMessageRoutine(".sounderr", msg, s, m)
 		return err
 	}
 
@@ -93,20 +93,20 @@ func PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channe
 	model.Buffer = make([][]byte, 0)
 	botSpeaking = false
 
-	DeleteMessageRoutine(s, ".stopbutton")
+	a.DeleteMessageRoutine(s, ".stopbutton")
 	return nil
 }
 
-func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType string) (err error) {
+func (a *API) PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType string) (err error) {
 	var soundFile string
 	var customModule string
 
 	if audioType == "youtube" {
-		soundFile = model.Bot.Config.YTOutput
+		soundFile = a.model.Config.YTOutput
 		customModule = "Youtube"
 
 	} else if audioType == "tts" {
-		soundFile = model.Bot.Config.TTSOutput
+		soundFile = a.model.Config.TTSOutput
 		customModule = "Text2Speech"
 	} else {
 		logger.ErrorLog.Printf("custom module %s not known!", audioType)
@@ -135,7 +135,7 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 				logger.ErrorLog.Println("error converting user ID to int:", err)
 				return err
 			} else {
-				err = model.AddUser(userID, m.Author.GlobalName)
+				err = a.model.AddUser(userID, m.Author.GlobalName)
 				if err != nil {
 					logger.ErrorLog.Println("error adding user:", err)
 					return err
@@ -156,12 +156,12 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 				Components: content,
 			}
 
-			NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, msg, s)
+			a.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, msg, s)
 
 			logger.InfoLog.Printf("User: %s played %s sound", m.Author.GlobalName, customModule)
 
 			// Play the sound
-			err = PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, g.ID, vs.ChannelID, soundFile)
+			err = a.PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, g.ID, vs.ChannelID, soundFile)
 			if err != nil {
 				logger.ErrorLog.Println("error playing sound:", err)
 				return err
@@ -175,12 +175,12 @@ func PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType
 	logger.InfoLog.Printf("User %s tried to play %s sound but is not in a voice channel", m.Author.GlobalName, customModule)
 	msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
-	NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
+	a.NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
 
 	return fmt.Errorf("user not in voice channel")
 }
 
-func VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func (a *API) VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	userInVS := false
 	c, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -206,7 +206,7 @@ func VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
 		logger.InfoLog.Printf("User %s tried to play youtube sound but is not in a voice channel", m.Author.GlobalName)
 		msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
 
-		NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
+		a.NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
 		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
 	}
 
@@ -214,9 +214,9 @@ func VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
 }
 
 // SyncDatabaseWithFileSystem will sync the database with the filesystem.
-func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
-	existingCategories, _ := model.GetCategoriesM() // Get current folders/categories in DB
-	existingSounds := model.GetSoundsM()            // Get current files/sounds in DB
+func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
+	existingCategories, _ := a.model.GetCategoriesM() // Get current folders/categories in DB
+	existingSounds := a.model.GetSoundsM()            // Get current files/sounds in DB
 
 	for folder, files := range folderMap {
 		var categoryID int
@@ -226,7 +226,7 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			categoryID = dbCategoryID // The folder already exists
 		} else {
 			// The folder doesn't exist in the database, so we need to add it
-			if err := model.AddCategory(folder); err != nil {
+			if err := a.model.AddCategory(folder); err != nil {
 				if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
 					logger.WarningLog.Printf("Failed to add category %s: %v", folder, err)
 				}
@@ -234,12 +234,12 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			}
 
 			// Fetch the new category ID after insertion
-			categoryID = model.GetCategoryByID(folder)
+			categoryID = a.model.GetCategoryByID(folder)
 		}
 
 		// Add new sounds for this category
 		for _, file := range files {
-			soundPath := filepath.Join(model.Bot.Config.SoundsDir, folder, file+".dca")
+			soundPath := filepath.Join(a.model.Config.SoundsDir, folder, file+".dca")
 			fileData, err := os.ReadFile(soundPath)
 			if err != nil {
 				return fmt.Errorf("failed to read sound file: %w", err)
@@ -257,7 +257,7 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			}
 
 			// File does not exist in the DB, add it
-			if err := model.AddSound(categoryID, file, fileHash, fileData); err != nil {
+			if err := a.model.AddSound(categoryID, file, fileHash, fileData); err != nil {
 				//ignore this error if the sound already exists
 				if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
 					logger.WarningLog.Printf("Failed to add sound %s to category %s: %v", file, folder, err)
@@ -270,7 +270,7 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	for folder, categoryID := range existingCategories {
 		if _, exists := folderMap[folder]; !exists {
 			// Folder exists in the database but not in the filesystem
-			if err := model.RemoveCategory(categoryID); err != nil {
+			if err := a.model.RemoveCategory(categoryID); err != nil {
 				logger.InfoLog.Printf("Failed to remove category %s (ID: %d): %v", folder, categoryID, err)
 			}
 
@@ -283,7 +283,7 @@ func SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			for dbFile := range dbFiles {
 				if !model.FileExistsInFS(fsFiles, dbFile) {
 					// File exists in the database but not in the filesystem
-					if err := model.RemoveSound(categoryID, dbFile); err != nil {
+					if err := a.model.RemoveSound(categoryID, dbFile); err != nil {
 						logger.InfoLog.Printf("Failed to remove sound %s from category %s: %v", dbFile, folder, err)
 					}
 

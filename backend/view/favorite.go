@@ -7,17 +7,17 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
-func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2, command string) error {
+func (a *API) HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2, command string) error {
 	switch arg {
 	case "add":
 		// check if sound exists
-		soundID, _ := model.GetFavoriteByNameAndUserID(arg2, m.Author.ID)
+		soundID, _ := a.model.GetFavoriteByNameAndUserID(arg2, m.Author.ID)
 		if soundID != "" {
 			_ = logger.ReactionLogSuccess(s, m, "sound already in favorites", "")
 			return nil
 		}
 		// add sound to favorites
-		err := model.SoundFavoriteAdd(m, arg2)
+		err := a.model.SoundFavoriteAdd(m, arg2)
 		if err != nil {
 			_ = logger.ReactionLogError(s, m, "error adding sound to favorites", err)
 			return err
@@ -26,7 +26,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		return nil
 	case "rm":
 		// remove sound from favorites
-		err := model.SoundFavoriteRemove(m, arg2)
+		err := a.model.SoundFavoriteRemove(m, arg2)
 		if err != nil {
 			_ = logger.ReactionLogError(s, m, "error removing sound from favorites", err)
 			return err
@@ -34,7 +34,7 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		_ = logger.ReactionLogSuccess(s, m, "sound removed from favorites", "")
 		return nil
 	case "list":
-		favorites, err := model.GetUserFavorites(m.Author.ID)
+		favorites, err := a.model.GetUserFavorites(m.Author.ID)
 		if err != nil {
 			logger.ErrorLog.Printf("error getting user favorites: %v", err)
 		}
@@ -56,17 +56,17 @@ func HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2,
 		messages := model.BuildMessages(buttons, initialMessage)
 
 		for i, message := range messages {
-			NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s)
+			a.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s)
 		}
 		_ = logger.ReactionLogSuccess(s, m, "favorites listed", "")
 		return nil
 	default:
 		message := fmt.Sprintf("🔥  Your favorites helper:\n" +
-			"> » **List sounds**\t\t" + model.Bot.Config.Prefix + "list\n" +
-			"> » **Add sound**\t\t " + model.Bot.Config.Prefix + "add <sound_name>\n" +
-			"> » **Remove sound**\t\t " + model.Bot.Config.Prefix + "rm <sound_name>\n")
+			"> » **List sounds**\t\t" + a.model.Config.Prefix + "list\n" +
+			"> » **Add sound**\t\t " + a.model.Config.Prefix + "add <sound_name>\n" +
+			"> » **Remove sound**\t\t " + a.model.Config.Prefix + "rm <sound_name>\n")
 		_ = logger.ReactionLogSuccess(s, m, "favorites help message sent", "")
-		NewMessageRoutine(command+"help", message, s, m)
+		a.NewMessageRoutine(command+"help", message, s, m)
 	}
 	return nil
 }

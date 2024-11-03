@@ -13,9 +13,8 @@ import (
 )
 
 // AudioMessageHandler is created on any channel that the authenticated bot has access to.
-func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	meta := model.Meta
-	prefix := model.Bot.Config.Prefix
+func (a *API) AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	prefix := a.model.Config.Prefix
 
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
@@ -31,7 +30,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		logger.ErrorLog.Println("error converting user ID to int:", err)
 	}
-	err = model.AddUser(userID, m.Author.GlobalName)
+	err = a.model.AddUser(userID, m.Author.GlobalName)
 	if err != nil {
 		logger.ErrorLog.Println("error adding user to DB:", err)
 	}
@@ -59,7 +58,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case len(args) > 4:
 		return
 	}
-
+	meta := model.Meta
 	// check if the message originated from the same Guild ID as the bot's Guild ID when he was started
 	if m.GuildID == meta.Guild.ID {
 		// we only want to enable the below commands in Servers
@@ -72,45 +71,45 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"> » **Text2Speech**\t%stts\n"+
 				"> » **Statistics**\t\t  %sstats\n"+
 				"> » **Favorites**\t\t  %sfav\n", prefix, prefix, prefix, prefix, prefix)
-			NewMessageRoutine(command, message, s, m)
+			a.NewMessageRoutine(command, message, s, m)
 			_ = logger.ReactionLogSuccess(s, m, "help message sent", "")
 			return
 		case command == fmt.Sprintf("%scleanup", prefix):
 			// Cleanup all messages
-			err := HandleCleanUp(s, m, arg, command)
+			err := a.HandleCleanUp(s, m, arg, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling cleanup:", err)
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%syoutube", prefix)):
 			// Play the sound of a YouTube video
-			err := HandleYoutube(s, m, arg, command)
+			err := a.HandleYoutube(s, m, arg, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling youtube audio", err)
 				return
 			}
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
-			err := HandleStatistics(s, m, arg, command)
+			err := a.HandleStatistics(s, m, arg, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling statistics", err)
 			}
 			_ = logger.ReactionLogSuccess(s, m, "statistics action successful", "")
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
-			err := HandleFavorite(s, m, arg, arg2, command)
+			err := a.HandleFavorite(s, m, arg, arg2, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling favorites:", err)
 			}
 			return
 		case command == fmt.Sprintf("%stts", prefix):
 			// Text2Speech
-			err := HandleTTS(s, m, command)
+			err := a.HandleTTS(s, m, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling TTS:", err)
 			}
 		case command == fmt.Sprintf("%slist", prefix):
 			// List categories
-			err := HandleList(s, m, arg, command)
+			err := a.HandleList(s, m, arg, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling list", err)
 				return
@@ -147,7 +146,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				logger.ErrorLog.Println("error getting member roles:", err)
 			}
 
-			if model.IsAdmin(memberRoles) {
+			if a.model.IsAdmin(memberRoles) {
 				message = fmt.Sprintf("🧙🏻‍♂️  Help:\n"+
 					"> » **Statistics**\t\t  %sstats\n"+
 					"> » **Favorites**\t\t  %sfav\n"+
@@ -163,7 +162,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sstats", prefix)):
 			// Handle statistics
-			err := HandleStatistics(s, m, arg, command)
+			err := a.HandleStatistics(s, m, arg, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling statistics", err)
 				return
@@ -172,14 +171,14 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%sfav", prefix)):
 			// Handle favorite sounds
-			err := HandleFavorite(s, m, arg, arg2, command)
+			err := a.HandleFavorite(s, m, arg, arg2, command)
 			if err != nil {
 				logger.ErrorLog.Println("error handling favorites:", err)
 			}
 			return
 		case strings.HasPrefix(command, fmt.Sprintf("%susers", prefix)):
 			// Handle gulag
-			err := HandleUsers(s, m, command)
+			err := a.HandleUsers(s, m, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling users", err)
 			} else {
@@ -187,7 +186,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_ = logger.ReactionLogSuccess(s, m, "users action successful", "")
 		case strings.HasPrefix(command, fmt.Sprintf("%sgulag", prefix)):
 			// Handle gulag
-			err := HandleGulag(s, m, arg, arg2, arg3, command)
+			err := a.HandleGulag(s, m, arg, arg2, arg3, command)
 			if err != nil {
 				_ = logger.ReactionLogError(s, m, "error handling gulag", err)
 				return
@@ -199,7 +198,7 @@ func AudioMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) (st *discordgo.Message) {
+func (a *API) NewMessageRoutine(command, message string, s *discordgo.Session, m *discordgo.MessageCreate) (st *discordgo.Message) {
 	// send our new message
 	st, err := s.ChannelMessageSend(m.ChannelID, message)
 	if err != nil {
@@ -207,7 +206,7 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 	}
 
 	// get all old messages for this command
-	oldMessages, err := model.GetAllCommandMessages(command)
+	oldMessages, err := a.model.GetAllCommandMessages(command)
 	if err != nil {
 		logger.ErrorLog.Println("error getting all command messages:", err)
 	}
@@ -218,7 +217,7 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 			err := s.ChannelMessageDelete(cID, msg)
 			if err != nil {
 				logger.ErrorLog.Printf("error deleting old message - ID: %s, err: %v", msg, err)
-				err = model.DeleteMessageID(msg)
+				err = a.model.DeleteMessageID(msg)
 				if err != nil {
 					logger.ErrorLog.Printf("error deleting message from DB: %v", err)
 				}
@@ -227,12 +226,12 @@ func NewMessageRoutine(command, message string, s *discordgo.Session, m *discord
 	}
 
 	// insert the new message id into the database
-	err = model.InsertMessageID(st.ChannelID, st.ID, command)
+	err = a.model.InsertMessageID(st.ChannelID, st.ID, command)
 	if err != nil {
 		logger.ErrorLog.Println("error inserting message id:", err)
 	}
 
-	err = model.DeleteOldCommandMessages(st.ID, command)
+	err = a.model.DeleteOldCommandMessages(st.ID, command)
 	if err != nil {
 		logger.ErrorLog.Println("error deleting old message:", err)
 	}
@@ -254,7 +253,7 @@ func NewPrivateMessageRoutine(message string, s *discordgo.Session, m *discordgo
 	return nil
 }
 
-func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
+func (a *API) NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.MessageSend, s *discordgo.Session) (st *discordgo.Message) {
 	// send our new message
 	st, err := s.ChannelMessageSendComplex(channelID, msg)
 	if err != nil {
@@ -262,7 +261,7 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 	}
 
 	// get all old messages for this command
-	oldMessages, err := model.GetAllCommandMessages(command)
+	oldMessages, err := a.model.GetAllCommandMessages(command)
 	if err != nil {
 		logger.ErrorLog.Println("error getting all command messages:", err)
 	}
@@ -273,7 +272,7 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 			err := s.ChannelMessageDelete(cID, msg)
 			if err != nil {
 				logger.ErrorLog.Printf("error deleting old message - ID: %s, err: %v", msg, err)
-				err = model.DeleteMessageID(msg)
+				err = a.model.DeleteMessageID(msg)
 				if err != nil {
 					logger.ErrorLog.Printf("error deleting message from DB: %v", err)
 				}
@@ -282,20 +281,20 @@ func NewComplexMessageRoutine(command, channelID, msgID string, msg *discordgo.M
 	}
 
 	// insert the new message id into the database
-	err = model.InsertMessageID(st.ChannelID, st.ID, command)
+	err = a.model.InsertMessageID(st.ChannelID, st.ID, command)
 	if err != nil {
 		logger.ErrorLog.Println("error inserting message id:", err)
 	}
 
-	err = model.DeleteOldCommandMessages(st.ID, command)
+	err = a.model.DeleteOldCommandMessages(st.ID, command)
 	if err != nil {
 		logger.ErrorLog.Println("error deleting old message:", err)
 	}
 	return st
 }
 
-func DeleteMessageRoutine(s *discordgo.Session, command string) {
-	oldMessages, err := model.GetAllCommandMessages(command)
+func (a *API) DeleteMessageRoutine(s *discordgo.Session, command string) {
+	oldMessages, err := a.model.GetAllCommandMessages(command)
 	if err != nil {
 		logger.ErrorLog.Println("error getting all command messages:", err)
 	}
@@ -310,7 +309,7 @@ func DeleteMessageRoutine(s *discordgo.Session, command string) {
 		}
 	}
 
-	err = model.DeleteAllCommandMessages(command)
+	err = a.model.DeleteAllCommandMessages(command)
 	if err != nil {
 		logger.ErrorLog.Println("error deleting all command messages:", err)
 	}

@@ -1,24 +1,18 @@
-package cronjob
+package controller
 
 import (
 	"github.com/cyb3rplis/discord-bot-go/logger"
-	"github.com/cyb3rplis/discord-bot-go/model"
-	"github.com/cyb3rplis/discord-bot-go/view"
 	"github.com/robfig/cron/v3"
 )
 
-func InitCron() {
-	syncCronjob()
-}
-
-func syncCronjob() {
+func (c *Controller) SyncCronjob() {
 	cronJob := cron.New()
 	_, _ = cronJob.AddFunc("*/5 * * * *", func() {
-		fsSounds, err := model.ScanDirectory()
+		fsSounds, err := c.model.ScanDirectory()
 		if err != nil {
 			logger.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
 		}
-		err = view.SyncDatabaseWithFileSystem(fsSounds)
+		err = c.view.SyncDatabaseWithFileSystem(fsSounds)
 		if err != nil {
 			logger.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
 		}

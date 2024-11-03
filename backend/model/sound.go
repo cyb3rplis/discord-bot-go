@@ -12,10 +12,11 @@ import (
 
 var Buffer = make([][]byte, 0)
 
-func AddSound(categoryID int, fileName, fileHash string, fileData []byte) error {
+// AddSound adds a sound to the database.
+func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []byte) error {
 	// Check if the sound with the same hash already exists
 	var existingID int
-	err := Bot.Db.QueryRow("SELECT id FROM sounds WHERE hash = ?", fileHash).Scan(&existingID)
+	err := m.Db.QueryRow("SELECT id FROM sounds WHERE hash = ?", fileHash).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to check existing sound: %w", err)
 	}
@@ -25,28 +26,30 @@ func AddSound(categoryID int, fileName, fileHash string, fileData []byte) error 
 		return nil
 	}
 	alias := RemoveFileExtension(fileName) // Or any other default value, e.g., ""
-	_, err = Bot.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
+	_, err = m.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
 	return err
 }
 
-func RemoveCategory(categoryID int) error {
+// RemoveCategory removes a category from the database.
+func (m *Model) RemoveCategory(categoryID int) error {
 	// ON DELETE CASCADE - sounds will get deleted automatically when the category is deleted
-	_, err := Bot.Db.Exec("DELETE FROM categories WHERE id = ?", categoryID)
+	_, err := m.Db.Exec("DELETE FROM categories WHERE id = ?", categoryID)
 	return err
 }
 
-func RemoveSound(categoryID int, fileName string) error {
-	_, err := Bot.Db.Exec("DELETE FROM sounds WHERE category_id = ? AND name = ?", categoryID, fileName)
+// RemoveSound removes a sound from the database.
+func (m *Model) RemoveSound(categoryID int, fileName string) error {
+	_, err := m.Db.Exec("DELETE FROM sounds WHERE category_id = ? AND name = ?", categoryID, fileName)
 	return err
 }
 
 // LoadSound attempts to load an encoded sound file from disk.
-func LoadSound(soundName string) error {
+func (m *Model) LoadSound(soundName string) error {
 	var opusLen int16
 	var fileData []byte
 
 	// get sounds from database
-	err := Bot.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
+	err := m.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("sound not found: %s", soundName)
@@ -81,8 +84,8 @@ func LoadSound(soundName string) error {
 }
 
 // GetSounds returns a list of sounds in the specified category (from DB)
-func GetSounds(category string) ([]string, error) {
-	rows, err := Bot.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ? ORDER BY sounds.name ASC", category)
+func (m *Model) GetSounds(category string) ([]string, error) {
+	rows, err := m.Db.Query("SELECT sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE categories.name = ? ORDER BY sounds.name ASC", category)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sounds in category: %w", err)
 	}
@@ -100,9 +103,9 @@ func GetSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
-func GetCategoryByID(folderName string) int {
+func (m *Model) GetCategoryByID(folderName string) int {
 	var categoryID int
-	err := Bot.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)
+	err := m.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This should not happen because the category should exist by this point.
@@ -114,8 +117,8 @@ func GetCategoryByID(folderName string) int {
 	return categoryID
 }
 
-func GetSoundsM() map[int]map[string]string {
-	rows, err := Bot.Db.Query("SELECT category_id, name, hash FROM sounds")
+func (m *Model) GetSoundsM() map[int]map[string]string {
+	rows, err := m.Db.Query("SELECT category_id, name, hash FROM sounds")
 	if err != nil {
 		logger.FatalLog.Fatal(err)
 	}
@@ -136,10 +139,10 @@ func GetSoundsM() map[int]map[string]string {
 	return sounds
 }
 
-func AddCategory(folderName string) error {
+func (m *Model) AddCategory(folderName string) error {
 	// Check if the category with the same name already exists
 	var existingID int
-	err := Bot.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&existingID)
+	err := m.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to check existing category: %w", err)
 	}
@@ -148,12 +151,12 @@ func AddCategory(folderName string) error {
 		//logger.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
 		return nil
 	}
-	_, err = Bot.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
+	_, err = m.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
 	return err
 }
 
 // LoadSoundFS loads the sound file from the filesystem.
-func LoadSoundFS(soundName string) error {
+func (m *Model) LoadSoundFS(soundName string) error {
 	var opusLen int16
 	file, err := os.Open(soundName)
 	if err != nil {
@@ -192,15 +195,15 @@ func LoadSoundFS(soundName string) error {
 }
 
 // CleanUpSoundFile deletes the sound files created during the TTS process.
-func CleanUpSoundFile(module string) {
+func (m *Model) CleanUpSoundFile(module string) {
 	if module == "tts" {
-		err := os.Remove(Bot.Config.TTSTemp)
+		err := os.Remove(m.Config.TTSTemp)
 		if err != nil {
 			// Handle error if file deletion fails
 			logger.ErrorLog.Printf("error deleting file: %v\n", err)
 		}
 
-		err = os.Remove(Bot.Config.TTSOutput)
+		err = os.Remove(m.Config.TTSOutput)
 		if err != nil {
 			// Handle error if file deletion fails
 			logger.ErrorLog.Printf("error deleting file: %v\n", err)

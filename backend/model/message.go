@@ -6,8 +6,8 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
 
-func GetCategoriesM() (map[string]int, error) {
-	rows, err := Bot.Db.Query("SELECT id, name FROM categories")
+func (m *Model) GetCategoriesM() (map[string]int, error) {
+	rows, err := m.Db.Query("SELECT id, name FROM categories")
 	if err != nil {
 		return nil, err
 	}
@@ -26,8 +26,8 @@ func GetCategoriesM() (map[string]int, error) {
 }
 
 // GetCategories returns a list of sound categories (from DB)
-func GetCategories() ([]string, error) {
-	rows, err := Bot.Db.Query("SELECT name FROM categories")
+func (m *Model) GetCategories() ([]string, error) {
+	rows, err := m.Db.Query("SELECT name FROM categories")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query categories: %w", err)
 	}
@@ -45,8 +45,8 @@ func GetCategories() ([]string, error) {
 	return categories, nil
 }
 
-func GetAllMessages() (messages map[string][]string, err error) {
-	rows, err := Bot.Db.Query("SELECT channel_id, message_id FROM messages;")
+func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
+	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages;")
 	if err != nil {
 		logger.FatalLog.Fatal(err)
 	}
@@ -70,8 +70,8 @@ func GetAllMessages() (messages map[string][]string, err error) {
 	return messages, err
 }
 
-func GetAllCommandMessages(command string) (messages map[string][]string, err error) {
-	rows, err := Bot.Db.Query("SELECT channel_id, message_id FROM messages WHERE command = ?;", command)
+func (m *Model) GetAllCommandMessages(command string) (messages map[string][]string, err error) {
+	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages WHERE command = ?;", command)
 	if err != nil {
 		logger.FatalLog.Fatal(err)
 	}
@@ -95,8 +95,8 @@ func GetAllCommandMessages(command string) (messages map[string][]string, err er
 	return messages, err
 }
 
-func InsertMessageID(channelID, messageID, command string) error {
-	_, err := Bot.Db.Exec("INSERT INTO messages (channel_id, message_id, command) VALUES (?, ?, ?);", channelID, messageID, command)
+func (m *Model) InsertMessageID(channelID, messageID, command string) error {
+	_, err := m.Db.Exec("INSERT INTO messages (channel_id, message_id, command) VALUES (?, ?, ?);", channelID, messageID, command)
 	if err != nil {
 		return err
 	}
@@ -104,8 +104,8 @@ func InsertMessageID(channelID, messageID, command string) error {
 	return nil
 }
 
-func DeleteMessageID(messageID string) error {
-	_, err := Bot.Db.Exec("DELETE FROM messages WHERE message_id = ?;", messageID)
+func (m *Model) DeleteMessageID(messageID string) error {
+	_, err := m.Db.Exec("DELETE FROM messages WHERE message_id = ?;", messageID)
 	if err != nil {
 		return err
 	}
@@ -113,8 +113,8 @@ func DeleteMessageID(messageID string) error {
 	return nil
 }
 
-func DeleteAllCommandMessages(command string) error {
-	_, err := Bot.Db.Exec("DELETE FROM messages WHERE command = ?;", command)
+func (m *Model) DeleteAllCommandMessages(command string) error {
+	_, err := m.Db.Exec("DELETE FROM messages WHERE command = ?;", command)
 	if err != nil {
 		return err
 	}
@@ -122,8 +122,8 @@ func DeleteAllCommandMessages(command string) error {
 	return nil
 }
 
-func DeleteOldCommandMessages(newID, command string) error {
-	_, err := Bot.Db.Exec("DELETE FROM messages WHERE message_id != ? AND command = ?;", newID, command)
+func (m *Model) DeleteOldCommandMessages(newID, command string) error {
+	_, err := m.Db.Exec("DELETE FROM messages WHERE message_id != ? AND command = ?;", newID, command)
 	if err != nil {
 		return err
 	}
@@ -131,8 +131,8 @@ func DeleteOldCommandMessages(newID, command string) error {
 	return nil
 }
 
-func DeleteAllMessages() error {
-	_, err := Bot.Db.Exec("DELETE FROM messages;")
+func (m *Model) DeleteAllMessages() error {
+	_, err := m.Db.Exec("DELETE FROM messages;")
 	if err != nil {
 		return err
 	}

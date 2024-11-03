@@ -14,8 +14,8 @@ import (
 )
 
 // ScanDirectory scans the sound directory and returns a map of folders and files.
-func ScanDirectory() (map[string][]string, error) {
-	soundsRoot := Bot.Config.SoundsDir
+func (m *Model) ScanDirectory() (map[string][]string, error) {
+	soundsRoot := m.Config.SoundsDir
 	folderMap := make(map[string][]string)
 
 	err := filepath.WalkDir(soundsRoot, func(path string, d os.DirEntry, err error) error {
@@ -155,8 +155,8 @@ func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discord
 	return messages
 }
 
-func IsAdmin(roleNames []string) bool {
-	adminRole := Bot.Config.AdminRole
+func (m *Model) IsAdmin(roleNames []string) bool {
+	adminRole := m.Config.AdminRole
 	for _, r := range roleNames {
 		if r == adminRole {
 			return true

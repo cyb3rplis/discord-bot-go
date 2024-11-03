@@ -15,8 +15,8 @@ type Favorite struct {
 	CategoryName string
 }
 
-func GetUserFavorites(userID string) ([]Favorite, error) {
-	rows, err := Bot.Db.Query("SELECT user_favorites.id, user_favorites.user_id, user_favorites.sound_id, sounds.name, categories.id, categories.name "+
+func (m *Model) GetUserFavorites(userID string) ([]Favorite, error) {
+	rows, err := m.Db.Query("SELECT user_favorites.id, user_favorites.user_id, user_favorites.sound_id, sounds.name, categories.id, categories.name "+
 		"FROM user_favorites "+
 		"LEFT JOIN sounds ON sounds.id = user_favorites.sound_id "+
 		"LEFT JOIN categories ON categories.id = sounds.category_id WHERE user_id = ?", userID)
@@ -56,46 +56,46 @@ func GetUserFavorites(userID string) ([]Favorite, error) {
 	return favorites, nil
 }
 
-func SoundFavoriteAdd(m *discordgo.MessageCreate, arg string) error {
-	userID := m.Author.ID
+func (m *Model) SoundFavoriteAdd(mc *discordgo.MessageCreate, arg string) error {
+	userID := mc.Author.ID
 	soundName := arg
 	//get soundID by Name
-	soundID, err := GetSoundIDByName(soundName)
+	soundID, err := m.GetSoundIDByName(soundName)
 	if err != nil {
 		return fmt.Errorf("failed to get sound by name: %w", err)
 	}
-	_, err = Bot.Db.Exec("INSERT INTO user_favorites (user_id, sound_id) VALUES (?, ?)", userID, soundID)
+	_, err = m.Db.Exec("INSERT INTO user_favorites (user_id, sound_id) VALUES (?, ?)", userID, soundID)
 	if err != nil {
 		return fmt.Errorf("failed to insert favorite: %w", err)
 	}
 	return nil
 }
 
-func SoundFavoriteRemove(m *discordgo.MessageCreate, arg string) error {
-	userID := m.Author.ID
+func (m *Model) SoundFavoriteRemove(mc *discordgo.MessageCreate, arg string) error {
+	userID := mc.Author.ID
 	soundName := arg
 	//get soundID by Name
-	soundID, err := GetFavoriteByNameAndUserID(soundName, userID)
+	soundID, err := m.GetFavoriteByNameAndUserID(soundName, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get sound by name: %w", err)
 	}
-	_, err = Bot.Db.Exec("DELETE FROM user_favorites WHERE id = ?", soundID)
+	_, err = m.Db.Exec("DELETE FROM user_favorites WHERE id = ?", soundID)
 	if err != nil {
 		return fmt.Errorf("failed to delete favorite: %w", err)
 	}
 	return nil
 }
 
-func GetFavoriteByNameAndUserID(name, userID string) (soundName string, err error) {
-	err = Bot.Db.QueryRow("SELECT user_favorites.id FROM user_favorites LEFT JOIN sounds s on user_favorites.sound_id = s.id WHERE name = ? AND user_id = ?", name, userID).Scan(&soundName)
+func (m *Model) GetFavoriteByNameAndUserID(name, userID string) (soundName string, err error) {
+	err = m.Db.QueryRow("SELECT user_favorites.id FROM user_favorites LEFT JOIN sounds s on user_favorites.sound_id = s.id WHERE name = ? AND user_id = ?", name, userID).Scan(&soundName)
 	if err != nil {
 		return "", fmt.Errorf("failed to query favorite by name and user ID: %w", err)
 	}
 	return soundName, nil
 }
 
-func GetSoundIDByName(name string) (soundName string, err error) {
-	err = Bot.Db.QueryRow("SELECT id FROM sounds WHERE name = ?", name).Scan(&soundName)
+func (m *Model) GetSoundIDByName(name string) (soundName string, err error) {
+	err = m.Db.QueryRow("SELECT id FROM sounds WHERE name = ?", name).Scan(&soundName)
 	if err != nil {
 		return "", fmt.Errorf("failed to query sound by alias: %w", err)
 	}

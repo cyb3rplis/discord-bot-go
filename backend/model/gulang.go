@@ -5,9 +5,9 @@ import (
 	"strconv"
 )
 
-func GulagUser(userID string, minutes int) error {
+func (m *Model) GulagUser(userID string, minutes int) error {
 	timeout := "+" + strconv.Itoa(minutes) + " minutes"
-	res, err := Bot.Db.Exec("UPDATE users SET gulagged = DATETIME(CURRENT_TIMESTAMP, ?) WHERE username = ?;", timeout, userID)
+	res, err := m.Db.Exec("UPDATE users SET gulagged = DATETIME(CURRENT_TIMESTAMP, ?) WHERE username = ?;", timeout, userID)
 	if err != nil {
 		return err
 	}
@@ -24,8 +24,8 @@ func GulagUser(userID string, minutes int) error {
 	return nil
 }
 
-func ReleaseUser(userID string) error {
-	_, err := Bot.Db.Exec("UPDATE users SET gulagged = NULL WHERE username = ?;", userID)
+func (m *Model) ReleaseUser(userID string) error {
+	_, err := m.Db.Exec("UPDATE users SET gulagged = NULL WHERE username = ?;", userID)
 	if err != nil {
 		return err
 	}

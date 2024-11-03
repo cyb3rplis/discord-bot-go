@@ -6,8 +6,8 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/logger"
 )
 
-func GetUsers() (users []config.User, err error) {
-	rows, err := Bot.Db.Query("SELECT id, username, gulagged FROM users;")
+func (m *Model) GetUsers() (users []config.User, err error) {
+	rows, err := m.Db.Query("SELECT id, username, gulagged FROM users;")
 
 	if err != nil {
 		logger.FatalLog.Fatal(err)
@@ -28,8 +28,8 @@ func GetUsers() (users []config.User, err error) {
 	return users, err
 }
 
-func GetUserFromUsername(username string) (user config.User, err error) {
-	err = Bot.Db.QueryRow("SELECT id, username, gulagged FROM users WHERE username = ?;", username).Scan(&user.ID, &user.Username, &user.Gulagged)
+func (m *Model) GetUserFromUsername(username string) (user config.User, err error) {
+	err = m.Db.QueryRow("SELECT id, username, gulagged FROM users WHERE username = ?;", username).Scan(&user.ID, &user.Username, &user.Gulagged)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
