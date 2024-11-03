@@ -34,15 +34,9 @@ func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, m
 	var cmd *exec.Cmd
 
 	if download.Start != "" && download.End != "" {
-<<<<<<< Updated upstream
-		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", download.Start, download.End, model.Bot.Config.YTTemp, download.URL))
+		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", download.Start, download.End, a.model.Config.YTTemp, download.URL))
 	} else {
-		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", model.Bot.Config.YTTemp, download.URL))
-=======
-		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", a.model.Config.YTDLP, download.Start, download.End, a.model.Config.YTTemp, download.URL))
-	} else {
-		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("%s -x --audio-format mp3 --force-overwrites -o %s %s", a.model.Config.YTDLP, a.model.Config.YTTemp, download.URL))
->>>>>>> Stashed changes
+		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", a.model.Config.YTTemp, download.URL))
 	}
 
 	err = cmd.Start()
