@@ -26,5 +26,5 @@ RUN wget https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x
 
 COPY --from=mwader/static-ffmpeg:latest /ffmpeg /usr/local/bin/
 COPY --from=backend /dist/discord-bot-go ./
-COPY --from=backend /go/bin/dca /usr/local/bin/dca
+COPY --from=backend /go/bin/dca /usr/local/bin/
 CMD ["./discord-bot-go"]

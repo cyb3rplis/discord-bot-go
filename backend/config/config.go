@@ -81,7 +81,7 @@ func LoadConfig() *Config {
 		}
 
 		// check if necessary binaries are on the system
-		binaries := []string{"dca", "ffmpeg"}
+		binaries := []string{"dca", "ffmpeg", "yt-dlp"}
 		for _, bin := range binaries {
 			_, err := exec.LookPath(bin)
 			if err != nil {
