@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/logger"
 	"io"
 	"os"
 	"path/filepath"
@@ -164,29 +163,6 @@ func (m *Model) IsAdmin(roleNames []string) bool {
 	}
 
 	return false
-}
-
-func GetMemberRoles(s *discordgo.Session, guildID, userID string) ([]string, error) {
-	var roleNames []string
-	member, err := s.GuildMember(guildID, userID)
-	if err != nil {
-		return roleNames, err
-	}
-
-	if len(member.Roles) == 0 {
-		return roleNames, nil
-	}
-
-	for _, roleID := range member.Roles {
-		role, err := s.State.Role(guildID, roleID)
-		if err != nil {
-			logger.ErrorLog.Printf("Error retrieving role %s: %v", roleID, err)
-			continue
-		}
-		roleNames = append(roleNames, role.Name)
-	}
-
-	return roleNames, nil
 }
 
 // ComputeFileHash computes the SHA-256 hash of a given file

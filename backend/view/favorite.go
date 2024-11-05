@@ -7,66 +7,120 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
-func (a *API) HandleFavorite(s *discordgo.Session, m *discordgo.MessageCreate, arg, arg2, command string) error {
-	switch arg {
-	case "add":
-		// check if sound exists
-		soundID, _ := a.model.GetFavoriteByNameAndUserID(arg2, m.Author.ID)
-		if soundID != "" {
-			_ = logger.ReactionLogSuccess(s, m, "sound already in favorites", "")
-			return nil
-		}
-		// add sound to favorites
-		err := a.model.SoundFavoriteAdd(m, arg2)
-		if err != nil {
-			_ = logger.ReactionLogError(s, m, "error adding sound to favorites", err)
-			return err
-		}
-		_ = logger.ReactionLogSuccess(s, m, "sound added to favorites", "")
-		return nil
-	case "rm":
-		// remove sound from favorites
-		err := a.model.SoundFavoriteRemove(m, arg2)
-		if err != nil {
-			_ = logger.ReactionLogError(s, m, "error removing sound from favorites", err)
-			return err
-		}
-		_ = logger.ReactionLogSuccess(s, m, "sound removed from favorites", "")
-		return nil
-	case "list":
-		favorites, err := a.model.GetUserFavorites(m.Author.ID)
-		if err != nil {
-			logger.ErrorLog.Printf("error getting user favorites: %v", err)
-		}
-		if len(favorites) == 0 {
-			_ = logger.ReactionLogSuccessWithFeedback(s, m, "No favorites in your list", "")
-			return nil
-		}
-		var soundNames []string
-		for _, favorite := range favorites {
-			soundNames = append(soundNames, favorite.SoundName)
-		}
-		// Build buttons for the favorite sounds
-		buttons := model.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
-		// Build messages for the favorite sounds
-		initialMessage := &discordgo.MessageSend{
-			Content: "Favourites of <@" + m.Author.ID + ">",
-		}
-
-		messages := model.BuildMessages(buttons, initialMessage)
-
-		for i, message := range messages {
-			a.NewComplexMessageRoutine(command+arg+fmt.Sprint(i)+m.Author.ID, m.ChannelID, m.ID, message, s)
-		}
-		_ = logger.ReactionLogSuccess(s, m, "favorites listed", "")
-		return nil
-	default:
-		message := fmt.Sprintf("🔥  Your favorites helper:\n" +
-			"> » **List sounds**\t\t" + a.model.Config.Prefix + "list\n" +
-			"> » **Add sound**\t\t " + a.model.Config.Prefix + "add <sound_name>\n" +
-			"> » **Remove sound**\t\t " + a.model.Config.Prefix + "rm <sound_name>\n")
-		_ = logger.ReactionLogSuccess(s, m, "favorites help message sent", "")
-		a.NewMessageRoutine(command+"help", message, s, m)
+func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	//get userID
+	if i.Member == nil {
+		logger.ErrorLog.Println("error getting member from interaction")
+		return
 	}
-	return nil
+	m := &discordgo.MessageCreate{
+		Message: &discordgo.Message{
+			ID:        i.ID,
+			ChannelID: i.ChannelID,
+			Author:    &discordgo.User{ID: i.Member.User.ID},
+		},
+	}
+	if i.Type == discordgo.InteractionApplicationCommand {
+		switch i.ApplicationCommandData().Name {
+		case "favorite":
+			option := i.ApplicationCommandData().Options[0]
+			switch option.Name {
+			case "list":
+				// Check if the user is in the Gulag
+				user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
+				if err != nil {
+					logger.ErrorLog.Println("error getting user from username:", err)
+				} else {
+					if remaining, ok := IsUserInGulag(user); ok {
+						user.Remaining = remaining
+						message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+						_, err = a.SendMessage(message, s, m, false)
+						if err != nil {
+							logger.ErrorLog.Printf("error sending message: %v", err)
+						}
+						return
+					}
+				}
+				favorites, err := a.model.GetUserFavorites(m.Author.ID)
+				if err != nil {
+					logger.ErrorLog.Printf("error getting user favorites: %v", err)
+				}
+				if len(favorites) == 0 {
+					logger.ErrorLog.Println("No favorites in your list")
+					err = a.SendHiddenMessage("No favorites in your list", i, s, true)
+					if err != nil {
+						logger.ErrorLog.Printf("error sending message: %v", err)
+					}
+					return
+				}
+				var soundNames []string
+				for _, favorite := range favorites {
+					fmt.Println(favorite.SoundName)
+					soundNames = append(soundNames, favorite.SoundName)
+				}
+				// Build buttons for the favorite sounds
+				buttons := model.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
+				// Build messages for the favorite sounds
+				initialMessage := &discordgo.MessageSend{
+					Content: "Favourites of <@" + m.Author.ID + ">",
+				}
+				messages := model.BuildMessages(buttons, initialMessage)
+				for _, message := range messages {
+					_, err = a.SendMessageComplex(message, s, m, false)
+					if err != nil {
+						logger.ErrorLog.Printf("error sending message: %v", err)
+					}
+				}
+			case "add":
+				if option.Type == discordgo.ApplicationCommandOptionSubCommand {
+					if len(option.Options) > 0 {
+						arg := option.Options[0].StringValue()
+						// check if sound exists
+						soundID, _ := a.model.GetFavoriteByNameAndUserID(arg, m.Author.ID)
+						if soundID != "" {
+							err := a.SendHiddenMessage("sound already in favorites", i, s, true)
+							if err != nil {
+								logger.ErrorLog.Printf("error sending message: %v", err)
+							}
+							return
+						}
+						// add sound to favorites
+						err := a.model.SoundFavoriteAdd(m, arg)
+						if err != nil {
+							err := a.SendHiddenMessage("error adding sound to favorites", i, s, true)
+							if err != nil {
+								logger.ErrorLog.Printf("error sending message: %v", err)
+							}
+							return
+						}
+						_, err = a.SendMessage(fmt.Sprintf("Sound %s has been added to your favorites", arg), s, m, false)
+						if err != nil {
+							logger.ErrorLog.Printf("error sending message: %v", err)
+						}
+						return
+					}
+				}
+			case "remove":
+				if option.Type == discordgo.ApplicationCommandOptionSubCommand {
+					if len(option.Options) > 0 {
+						arg := option.Options[0].StringValue()
+						// remove sound from favorites
+						err := a.model.SoundFavoriteRemove(m, arg)
+						if err != nil {
+							err := a.SendHiddenMessage("error removing sound from favorites", i, s, true)
+							if err != nil {
+								logger.ErrorLog.Printf("error sending message: %v", err)
+							}
+							return
+						}
+						_, err = a.SendMessage(fmt.Sprintf("Sound %s has been removed from your favorites", arg), s, m, false)
+						if err != nil {
+							logger.ErrorLog.Printf("error sending message: %v", err)
+						}
+						return
+					}
+				}
+			}
+		}
+	}
 }

@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/controller"
@@ -10,8 +11,11 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/view"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
+
+var readyMutex = &sync.Mutex{}
 
 func Init() {
 	m, dbClose, err := db.InitModel()
@@ -59,12 +63,34 @@ func Init() {
 		logger.ErrorLog.Println("error creating Discord session: ", err)
 		return
 	}
-	
-	// Register messageCreate as a callback for the messageCreate events.
-	dg.AddHandler(viewInstance.AudioMessageHandler)
 
-	// Register interaction handler for button clicks
-	dg.AddHandler(viewInstance.InteractionHandler)
+	//set bot ready
+	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.Ready) {
+		readyMutex.Lock()
+		defer readyMutex.Unlock()
+		logger.InfoLog.Println("Bot is ready")
+		view.BotReady = true
+	})
+
+	// Register prompt handlers
+	//prompt > list
+	dg.AddHandler(view.RegisterPromptInteractionsList) //list
+	dg.AddHandler(viewInstance.PromptInteractionList)  //list
+	//prompt > audio
+	dg.AddHandler(view.RegisterPromptInteractionsAudio) //audio
+	dg.AddHandler(viewInstance.PromptInteractionAudio)  //audio
+	//prompt > favorite
+	dg.AddHandler(view.RegisterPromptInteractionsFavorite) //favorite
+	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
+	//prompt > gulag
+	dg.AddHandler(view.RegisterPromptInteractionsGulag) //gulag
+	dg.AddHandler(viewInstance.PromptInteractionGulag)  //gulag
+
+	dg.AddHandler(view.RegisterPromptInteractionsStats) //stats
+	dg.AddHandler(viewInstance.PromptInteractionStats)  //stats
+
+	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
+	dg.AddHandler(viewInstance.HandlePlaySoundInteraction) //audio interaction
 
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandler(guildCreate)
@@ -96,10 +122,18 @@ func Init() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
+	ctx, cancel := context.WithCancel(context.Background())
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt)
+	go func() {
+		<-s
+		cancel()
+	}()
+
 	// Cleanly close down the Discord session.
 	_ = dg.Close()
 
-	ctrl.Run()
+	ctrl.Run(ctx)
 }
 
 func NewBot() {
@@ -110,10 +144,13 @@ func NewBot() {
 // guild is joined.
 func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
+		logger.FatalLog.Println("> Guild is unavailable")
 		return
 	}
-	// load the guild into the
+	logger.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
+	logger.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
+	//logger.InfoLog.Printf("Channels: %v", event.Guild.Channels)
+	//logger.InfoLog.Printf("Voice States: %v", event.Guild.VoiceStates)
 	config.LoadGuild(event)
 	model.Meta = model.NewInfo()
-	logger.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
 }

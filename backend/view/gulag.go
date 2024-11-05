@@ -8,99 +8,104 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/logger"
-	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
-func (a *API) HandleGulag(s *discordgo.Session, mc *discordgo.MessageCreate, action, user, timeOut, command string) error {
-	meta := model.Meta
-	memberRoles, err := model.GetMemberRoles(s, meta.Guild.ID, mc.Author.ID)
-	if err != nil {
-		return err
+func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	//get userID
+	if i.Member == nil {
+		logger.ErrorLog.Println("error getting member from interaction")
+		return
 	}
-
-	if a.model.IsAdmin(memberRoles) {
-		switch action {
-		case "add":
-			if timeOut == "" {
-				err := a.model.GulagUser(user, 3)
+	m := &discordgo.MessageCreate{
+		Message: &discordgo.Message{
+			ID:        i.ID,
+			ChannelID: i.ChannelID,
+			Author:    &discordgo.User{ID: i.Member.User.ID},
+		},
+	}
+	if i.Type == discordgo.InteractionApplicationCommand {
+		switch i.ApplicationCommandData().Name {
+		case "gulag":
+			option := i.ApplicationCommandData().Options[0]
+			switch option.Name {
+			case "list":
+				users, err := a.model.GetUsers()
 				if err != nil {
-					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
-					err = NewPrivateMessageRoutine(message, s, mc)
-
-					return err
+					return
 				}
 
-				logger.InfoLog.Printf("Admin %s gulagged user: %s for 3 Minutes\n", mc.Author.GlobalName, user)
-				return nil
-			} else {
-				minutes, err := strconv.Atoi(timeOut)
+				var gulaggedUsers []config.User
+				for _, u := range users {
+					if remaining, ok := IsUserInGulag(u); ok {
+						u.Remaining = remaining
+						gulaggedUsers = append(gulaggedUsers, u)
+					}
+				}
+
+				var message string
+				if len(gulaggedUsers) == 0 {
+					message = "🧱  No users are gulagged\n"
+				} else {
+					message = "🧱  Gulagged Users:\n"
+					for _, u := range gulaggedUsers {
+						message = message + fmt.Sprintf("> » User: %s - Remaining: %s\n", u.Username, u.Remaining)
+					}
+				}
+				err = a.SendHiddenMessage(message, i, s, true)
 				if err != nil {
-					message := fmt.Sprintf("🧱  Invalid time out value: %s\n", timeOut)
-					err = NewPrivateMessageRoutine(message, s, mc)
-					return err
+					return
 				}
+				return
+			case "add":
+				if option.Type == discordgo.ApplicationCommandOptionSubCommand {
+					if len(option.Options) > 0 {
+						user := option.Options[0].StringValue()
+						timeout := option.Options[1].StringValue()
+						minutes, err := strconv.Atoi(timeout)
+						if err != nil {
+							err = a.SendHiddenMessage(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), i, s, true)
+							return
+						}
 
-				err = a.model.GulagUser(user, minutes)
-				if err != nil {
-					message := fmt.Sprintf("🧱  Error gulagging user: %s\n", user)
-					err = NewPrivateMessageRoutine(message, s, mc)
-					return err
+						err = a.model.GulagUser(user, minutes)
+						if err != nil {
+							err = a.SendHiddenMessage(fmt.Sprintf("🧱  error gulagging user: %s --> %v \n", user, err), i, s, true)
+							return
+						}
+
+						logger.InfoLog.Printf("Admin %s gulagged user: %s for %d Minutes\n", m.Author.GlobalName, user, minutes)
+						err = a.SendHiddenMessage(fmt.Sprintf("🧱  User %s has been gulagged for %d minutes\n", user, minutes), i, s, true)
+						if err != nil {
+							logger.ErrorLog.Println("error sending hidden message:", err)
+							return
+						}
+						return
+					}
 				}
+			case "remove":
+				if option.Type == discordgo.ApplicationCommandOptionSubCommand {
+					if len(option.Options) > 0 {
+						user := option.Options[0].StringValue()
+						err := a.model.ReleaseUser(user)
+						if err != nil {
+							logger.ErrorLog.Println("error releasing user from gulag:", err)
+							err = a.SendHiddenMessage(fmt.Sprintf("🧱  Error releasing user %s from gulag --> %v \n", user, err), i, s, true)
+							return
+						}
 
-				logger.InfoLog.Printf("Admin %s gulagged user: %s for %d Minutes\n", mc.Author.GlobalName, user, minutes)
-				return nil
-			}
-		case "rm":
-			err := a.model.ReleaseUser(user)
-			if err != nil {
-				message := fmt.Sprintf("🧱  Error releasing user %s from gulag\n", user)
-				err = NewPrivateMessageRoutine(message, s, mc)
-				return err
-			}
+						logger.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user)
+						err = a.SendHiddenMessage(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user), i, s, true)
+						if err != nil {
+							logger.ErrorLog.Println("error sending hidden message:", err)
+							return
+						}
 
-			logger.InfoLog.Printf("Admin %s released: %s from gulag\n", mc.Author.GlobalName, user)
-			return nil
-		case "list":
-			users, err := a.model.GetUsers()
-			if err != nil {
-				return err
-			}
-
-			var gulaggedUsers []config.User
-			for _, u := range users {
-				if remaining, ok := IsUserInGulag(u); ok {
-					u.Remaining = remaining
-					gulaggedUsers = append(gulaggedUsers, u)
+						return
+					}
 				}
-			}
-
-			var message string
-			if len(gulaggedUsers) == 0 {
-				message = "🧱  No users are gulagged\n"
-			} else {
-				message = "🧱  Gulagged Users:\n"
-				for _, u := range gulaggedUsers {
-					message = message + fmt.Sprintf("> » User: %s - Remaining: %s\n", u.Username, u.Remaining)
-				}
-			}
-			err = NewPrivateMessageRoutine(message, s, mc)
-			if err != nil {
-				return err
-			}
-			return nil
-		default:
-			message := fmt.Sprintf("🧱  Your gulag helper:\n" +
-				"> » **Gulag User**\t\t" + a.model.Config.Prefix + "gulag add <username> <optional: minutes, default 3>\n" +
-				"> » **Release User**\t\t " + a.model.Config.Prefix + "gulag rm <username>\n" +
-				"> » **List Users**\t\t " + a.model.Config.Prefix + "gulag list\n")
-			err = NewPrivateMessageRoutine(message, s, mc)
-			if err != nil {
-				return err
 			}
 		}
 	}
-
-	return nil
 }
 
 func IsUserInGulag(user config.User) (time.Duration, bool) {

@@ -31,7 +31,7 @@ type Entry struct {
 }
 
 // PlaySound plays the current buffer to the provided channel.
-func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) (err error) {
+func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildID, channelID, soundName string) error {
 
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
@@ -40,6 +40,7 @@ func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildI
 	}
 
 	// Load the sound file.
+	var err error
 	if soundName == a.model.Config.YTOutput || soundName == a.model.Config.TTSOutput {
 		err = a.model.LoadSoundFS(soundName)
 	} else {
@@ -48,8 +49,10 @@ func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildI
 
 	if err != nil {
 		logger.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
-		msg := "Sound does not exist\n> Sikerim"
-		a.NewMessageRoutine(".sounderr", msg, s, m)
+		_, err := a.SendMessage("Sound does not exist\n> Sikerim", s, m, true)
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+		}
 		return err
 	}
 
@@ -93,26 +96,12 @@ func (a *API) PlaySound(s *discordgo.Session, m *discordgo.MessageCreate, guildI
 	model.Buffer = make([][]byte, 0)
 	botSpeaking = false
 
-	a.DeleteMessageRoutine(s, ".stopbutton")
 	return nil
 }
 
-func (a *API) PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, audioType string) (err error) {
-	var soundFile string
-	var customModule string
+func (a *API) PlayAudio(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	soundFile := a.model.Config.YTOutput
 
-	if audioType == "audio" {
-		soundFile = a.model.Config.YTOutput
-		customModule = "Youtube"
-
-	} else if audioType == "tts" {
-		soundFile = a.model.Config.TTSOutput
-		customModule = "Text2Speech"
-	} else {
-		logger.ErrorLog.Printf("custom module %s not known!", audioType)
-		return
-	}
-	logger.InfoLog.Println("soundfile", soundFile, "customModule", customModule)
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -152,14 +141,19 @@ func (a *API) PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, 
 			content = append(content, row)
 
 			msg := &discordgo.MessageSend{
-				Content:    "➡ Currently Playing " + customModule + " Audio by <@" + m.Author.ID + "> ",
+				Content:    "➡ Currently playing audio by <@" + m.Author.ID + "> ",
 				Components: content,
 			}
 
-			a.NewComplexMessageRoutine(".stopbutton", m.ChannelID, m.ID, msg, s)
+			// Send the message (+stop button)
+			_, err = a.SendMessageComplex(msg, s, m, false)
+			if err != nil {
+				logger.ErrorLog.Println("error sending message:", err)
+				return err
+			}
 
-			logger.InfoLog.Printf("User: %s played %s sound", m.Author.GlobalName, customModule)
-
+			// Play the sound
+			logger.InfoLog.Printf("User: %s played sound", m.Author.GlobalName)
 			// Play the sound
 			err = a.PlaySound(s, &discordgo.MessageCreate{Message: m.Message}, g.ID, vs.ChannelID, soundFile)
 			if err != nil {
@@ -172,44 +166,14 @@ func (a *API) PlayCustomAudio(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 
 	// If the user is not in a voice channel, send an error message
-	logger.InfoLog.Printf("User %s tried to play %s sound but is not in a voice channel", m.Author.GlobalName, customModule)
-	msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
+	logger.InfoLog.Printf("User %s tried to play audio but is not in a voice channel", m.Author.GlobalName)
+	msg := "You need to be in a voice channel to play audio <@" + m.Author.ID + ">"
 
-	a.NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
-
-	return fmt.Errorf("user not in voice channel")
-}
-
-func (a *API) VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	userInVS := false
-	c, err := s.State.Channel(m.ChannelID)
+	_, err = a.SendMessage(msg, s, m, false)
 	if err != nil {
-		logger.ErrorLog.Println("error finding channel:", err)
-		return err
+		logger.ErrorLog.Println("error sending message:", err)
+		return fmt.Errorf("user not in voice channel")
 	}
-
-	// Find the guild for that channel
-	g, err := s.State.Guild(c.GuildID)
-	if err != nil {
-		logger.ErrorLog.Println("error finding guild:", err)
-		return err
-	}
-
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			userInVS = true
-		}
-	}
-
-	if !userInVS {
-		// If the user is not in a voice channel, send an error message and avoid processing the audio
-		logger.InfoLog.Printf("User %s tried to play sound but is not in a voice channel", m.Author.GlobalName)
-		msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
-
-		a.NewMessageRoutine(".novc"+m.Author.ID, msg, s, m)
-		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
-	}
-
 	return nil
 }
 
@@ -291,6 +255,38 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 				}
 			}
 		}
+	}
+
+	return nil
+}
+
+func (a *API) VoiceChannelCheck(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	userInVS := false
+	c, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		logger.ErrorLog.Println("error finding channel:", err)
+		return err
+	}
+	// Find the guild for that channel
+	g, err := s.State.Guild(c.GuildID)
+	if err != nil {
+		logger.ErrorLog.Println("error finding guild:", err)
+		return err
+	}
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			userInVS = true
+		}
+	}
+	if !userInVS {
+		// If the user is not in a voice channel, send an error message and avoid processing the audio
+		logger.InfoLog.Printf("User %s tried to play sound but is not in a voice channel", m.Author.GlobalName)
+		msg := "You need to be in a voice channel to play sounds <@" + m.Author.ID + ">"
+		_, err = a.SendMessage(msg, s, m, false)
+		if err != nil {
+			logger.ErrorLog.Println("error sending message:", err)
+		}
+		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
 	}
 
 	return nil
