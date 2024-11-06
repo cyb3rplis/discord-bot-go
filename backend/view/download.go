@@ -86,7 +86,7 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 						return
 					}
 
-					fileHash, err := model.ComputeFileHash(soundPath)
+					fileHash, err := model.ComputeFileHash(filepath.Join(a.model.Config.SoundsDir, download.Category, download.SoundName+".mp3")) //use mp3 hash for comparing
 					if err != nil {
 						dlog.WarningLog.Printf("Failed to compute hash for file %s: %v", download.SoundName, err)
 						return
