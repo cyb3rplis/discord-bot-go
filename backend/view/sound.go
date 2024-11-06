@@ -60,7 +60,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			for _, vs := range g.VoiceStates {
 				if vs.UserID == i.Member.User.ID {
 					soundName := i.ApplicationCommandData().Options[0].StringValue()
-					err := a.SendInteractionRespond("➡ Playing sound", s, i)
+					err := a.UpdateInteractionResponse("➡ Playing sound", s, i)
 					if err != nil {
 						log.Printf("error executing play command: %v", err)
 					}
