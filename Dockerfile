@@ -6,7 +6,6 @@ ENV GOOS=linux
 ENV GOARCH=amd64
 WORKDIR /app/backend
 COPY backend/ ./
-RUN go vet main/main.go
 RUN go build -o /dist/discord-bot-go main/main.go
 
 # Stage 2: Set up the runtime environment

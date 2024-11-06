@@ -76,8 +76,7 @@ func Init() {
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandler(guildCreate)
 
-	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
-	dg.AddHandler(viewInstance.HandlePlaySoundInteraction) //audio interaction
+	dg.AddHandler(viewInstance.InteractionHandler) //interaction handler
 
 	// Register prompt handlers
 	//prompt > list

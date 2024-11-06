@@ -74,9 +74,9 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 
 	switch {
 	case strings.HasPrefix(customID, "play_sound_"):
-		a.HandlePlaySoundInteraction(s, i, customID)
+		a.handlePlaySoundInteraction(s, i)
 	case strings.HasPrefix(customID, "list_sounds_"):
-		a.HandleListSoundsInteraction(s, i, customID)
+		a.handleListSoundsInteraction(s, i)
 	case strings.HasPrefix(customID, "stop_sound"):
 		a.handleStopSoundInteraction(s, i)
 	default:
@@ -99,8 +99,17 @@ func (a *API) handleStopSoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 }
 
-func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Extract the subfolder and sound name from the custom ID
+	customID := ""
+	if i.Interaction.Type != 3 {
+		dlog.ErrorLog.Println("Invalid interaction type")
+		return
+	}
+
+	customID = i.Interaction.MessageComponentData().CustomID
+	dlog.InfoLog.Println("customid: ", customID)
+
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
 		dlog.ErrorLog.Println("Invalid custom ID format")
@@ -190,8 +199,17 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 }
 
 // HandleListSoundsInteraction handles the list sounds interaction
-func (a *API) HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, customID string) {
+func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Extract the category from the custom ID
+	customID := ""
+	if i.Interaction.Type != 3 {
+		dlog.ErrorLog.Println("Invalid interaction type")
+		return
+	}
+
+	customID = i.Interaction.MessageComponentData().CustomID
+	dlog.InfoLog.Println("customid: ", customID)
+
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	msg := "➡ Sounds in category - " + category
 	_, err := a.SendMessage(msg, s, i, false)
