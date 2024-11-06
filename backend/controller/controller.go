@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/view"
 )
@@ -18,9 +16,5 @@ func New(model *model.Model, view *view.API) *Controller {
 }
 
 func (c *Controller) Run(ctx context.Context) {
-	// run background tasks here
-	dlog.InfoLog.Println("Initializing Background Tasks")
-	startBackgroundFunctions(ctx,
-		c.SyncFiles,
-	)
+
 }

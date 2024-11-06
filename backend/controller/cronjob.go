@@ -2,10 +2,10 @@ package controller
 
 import (
 	"context"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
+	"github.com/go-co-op/gocron"
 	"sync"
 	"time"
-
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 type backgroundFunc func(context.Context)
@@ -13,9 +13,9 @@ type backgroundFunc func(context.Context)
 func (c *Controller) SyncCronjob(ctx context.Context) {
 	interval := time.Minute
 	for {
-
 		select {
 		case <-time.After(interval):
+
 		case <-ctx.Done():
 			return
 		}
@@ -34,32 +34,22 @@ func startBackgroundFunctions(ctx context.Context, fncs ...backgroundFunc) {
 	wg.Wait()
 }
 
-func (c *Controller) SyncFiles(ctx context.Context) {
-	interval := time.Minute * 2
-	dlog.InfoLog.Println("Run Background Task", "INTERVAL", interval)
-	fsSounds, err := c.model.ScanDirectory()
-	if err != nil {
-		dlog.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
-	}
-	err = c.view.SyncDatabaseWithFileSystem(fsSounds)
-	if err != nil {
-		dlog.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
-	}
-	for {
-		select {
-		case <-time.After(interval):
-			dlog.InfoLog.Println("Run Background Task", "INTERVAL", interval)
-			fsSounds, err := c.model.ScanDirectory()
-			if err != nil {
-				dlog.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
-			}
-			err = c.view.SyncDatabaseWithFileSystem(fsSounds)
-			if err != nil {
-				dlog.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
-			}
-			dlog.InfoLog.Println("Cron: database synced with filesystem")
-		case <-ctx.Done():
-			return
+func (c *Controller) SyncSoundDirectories() {
+	interval := time.Minute * 1
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(interval).Do(func() {
+		fsSounds, err := c.model.ScanDirectory()
+		if err != nil {
+			dlog.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
 		}
-	}
+		err = c.view.SyncDatabaseWithFileSystem(fsSounds)
+		if err != nil {
+			dlog.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
+		}
+		//dlog.InfoLog.Println("Cron: database synced with filesystem")
+	})
+	// starts the scheduler asynchronously
+	s.StartAsync()
+	// starts the scheduler and blocks current execution path
+	//s.StartBlocking()
 }

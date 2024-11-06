@@ -14,13 +14,14 @@ import (
 )
 
 type Config struct {
-	Token     string `json:"token"`
-	Prefix    string `json:"prefix"`
-	SoundsDir string `json:"sounds_dir"`
-	DB        string `json:"db"`
-	YTOutput  string `json:"yt_output"`
-	YTTemp    string `json:"yt_temp"`
-	YTTimeout int    `json:"yt_timeout"`
+	Token        string `json:"token"`
+	Prefix       string `json:"prefix"`
+	DataDir      string `json:"data_dir"`
+	SoundsDir    string `json:"sounds_dir"`
+	DB           string `json:"db"`
+	AudioTemp    string `json:"audio_temp"`
+	AudioTimeout int    `json:"audio_timeout"`
+	AdminRole    string `json:"admin"`
 }
 
 type User struct {
@@ -56,13 +57,14 @@ func LoadConfig() *Config {
 	configOnce.Do(func() {
 
 		configInstance = &Config{
-			Token:     os.Getenv("TOKEN"), // Read the token from .env
-			Prefix:    ".",
-			SoundsDir: filepath.Join(AppPath(), "data", "sounds"),
-			DB:        filepath.Join(AppPath(), "data", "soundbot.db"),
-			YTOutput:  filepath.Join(AppPath(), "data", "yt.dca"),
-			YTTemp:    filepath.Join(AppPath(), "data", "yt.mp3"),
-			YTTimeout: 20,
+			Token:        os.Getenv("TOKEN"), // Read the token from .env
+			Prefix:       ".",
+			DataDir:      filepath.Join(AppPath(), "data"),
+			SoundsDir:    filepath.Join(AppPath(), "data", "sounds"),
+			DB:           filepath.Join(AppPath(), "data", "soundbot.db"),
+			AudioTemp:    "temp",
+			AudioTimeout: 20,
+			AdminRole:    os.Getenv("ADMIN_ROLE"),
 		}
 		// Check if Token is actually set
 		if configInstance.Token == "" {
@@ -84,9 +86,11 @@ func LoadConfig() *Config {
 	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
 	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
 	fmt.Println(" > DB:\t\t", configInstance.DB)
-	fmt.Println(" > YT_OUTPUT:\t", configInstance.YTOutput)
-	fmt.Println(" > YT_TEMP:\t", configInstance.YTTemp)
-	fmt.Println(" > YTTimeout:\t", configInstance.YTTimeout)
+
+	fmt.Println(" > AUDIO_TEMP:\t", configInstance.AudioTemp)
+	fmt.Println(" > AUDIO_TIMEOUT:\t", configInstance.AudioTimeout)
+	fmt.Println(" > ADMIN_ROLE:\t", configInstance.AdminRole)
+
 	fmt.Println("---------------------------------------------------")
 
 	return configInstance

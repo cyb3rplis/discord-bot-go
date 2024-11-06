@@ -123,7 +123,6 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 
 // PlaySound plays the current buffer to the provided channel.
 func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, guildID, channelID, soundName string) error {
-
 	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
 	if botSpeaking {
 		stopChannel <- struct{}{}
@@ -132,8 +131,8 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 
 	// Load the sound file.
 	var err error
-	if soundName == a.model.Config.YTOutput {
-		err = a.model.LoadSoundFS(soundName)
+	if soundName == a.model.Config.AudioTemp {
+		err = a.model.LoadSoundFS(filepath.Join(a.model.Config.DataDir, soundName+".dca")) //play file from system if function (audio) is played
 	} else {
 		err = a.model.LoadSound(soundName)
 	}
@@ -190,9 +189,7 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	return nil
 }
 
-func (a *API) PlayAudio(s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	soundFile := a.model.Config.YTOutput
-
+func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(i.ChannelID)
 	if err != nil {
@@ -251,7 +248,7 @@ func (a *API) PlayAudio(s *discordgo.Session, i *discordgo.InteractionCreate) er
 
 			dlog.InfoLog.Printf("User: %s played sound", i.Member.User.GlobalName)
 			// Play the sound
-			err = a.PlaySound(s, i, g.ID, vs.ChannelID, soundFile)
+			err = a.PlaySound(s, i, g.ID, vs.ChannelID, audioName)
 			if err != nil {
 				dlog.ErrorLog.Println("error playing sound:", err)
 				return err
@@ -280,7 +277,6 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 
 	for folder, files := range folderMap {
 		var categoryID int
-
 		// Check if the folder (category) exists in the database
 		if dbCategoryID, exists := existingCategories[folder]; exists {
 			categoryID = dbCategoryID // The folder already exists
@@ -292,7 +288,6 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 				}
 				continue
 			}
-
 			// Fetch the new category ID after insertion
 			categoryID = a.model.GetCategoryByID(folder)
 		}
@@ -302,7 +297,7 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			soundPath := filepath.Join(a.model.Config.SoundsDir, folder, file+".dca")
 			fileData, err := os.ReadFile(soundPath)
 			if err != nil {
-				return fmt.Errorf("failed to read sound file: %w", err)
+				return fmt.Errorf("error reading dca sound file: %w", err)
 			}
 
 			fileHash, err := model.ComputeFileHash(soundPath)
@@ -315,6 +310,14 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 				// File exists and hasn't changed, skip
 				continue
 			}
+
+			//convert mp3 to dca
+			err = a.ConvertMP3ToDCA(file, folder)
+			if err != nil {
+				dlog.ErrorLog.Println("error converting mp3 to dca:", err)
+				continue
+			}
+			time.Sleep(3 * time.Second)
 
 			// File does not exist in the DB, add it
 			if err := a.model.AddSound(categoryID, file, fileHash, fileData); err != nil {
@@ -333,7 +336,6 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			if err := a.model.RemoveCategory(categoryID); err != nil {
 				dlog.InfoLog.Printf("Failed to remove category %s (ID: %d): %v", folder, categoryID, err)
 			}
-
 			dlog.InfoLog.Printf("Removed category %s (ID: %d)", folder, categoryID)
 		} else {
 			// For existing folders, remove missing files

@@ -44,8 +44,8 @@ func (m *Model) ScanDirectory() (map[string][]string, error) {
 				return err
 			}
 
-			// Filter for audio files based on extensions, e.g., ".dca", etc.
-			if ext := filepath.Ext(path); ext == ".dca" {
+			// Filter for audio files based on extensions, e.g., ".mp3", etc.
+			if ext := filepath.Ext(path); ext == ".mp3" {
 				fileNameWithoutExt := RemoveFileExtension(filepath.Base(path))
 				folderMap[relativeFolder] = append(folderMap[relativeFolder], fileNameWithoutExt)
 			}

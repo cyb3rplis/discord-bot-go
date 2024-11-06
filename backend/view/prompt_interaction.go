@@ -32,7 +32,65 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session, i *discordgo.Intera
 	// Register the command globally
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
 		Name:        commandName,
-		Description: "Use buttons to list all button categories",
+		Description: "Manage your favorite sounds",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "list",
+				Description: "List all your favorite sound buttons",
+			},
+		},
+	})
+	if err != nil {
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
+	}
+}
+
+// RegisterPromptInteractionsCreate - Register prompt interactions
+func RegisterPromptInteractionsCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	commandName := "create"
+	// Register the command globally
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
+		Name:        commandName,
+		Description: "Manage your favorite sounds",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "button",
+				Description: "Create a new sound button using a URL (e.G. YouTube, Vimeo, etc.)",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "url",
+						Description: "The URL of the video you want to create a sound button for",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "start_time",
+						Description: "The start time of the sound button",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "end_time",
+						Description: "The end time of the sound button",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "name",
+						Description: "The name of the sound button",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "category",
+						Description: "The category of the sound button",
+						Required:    true,
+					},
+				},
+			}},
 	})
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
@@ -42,7 +100,6 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session, i *discordgo.Intera
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
 func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	commandName := "favorite"
-	userID := i.Member.User.ID
 	sounds, err := a.model.GetSoundsAll()
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
@@ -55,19 +112,6 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, i *discor
 			Value: sound,
 		}
 		soundsChoices = append(soundsChoices, soundChoice)
-	}
-	favoriteSounds, err := a.model.GetUserFavorites(userID)
-	if err != nil {
-		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
-		return
-	}
-	var favoriteSoundsChoices []*discordgo.ApplicationCommandOptionChoice
-	for _, sound := range favoriteSounds {
-		soundChoice := &discordgo.ApplicationCommandOptionChoice{
-			Name:  sound.SoundName,
-			Value: sound.SoundName,
-		}
-		favoriteSoundsChoices = append(favoriteSoundsChoices, soundChoice)
 	}
 	// Register the command globally
 	_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
@@ -103,7 +147,6 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, i *discor
 						Name:        "sound",
 						Description: "The name of the sound to remove",
 						Required:    true,
-						Choices:     favoriteSoundsChoices,
 					},
 				},
 			},

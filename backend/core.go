@@ -82,6 +82,9 @@ func Init() {
 	//prompt > list
 	dg.AddHandler(view.RegisterPromptInteractionsButtons) //buttons
 	dg.AddHandler(viewInstance.PromptInteractionButtons)  //buttons
+	// prompt > create
+	dg.AddHandler(view.RegisterPromptInteractionsCreate) //create
+	dg.AddHandler(viewInstance.PromptInteractionCreate)  //create
 	//prompt > audio
 	dg.AddHandler(view.RegisterPromptInteractionsAudio) //audio
 	dg.AddHandler(viewInstance.PromptInteractionAudio)  //audio
@@ -117,6 +120,9 @@ func Init() {
 	if err != nil {
 		dlog.FatalLog.Printf("error syncing sound files: %v", err)
 	}
+
+	//background TODO: move this to controller
+	go ctrl.SyncSoundDirectories()
 
 	// Wait here until CTRL-C or other term signal is received.
 	dlog.InfoLog.Println("Bot is now running")

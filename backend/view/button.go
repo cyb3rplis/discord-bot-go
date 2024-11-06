@@ -10,16 +10,30 @@ func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.Intera
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "buttons":
-			err := a.SendInteractionRespond("👉 Listing sound category buttons", s, i)
-			if err != nil {
-				dlog.ErrorLog.Println("error executing buttons command:", err)
-			}
-			err = a.handleList(s, i)
-			if err != nil {
-				dlog.ErrorLog.Println("error handling buttons command:", err)
+			//case list, create:
+			if len(i.ApplicationCommandData().Options) == 0 {
+				err := a.handleList(s, i)
+				if err != nil {
+					dlog.ErrorLog.Println("error handling list:", err)
+				}
+			} else {
+				option := i.ApplicationCommandData().Options[0]
+				switch option.Name {
+				case "list":
+					err := a.SendInteractionRespond("👉 Listing sound category buttons", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error executing buttons command:", err)
+					}
+					err = a.handleList(s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error handling buttons command:", err)
+					}
+
+				}
 			}
 		}
 	}
+
 }
 
 func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
