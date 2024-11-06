@@ -108,7 +108,6 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 
 	customID = i.Interaction.MessageComponentData().CustomID
-	dlog.InfoLog.Println("customid: ", customID)
 
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
@@ -208,7 +207,6 @@ func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	}
 
 	customID = i.Interaction.MessageComponentData().CustomID
-	dlog.InfoLog.Println("customid: ", customID)
 
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	msg := "➡ Sounds in category - " + category

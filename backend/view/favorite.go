@@ -43,7 +43,6 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					dlog.ErrorLog.Printf("error getting user favorites: %v", err)
 				}
 				if len(favorites) == 0 {
-					dlog.ErrorLog.Println("No favorites in your list")
 					err = a.UpdateInteractionResponse("No favorites in your list", s, i)
 					if err != nil {
 						dlog.ErrorLog.Printf("error sending message: %v", err)
