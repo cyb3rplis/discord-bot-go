@@ -79,7 +79,7 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session, i *discordgo.Interac
 					},
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "duration",
+						Name:        "start_time",
 						Description: "The start time of the sound button",
 						Required:    false,
 					},
