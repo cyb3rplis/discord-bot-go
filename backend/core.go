@@ -80,8 +80,8 @@ func Init() {
 
 	// Register prompt handlers
 	//prompt > list
-	dg.AddHandler(view.RegisterPromptInteractionsList) //list
-	dg.AddHandler(viewInstance.PromptInteractionList)  //list
+	dg.AddHandler(view.RegisterPromptInteractionsButtons) //buttons
+	dg.AddHandler(viewInstance.PromptInteractionButtons)  //buttons
 	//prompt > audio
 	dg.AddHandler(view.RegisterPromptInteractionsAudio) //audio
 	dg.AddHandler(viewInstance.PromptInteractionAudio)  //audio

@@ -6,17 +6,17 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
-func (a *API) PromptInteractionList(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
-		case "list":
-			err := a.SendInteractionRespond("👉 Listing sound categories", s, i)
+		case "buttons":
+			err := a.SendInteractionRespond("👉 Listing sound category buttons", s, i)
 			if err != nil {
-				dlog.ErrorLog.Println("error executing list command:", err)
+				dlog.ErrorLog.Println("error executing buttons command:", err)
 			}
 			err = a.handleList(s, i)
 			if err != nil {
-				dlog.ErrorLog.Println("error handling list command:", err)
+				dlog.ErrorLog.Println("error handling buttons command:", err)
 			}
 		}
 	}

@@ -19,7 +19,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 		case "favorite":
 			option := i.ApplicationCommandData().Options[0]
 			switch option.Name {
-			case "list":
+			case "buttons":
 				err := a.SendInteractionRespond("👉 Listing favorites", s, i)
 				if err != nil {
 					dlog.ErrorLog.Printf("error sending message: %v", err)

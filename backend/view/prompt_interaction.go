@@ -26,13 +26,13 @@ func RegisterPromptInteractionsAudio(s *discordgo.Session, i *discordgo.Interact
 	}
 }
 
-// RegisterPromptInteractionsList - Register prompt interactions
-func RegisterPromptInteractionsList(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	commandName := "list"
+// RegisterPromptInteractionsButtons - Register prompt interactions
+func RegisterPromptInteractionsButtons(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	commandName := "buttons"
 	// Register the command globally
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
 		Name:        commandName,
-		Description: "Use list to list all button categories",
+		Description: "Use buttons to list all button categories",
 	})
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
@@ -76,8 +76,8 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, i *discor
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "list",
-				Description: "List all your favorite sounds",
+				Name:        "buttons",
+				Description: "List all your favorite sound buttons",
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
