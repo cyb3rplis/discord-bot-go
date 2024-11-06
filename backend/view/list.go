@@ -14,7 +14,7 @@ func (a *API) PromptInteractionList(s *discordgo.Session, i *discordgo.Interacti
 			if err != nil {
 				dlog.ErrorLog.Println("error executing list command:", err)
 			}
-			err = a.HandleList(s, i, "", ".list")
+			err = a.handleList(s, i)
 			if err != nil {
 				dlog.ErrorLog.Println("error handling list command:", err)
 			}
@@ -22,7 +22,7 @@ func (a *API) PromptInteractionList(s *discordgo.Session, i *discordgo.Interacti
 	}
 }
 
-func (a *API) HandleList(s *discordgo.Session, i *discordgo.InteractionCreate, arg, command string) error {
+func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	categories, err := a.model.GetCategories()
 	if err != nil {
 		dlog.ErrorLog.Println("error getting categories:", err)
