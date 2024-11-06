@@ -6,7 +6,6 @@ echo "PATH from .env: $APP_PATH"
 
 export TOKEN
 export APP_PATH
-export ADMIN_ROLE
 
 echo "Start Bot local.."
 go run main/main.go
