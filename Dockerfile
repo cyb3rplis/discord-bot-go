@@ -1,10 +1,9 @@
 # Stage 1: Build the Go application
 FROM golang:1.23 AS backend
 ARG TARGETARCH
-ARG TARGETPLATFORM
 RUN go install github.com/redteampanda-ng/dca/cmd/dca@latest
 ENV GOFLAGS="-mod=vendor"
-ENV GOOS=$TARGETPLATFORM
+ENV GOOS=linux
 ENV GOARCH=$TARGETARCH
 WORKDIR /app/backend
 COPY backend/ ./
