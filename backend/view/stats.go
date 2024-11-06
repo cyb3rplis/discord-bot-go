@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/dlog"
@@ -21,29 +22,41 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 			option := i.ApplicationCommandData().Options[0]
 			switch option.Name {
 			case "sounds":
-				err := a.SendInteractionRespond("👉 Getting sound statistics", s, i, true)
+				err := a.SendInteractionRespond("👉 Getting sound statistics", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.soundStats(s, i)
+				stats, err := a.getStatsSounds()
+				if err != nil {
+					dlog.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.UpdateInteractionResponse(stats, s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "users":
-				err := a.SendInteractionRespond("👉 Getting user statistics", s, i, true)
+				err := a.SendInteractionRespond("👉 Getting user statistics", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.userStats(s, i)
+				stats, err := a.getStatsUsers()
+				if err != nil {
+					dlog.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.UpdateInteractionResponse(stats, s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "me":
-				err := a.SendInteractionRespond("👉 Getting your statistics", s, i, true)
+				err := a.SendInteractionRespond("👉 Getting your statistics", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.meStats(s, i)
+				stats, err := a.getStatsMe(i)
+				if err != nil {
+					dlog.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.UpdateInteractionResponse(stats, s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
@@ -52,75 +65,44 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 	}
 }
 
-func (a *API) soundStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func (a *API) getStatsSounds() (string, error) {
 	soundStats, err := a.model.GetSoundStatistics()
 	if err != nil {
 		dlog.ErrorLog.Printf("error getting sound statistics: %v", err)
 	}
 	sortedKeys := model.SortMapKeysByValue(soundStats)
-	message := "🔥  Top 10 played sounds: \n\n"
+	content := strings.Builder{}
+	content.Write([]byte("🔥  Top 10 sounds: \n\n"))
 	for _, c := range sortedKeys {
-		message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
+		content.Write([]byte(fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)))
 	}
-	_, err = a.SendMessage(message, s, i, false)
-	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
-	}
-	return nil
+	return content.String(), nil
 }
 
-func (a *API) userStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func (a *API) getStatsUsers() (string, error) {
 	userStats, err := a.model.GetAllUserStatistics()
 	if err != nil {
 		dlog.ErrorLog.Printf("error getting all users statistics: %v", err)
 	}
 	sortedKeys := model.SortMapKeysByValue(userStats)
 
-	// send table instead of loose lines -> formatting
-	message := "🤡  Top 10 Users: \n\n"
-	for i, c := range sortedKeys {
-		i += 1
-		message = message + fmt.Sprintf("> %d.\t%s\t\tplayed: %d\n", i, c, userStats[c])
+	content := strings.Builder{}
+	content.Write([]byte("🔥  Top 10 users: \n\n"))
+	for _, c := range sortedKeys {
+		content.Write([]byte(fmt.Sprintf("> %dx:\t%s\n", userStats[c], c)))
 	}
-
-	_, err = a.SendMessage(message, s, i, false)
-	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
-	}
-	return nil
+	return content.String(), nil
 }
 
-func (a *API) meStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func (a *API) getStatsMe(i *discordgo.InteractionCreate) (string, error) {
 	userStats, err := a.model.GetUserStatistics(i.Member.User.ID, 10)
 	if err != nil {
 		dlog.ErrorLog.Printf("error getting user statistics: %v", err)
 	}
-	content := []discordgo.MessageComponent{}
-	row := discordgo.ActionsRow{}
-	for i, s := range userStats {
-		// only 5 buttons per row - discord does not allow more
-		if i > 0 && i%5 == 0 {
-			content = append(content, row)
-			row = discordgo.ActionsRow{}
-		}
-		row.Components = append(row.Components, discordgo.Button{
-			Label:    fmt.Sprintf("%dx: %s", s.Count, s.Name),
-			Style:    discordgo.SuccessButton,
-			CustomID: fmt.Sprintf("play_sound_%s_%s", s.Category, s.Name),
-		})
+	content := strings.Builder{}
+	content.Write([]byte("🔥  <@" + i.Member.User.ID + "> 's top 10 played sounds: \n\n"))
+	for _, s := range userStats {
+		content.Write([]byte(fmt.Sprintf("> %dx:\t%s\n", s.Count, s.Name)))
 	}
-	// Append the last row if it has any components
-	if len(row.Components) > 0 {
-		content = append(content, row)
-	}
-	message2 := &discordgo.MessageSend{
-		Content:    "🔥  <@" + i.Member.User.ID + ">'s top 10 played sounds: \n\n",
-		Components: content,
-	}
-
-	_, err = a.SendMessageComplex(message2, s, i, false)
-	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
-	}
-	return nil
+	return content.String(), nil
 }

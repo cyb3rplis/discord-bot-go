@@ -56,8 +56,8 @@ func (m *Model) GetUserFavorites(userID string) ([]Favorite, error) {
 	return favorites, nil
 }
 
-func (m *Model) SoundFavoriteAdd(mc *discordgo.MessageCreate, arg string) error {
-	userID := mc.Author.ID
+func (m *Model) SoundFavoriteAdd(i *discordgo.InteractionCreate, arg string) error {
+	userID := i.Member.User.ID
 	soundName := arg
 	//get soundID by Name
 	soundID, err := m.GetSoundIDByName(soundName)
@@ -71,8 +71,8 @@ func (m *Model) SoundFavoriteAdd(mc *discordgo.MessageCreate, arg string) error 
 	return nil
 }
 
-func (m *Model) SoundFavoriteRemove(mc *discordgo.MessageCreate, arg string) error {
-	userID := mc.Author.ID
+func (m *Model) SoundFavoriteRemove(i *discordgo.InteractionCreate, arg string) error {
+	userID := i.Member.User.ID
 	soundName := arg
 	//get soundID by Name
 	soundID, err := m.GetFavoriteByNameAndUserID(soundName, userID)

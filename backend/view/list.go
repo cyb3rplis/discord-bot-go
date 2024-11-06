@@ -10,7 +10,7 @@ func (a *API) PromptInteractionList(s *discordgo.Session, i *discordgo.Interacti
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "list":
-			err := a.SendInteractionRespond("👉 Listing sound categories", s, i, true)
+			err := a.SendInteractionRespond("👉 Listing sound categories", s, i)
 			if err != nil {
 				dlog.ErrorLog.Println("error executing list command:", err)
 			}

@@ -45,27 +45,36 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 	return message, nil
 }
 
-func (a *API) SendInteractionRespond(msg string, s *discordgo.Session, i *discordgo.InteractionCreate, hidden bool) error {
-	var err error
-	if hidden {
-
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: msg,
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
-	} else {
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: msg,
-			}})
-	}
+func (a *API) SendInteractionRespond(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: msg,
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("error responding to interaction: %v", err)
 	}
+	return nil
+}
 
+func (a *API) SendInteractionRespondFollowup(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		Content: msg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending followup message: %v", err)
+	}
+	return nil
+}
+
+func (a *API) UpdateInteractionResponse(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: &msg,
+	})
+	if err != nil {
+		return fmt.Errorf("error updating interaction response: %v", err)
+	}
 	return nil
 }

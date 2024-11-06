@@ -41,7 +41,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "play":
-			_ = a.SendInteractionRespond("➡ Playing sound", s, i, true)
+			_ = a.SendInteractionRespond("➡ Playing sound", s, i)
 			// Find the channel that the interaction came from
 			c, err := s.State.Channel(i.ChannelID)
 			if err != nil {
@@ -60,7 +60,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			for _, vs := range g.VoiceStates {
 				if vs.UserID == i.Member.User.ID {
 					soundName := i.ApplicationCommandData().Options[0].StringValue()
-					err := a.SendInteractionRespond("➡ Playing sound", s, i, true)
+					err := a.SendInteractionRespond("➡ Playing sound", s, i)
 					if err != nil {
 						log.Printf("error executing play command: %v", err)
 					}
@@ -243,10 +243,11 @@ func (a *API) PlayAudio(s *discordgo.Session, i *discordgo.InteractionCreate) er
 				return err
 			}
 
-			response := "🎶  Playing audio"
-			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Content: &response,
-			})
+			err = a.UpdateInteractionResponse("🎶  Playing audio", s, i)
+			if err != nil {
+				dlog.ErrorLog.Println("error updating interaction response:", err)
+				return err
+			}
 
 			dlog.InfoLog.Printf("User: %s played sound", i.Member.User.GlobalName)
 			// Play the sound

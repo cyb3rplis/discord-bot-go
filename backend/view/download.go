@@ -19,7 +19,7 @@ type Download struct {
 }
 
 func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	err := a.SendInteractionRespond("🎶  Preparing Audio, this might take a few seconds...", s, i, true)
+	err := a.SendInteractionRespond("🎶  Preparing Audio, this might take a few seconds...", s, i)
 	if err != nil {
 		dlog.ErrorLog.Println("error sending message:", err)
 	}
