@@ -100,7 +100,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY_IMAGE }}
           flavor: |
-            latest=auto
+            latest=true
             prefix=
             suffix=
 
