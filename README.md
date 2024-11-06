@@ -14,7 +14,6 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Sync and Play music from local files
 - [x] Interact with buttons to play music (no need to type commands)
 - [x] Play music from video platform
-- [x] Text2Speech
 - [x] Statistics (Sounds, User)
 - [x] Most used sounds (Top 10, Top 20)
 - [x] Add, Remove and List Favorites
@@ -24,8 +23,7 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [ ] Delete sounds (admins only)
 - [ ] Move sounds (admins only, e.g. ".move fart2 custom")
 - [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName \<start\> \<end\>")
-- [ ] Jail users for a specified amount of time (cant use sounds)
-- [x] Pull admin users from roles on server
+- [x] Jail users for a specified amount of time (cant use sounds)
 
 ## Executing the bot
 
@@ -96,7 +94,7 @@ $ docker compose down
 
 ## Development
 
-Run the container like so:
+Run the container like so (omit --watch if you don't want to rebuild the running container on changes):
 
 ```
 $ docker compose -f compose.dev.yml up --watch --build
