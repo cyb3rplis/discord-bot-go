@@ -45,17 +45,7 @@ total 4
 
 IMPORTANT: the `./data` directory will also contain the `soundbot.db` database, so make sure to create a backup of the folder regularly.
 
-Make sure to place your token in the `.env` file in the root directory of the project:
-
-```
-TOKEN=your_token_here
-```
-
-Run the following command to build the docker container (in the future hosted on github, modified `compose.yml` to pull up to date image):
-
-```
-$ docker build -t discord-bot-go .
-```
+Make sure to place your token in the `.env` file in the root directory of the project. See `example.env`.
 
 Run the container:
 
