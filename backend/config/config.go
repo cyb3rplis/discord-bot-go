@@ -21,7 +21,6 @@ type Config struct {
 	YTOutput  string `json:"yt_output"`
 	YTTemp    string `json:"yt_temp"`
 	YTTimeout int    `json:"yt_timeout"`
-	AdminRole string `json:"admin"`
 }
 
 type User struct {
@@ -64,14 +63,10 @@ func LoadConfig() *Config {
 			YTOutput:  filepath.Join(AppPath(), "data", "yt.dca"),
 			YTTemp:    filepath.Join(AppPath(), "data", "yt.mp3"),
 			YTTimeout: 20,
-			AdminRole: os.Getenv("ADMIN_ROLE"),
 		}
 		// Check if Token is actually set
 		if configInstance.Token == "" {
 			dlog.FatalLog.Fatalf("environment variable TOKEN not set")
-		}
-		if configInstance.AdminRole == "" {
-			dlog.FatalLog.Fatalf("environment variable ADMIN_ROLE not set")
 		}
 
 		// check if necessary binaries are on the system
@@ -92,7 +87,6 @@ func LoadConfig() *Config {
 	fmt.Println(" > YT_OUTPUT:\t", configInstance.YTOutput)
 	fmt.Println(" > YT_TEMP:\t", configInstance.YTTemp)
 	fmt.Println(" > YTTimeout:\t", configInstance.YTTimeout)
-	fmt.Println(" > ADMIN_ROLE:\t", configInstance.AdminRole)
 	fmt.Println("---------------------------------------------------")
 
 	return configInstance

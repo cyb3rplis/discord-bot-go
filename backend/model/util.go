@@ -4,12 +4,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // ScanDirectory scans the sound directory and returns a map of folders and files.
@@ -152,17 +153,6 @@ func BuildMessages(buttons []discordgo.MessageComponent, initialMessage *discord
 		messages = append(messages, message)
 	}
 	return messages
-}
-
-func (m *Model) IsAdmin(roleNames []string) bool {
-	adminRole := m.Config.AdminRole
-	for _, r := range roleNames {
-		if r == adminRole {
-			return true
-		}
-	}
-
-	return false
 }
 
 // ComputeFileHash computes the SHA-256 hash of a given file
