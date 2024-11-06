@@ -294,7 +294,7 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 
 		// Add new sounds for this category
 		for _, file := range files {
-			soundPath := filepath.Join(a.model.Config.SoundsDir, folder, file+".dca")
+			soundPath := filepath.Join(a.model.Config.SoundsDir, folder, file+".mp3")
 			fileData, err := os.ReadFile(soundPath)
 			if err != nil {
 				return fmt.Errorf("error reading dca sound file: %w", err)
