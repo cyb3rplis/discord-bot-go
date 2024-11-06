@@ -27,17 +27,29 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 			option := i.ApplicationCommandData().Options[0]
 			switch option.Name {
 			case "sounds":
-				err := a.soundStats(s, m)
+				err := a.SendInteractionRespond("👉 Getting sound statistics", i, s, true)
+				if err != nil {
+					logger.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.soundStats(s, m)
 				if err != nil {
 					logger.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "users":
-				err := a.userStats(s, m)
+				err := a.SendInteractionRespond("👉 Getting user statistics", i, s, true)
+				if err != nil {
+					logger.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.userStats(s, m)
 				if err != nil {
 					logger.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "me":
-				err := a.meStats(s, m)
+				err := a.SendInteractionRespond("👉 Getting your statistics", i, s, true)
+				if err != nil {
+					logger.ErrorLog.Println("error executing stats command:", err)
+				}
+				err = a.meStats(s, m)
 				if err != nil {
 					logger.ErrorLog.Println("error executing stats command:", err)
 				}

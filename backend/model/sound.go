@@ -103,6 +103,26 @@ func (m *Model) GetSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
+// GetSoundsAll returns a list of sounds in the specified category (from DB)
+func (m *Model) GetSoundsAll() ([]string, error) {
+	rows, err := m.Db.Query("SELECT sounds.name FROM sounds ORDER BY sounds.name")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query sounds: %w", err)
+	}
+	defer rows.Close()
+
+	var sounds []string
+	for rows.Next() {
+		var sound string
+		err := rows.Scan(&sound)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan sound: %w", err)
+		}
+		sounds = append(sounds, sound)
+	}
+	return sounds, nil
+}
+
 func (m *Model) GetCategoryByID(folderName string) int {
 	var categoryID int
 	err := m.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)

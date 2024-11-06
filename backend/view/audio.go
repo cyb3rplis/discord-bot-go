@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/logger"
-	"log"
 )
 
 func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -23,17 +22,8 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "audio":
-			arg := i.ApplicationCommandData().Options[0].StringValue()
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "➡ Currently Playing audio by <@" + i.Member.User.Username + "> ",
-				},
-			})
-			if err != nil {
-				log.Printf("error executing audio command: %v", err)
-			}
 
+			arg := i.ApplicationCommandData().Options[0].StringValue()
 			// Check if the user is in the Gulag
 			user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
 			if err != nil {

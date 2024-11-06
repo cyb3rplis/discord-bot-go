@@ -45,7 +45,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, mc *discordgo.Messag
 	return message, nil
 }
 
-func (a *API) SendHiddenMessage(msg string, i *discordgo.InteractionCreate, s *discordgo.Session, delete bool) error {
+func (a *API) SendInteractionRespond(msg string, i *discordgo.InteractionCreate, s *discordgo.Session, delete bool) error {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -58,7 +58,7 @@ func (a *API) SendHiddenMessage(msg string, i *discordgo.InteractionCreate, s *d
 	}
 	if delete {
 		go func() {
-			time.Sleep(10 * time.Second)
+			time.Sleep(8 * time.Second)
 			err := s.InteractionResponseDelete(i.Interaction)
 			if err != nil {
 				logger.ErrorLog.Println("error deleting hidden message:", err)

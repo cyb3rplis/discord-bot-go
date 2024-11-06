@@ -112,15 +112,6 @@ func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 	return soundStats, err
 }
 
-func (m *Model) AddUser(userID int, userName string) error {
-	_, err := m.Db.Exec("INSERT INTO users (id, username) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET username = excluded.username;", userID, userName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // AddUserStatistics adds a sound play to the user statistics
 func (m *Model) AddUserStatistics(userID int, soundName string) error {
 	_, err := m.Db.Exec("INSERT INTO stats_users (user_id, sound_id, count) VALUES (?, (SELECT id FROM sounds WHERE name = ?), 1) ON CONFLICT(user_id, sound_id) DO UPDATE SET count = count + 1;", userID, soundName)

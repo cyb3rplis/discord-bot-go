@@ -125,7 +125,6 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Look for the interaction user in that guild's current voice states
 	for _, vs := range g.VoiceStates {
 		if vs.UserID == i.Member.User.ID {
-
 			// add user and user statistics
 			userID, err := strconv.Atoi(i.Member.User.ID)
 			if err != nil {
@@ -160,6 +159,7 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 			_, err = a.SendMessageComplex(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
 			if err != nil {
 				logger.ErrorLog.Println("error sending message:", err)
+				return
 			}
 
 			logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)

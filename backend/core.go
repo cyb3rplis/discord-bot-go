@@ -2,6 +2,11 @@ package backend
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/controller"
@@ -9,10 +14,6 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/view"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 var readyMutex = &sync.Mutex{}
@@ -72,6 +73,12 @@ func Init() {
 		view.BotReady = true
 	})
 
+	// Register guildCreate as a callback for the guildCreate events.
+	dg.AddHandler(guildCreate)
+
+	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
+	dg.AddHandler(viewInstance.HandlePlaySoundInteraction) //audio interaction
+
 	// Register prompt handlers
 	//prompt > list
 	dg.AddHandler(view.RegisterPromptInteractionsList) //list
@@ -80,22 +87,18 @@ func Init() {
 	dg.AddHandler(view.RegisterPromptInteractionsAudio) //audio
 	dg.AddHandler(viewInstance.PromptInteractionAudio)  //audio
 	//prompt > favorite
-	dg.AddHandler(view.RegisterPromptInteractionsFavorite) //favorite
-	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
+	dg.AddHandler(viewInstance.RegisterPromptInteractionsFavorite) //favorite
+	dg.AddHandler(viewInstance.PromptInteractionFavorite)          //favorite
 	//prompt > gulag
-	dg.AddHandler(view.RegisterPromptInteractionsGulag) //gulag
-	dg.AddHandler(viewInstance.PromptInteractionGulag)  //gulag
+	dg.AddHandler(viewInstance.RegisterPromptInteractionsGulag) //gulag
+	dg.AddHandler(viewInstance.PromptInteractionGulag)          //gulag
 
 	dg.AddHandler(view.RegisterPromptInteractionsStats) //stats
 	dg.AddHandler(viewInstance.PromptInteractionStats)  //stats
 
-	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
-	dg.AddHandler(viewInstance.HandlePlaySoundInteraction) //audio interaction
+	dg.AddHandler(viewInstance.RegisterPromptInteractionsPlaySound) //play sound
+	dg.AddHandler(viewInstance.PromptInteractionPlaySound)          //play sound
 
-	// Register guildCreate as a callback for the guildCreate events.
-	dg.AddHandler(guildCreate)
-
-	// We need information about guilds (which includes their channels),
 	// messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers
 

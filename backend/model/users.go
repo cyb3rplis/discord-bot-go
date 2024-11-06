@@ -8,7 +8,6 @@ import (
 
 func (m *Model) GetUsers() (users []config.User, err error) {
 	rows, err := m.Db.Query("SELECT id, username, gulagged FROM users;")
-
 	if err != nil {
 		logger.FatalLog.Fatal(err)
 	}
@@ -26,6 +25,15 @@ func (m *Model) GetUsers() (users []config.User, err error) {
 	}
 
 	return users, err
+}
+
+func (m *Model) AddUser(userID int, userName string) error {
+	_, err := m.Db.Exec("INSERT INTO users (id, username) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET username = excluded.username;", userID, userName)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *Model) GetUserFromUsername(username string) (user config.User, err error) {

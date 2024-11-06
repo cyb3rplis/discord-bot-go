@@ -1,8 +1,9 @@
 package view
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"log"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // RegisterPromptInteractionsAudio - Register prompt interactions
@@ -42,10 +43,23 @@ func RegisterPromptInteractionsList(s *discordgo.Session, event *discordgo.Ready
 }
 
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
-func RegisterPromptInteractionsFavorite(s *discordgo.Session, event *discordgo.Ready) {
+func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, event *discordgo.Ready) {
 	commandName := "favorite"
+	sounds, err := a.model.GetSoundsAll()
+	if err != nil {
+		log.Fatalf("cannot get sounds: %v", err)
+		return
+	}
+	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
+	for _, sound := range sounds {
+		soundChoice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  sound,
+			Value: sound,
+		}
+		soundsChoices = append(soundsChoices, soundChoice)
+	}
 	// Register the command globally
-	_, err := s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
+	_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
 		Name:        commandName,
 		Description: "Manage your favorite sounds",
 		Options: []*discordgo.ApplicationCommandOption{
@@ -64,6 +78,7 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session, event *discordgo.R
 						Name:        "sound",
 						Description: "The name of the sound to add",
 						Required:    true,
+						Choices:     soundsChoices,
 					},
 				},
 			},
@@ -77,6 +92,7 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session, event *discordgo.R
 						Name:        "sound",
 						Description: "The name of the sound to remove",
 						Required:    true,
+						Choices:     soundsChoices,
 					},
 				},
 			},
@@ -89,10 +105,23 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session, event *discordgo.R
 }
 
 // RegisterPromptInteractionsGulag - Register prompt interactions for gulag
-func RegisterPromptInteractionsGulag(s *discordgo.Session, event *discordgo.Ready) {
+func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, event *discordgo.Ready) {
 	commandName := "gulag"
+	users, err := a.model.GetUsers()
+	if err != nil {
+		log.Fatalf("cannot get sounds: %v", err)
+		return
+	}
+	var usersChoices []*discordgo.ApplicationCommandOptionChoice
+	for _, user := range users {
+		soundChoice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  user.Username,
+			Value: user.Username,
+		}
+		usersChoices = append(usersChoices, soundChoice)
+	}
 	// Register the command globally
-	_, err := s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
+	_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
 		Name:        commandName,
 		Description: "Manage gulag sounds",
 		Options: []*discordgo.ApplicationCommandOption{
@@ -109,8 +138,9 @@ func RegisterPromptInteractionsGulag(s *discordgo.Session, event *discordgo.Read
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
 						Name:        "user",
-						Description: "The name of the sound to add",
+						Description: "The name of the user to add to the gulag",
 						Required:    true,
+						Choices:     usersChoices,
 					},
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
@@ -127,9 +157,10 @@ func RegisterPromptInteractionsGulag(s *discordgo.Session, event *discordgo.Read
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "sound",
-						Description: "The name of the sound to remove",
+						Name:        "user",
+						Description: " The name of the user to remove from the gulag",
 						Required:    true,
+						Choices:     usersChoices,
 					},
 				},
 			},
@@ -163,6 +194,41 @@ func RegisterPromptInteractionsStats(s *discordgo.Session, event *discordgo.Read
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "me",
 				Description: "Get your personal sound statistics",
+			},
+		},
+	})
+	if err != nil {
+		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+	}
+	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+}
+
+func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session, event *discordgo.Ready) {
+	commandName := "play"
+	// Register the command globally
+	sounds, err := a.model.GetSoundsAll()
+	if err != nil {
+		log.Fatalf("cannot get sounds: %v", err)
+		return
+	}
+	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
+	for _, sound := range sounds {
+		soundChoice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  sound,
+			Value: sound,
+		}
+		soundsChoices = append(soundsChoices, soundChoice)
+	}
+	_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
+		Name:        commandName,
+		Description: "Play a sound by name",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "sound",
+				Description: "The name of the sound to play",
+				Required:    true,
+				Choices:     soundsChoices,
 			},
 		},
 	})

@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,6 +29,103 @@ const resetDuration = 15 * time.Second // Duration to reset the interaction coun
 type Entry struct {
 	ID   int
 	Name string
+}
+
+func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	//get userID
+	if i.Member == nil {
+		logger.ErrorLog.Println("error getting member from interaction")
+		return
+	}
+	m := &discordgo.MessageCreate{
+		Message: &discordgo.Message{
+			ID:        i.ID,
+			ChannelID: i.ChannelID,
+			Author:    &discordgo.User{ID: i.Member.User.ID},
+		},
+	}
+
+	if i.Type == discordgo.InteractionApplicationCommand {
+		switch i.ApplicationCommandData().Name {
+		case "play":
+			err := a.SendInteractionRespond("➡ Playing sound", i, s, true)
+			// Find the channel that the interaction came from
+			c, err := s.State.Channel(i.ChannelID)
+			if err != nil {
+				logger.ErrorLog.Println("error finding channel:", err)
+				return
+			}
+
+			// Find the guild for that channel
+			g, err := s.State.Guild(c.GuildID)
+			if err != nil {
+				logger.ErrorLog.Println("error finding guild:", err)
+				return
+			}
+
+			// Look for the interaction user in that guild's current voice states
+			for _, vs := range g.VoiceStates {
+				if vs.UserID == i.Member.User.ID {
+					soundName := i.ApplicationCommandData().Options[0].StringValue()
+					err := a.SendInteractionRespond("➡ Playing sound", i, s, true)
+					if err != nil {
+						log.Printf("error executing play command: %v", err)
+					}
+
+					// Check if the user is in the Gulag
+					user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
+					if err != nil {
+						logger.ErrorLog.Println("error getting user from username:", err)
+					} else {
+						if remaining, ok := IsUserInGulag(user); ok {
+							user.Remaining = remaining
+							message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+							_, err = a.SendMessage(message, s, m, true)
+							if err != nil {
+								logger.ErrorLog.Printf("error sending message: %v", err)
+							}
+							return
+						}
+					}
+					// Check if the user is in a voice channel
+					err = a.VoiceChannelCheck(s, &discordgo.MessageCreate{Message: &discordgo.Message{ID: i.ID, ChannelID: i.ChannelID, Author: i.Member.User}})
+					if err != nil {
+						logger.ErrorLog.Println("error checking voice channel:", err)
+						return
+					}
+
+					content := []discordgo.MessageComponent{}
+					row := discordgo.ActionsRow{}
+					row.Components = append(row.Components, discordgo.Button{
+						Label:    "Stop Sound",
+						Style:    discordgo.DangerButton,
+						CustomID: "stop_sound",
+					})
+					content = append(content, row)
+
+					msg := &discordgo.MessageSend{
+						Content:    "➡ Currently Playing by <@" + i.Member.User.Username + ">: " + soundName,
+						Components: content,
+					}
+
+					// Send the message (+stop button)
+					_, err = a.SendMessageComplex(msg, s, m, false)
+					if err != nil {
+						logger.ErrorLog.Println("error sending message:", err)
+						return
+					}
+
+					// Play the custom sound
+					err = a.PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundName)
+					if err != nil {
+						logger.ErrorLog.Println("error playing sound:", err)
+					}
+				}
+
+			}
+
+		}
+	}
 }
 
 // PlaySound plays the current buffer to the provided channel.
