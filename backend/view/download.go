@@ -19,12 +19,10 @@ type Download struct {
 }
 
 func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "🎶  Preparing Audio, this might take a few seconds...",
-		},
-	})
+	err := a.SendInteractionRespond("🎶  Preparing Audio, this might take a few seconds...", s, i, true)
+	if err != nil {
+		dlog.ErrorLog.Println("error sending message:", err)
+	}
 
 	// setting up a context to cancel the process after x seconds
 	timeout := time.Duration(a.model.Config.YTTimeout) * time.Second
@@ -39,7 +37,7 @@ func (a *API) DownloadAndConvertAudio(download Download, s *discordgo.Session, i
 		cmd = exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", a.model.Config.YTTemp, download.URL))
 	}
 
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)
 	}

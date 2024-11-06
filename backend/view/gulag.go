@@ -49,7 +49,7 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 				} else {
 
 				}
-				err = a.SendInteractionRespond(message, i, s, false)
+				err = a.SendInteractionRespond(message, s, i, true)
 				if err != nil {
 					return
 				}
@@ -60,16 +60,16 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					timeout := option.Options[1].StringValue()
 					minutes, err := strconv.Atoi(timeout)
 					if err != nil {
-						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), i, s, false)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), s, i, true)
 						return
 					}
 					err = a.model.GulagUser(user, minutes)
 					if err != nil {
-						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", user, err), i, s, false)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", user, err), s, i, true)
 						return
 					}
 					dlog.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", m.Author.GlobalName, user, minutes)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", user, minutes), i, s, false)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", user, minutes), s, i, true)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
@@ -82,11 +82,11 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					err := a.model.ReleaseUser(user)
 					if err != nil {
 						dlog.ErrorLog.Println("error releasing user from gulag:", err)
-						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user, err), i, s, false)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user, err), s, i, true)
 						return
 					}
 					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user), i, s, false)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user), s, i, true)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return

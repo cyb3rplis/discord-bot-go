@@ -41,7 +41,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "play":
-			_ = a.SendInteractionRespond("➡ Playing sound", i, s, true)
+			_ = a.SendInteractionRespond("➡ Playing sound", s, i, true)
 			// Find the channel that the interaction came from
 			c, err := s.State.Channel(i.ChannelID)
 			if err != nil {
@@ -60,7 +60,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			for _, vs := range g.VoiceStates {
 				if vs.UserID == i.Member.User.ID {
 					soundName := i.ApplicationCommandData().Options[0].StringValue()
-					err := a.SendInteractionRespond("➡ Playing sound", i, s, true)
+					err := a.SendInteractionRespond("➡ Playing sound", s, i, true)
 					if err != nil {
 						log.Printf("error executing play command: %v", err)
 					}
