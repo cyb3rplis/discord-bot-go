@@ -1,9 +1,8 @@
 package view
 
 import (
-	"log"
-
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 // RegisterPromptInteractionsAudio - Register prompt interactions
@@ -23,9 +22,9 @@ func RegisterPromptInteractionsAudio(s *discordgo.Session, event *discordgo.Read
 		},
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }
 
 // RegisterPromptInteractionsList - Register prompt interactions
@@ -37,9 +36,9 @@ func RegisterPromptInteractionsList(s *discordgo.Session, event *discordgo.Ready
 		Description: "Use list to list all button categories",
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }
 
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
@@ -47,7 +46,7 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, event *di
 	commandName := "favorite"
 	sounds, err := a.model.GetSoundsAll()
 	if err != nil {
-		log.Fatalf("cannot get sounds: %v", err)
+		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
@@ -99,9 +98,9 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session, event *di
 		},
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }
 
 // RegisterPromptInteractionsGulag - Register prompt interactions for gulag
@@ -109,7 +108,7 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, event *disco
 	commandName := "gulag"
 	users, err := a.model.GetUsers()
 	if err != nil {
-		log.Fatalf("cannot get sounds: %v", err)
+		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var usersChoices []*discordgo.ApplicationCommandOptionChoice
@@ -123,17 +122,17 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, event *disco
 	// Register the command globally
 	_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
 		Name:        commandName,
-		Description: "Manage gulag sounds",
+		Description: "Manage gulag",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "list",
-				Description: "List all gulag sounds",
+				Description: "List all users in the gulag",
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "add",
-				Description: "Add a sound to the gulag",
+				Description: "Add a user to the gulag",
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
@@ -153,7 +152,7 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, event *disco
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "remove",
-				Description: "Remove a sound from the gulag",
+				Description: "Remove a user from the gulag",
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
@@ -167,9 +166,9 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, event *disco
 		},
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }
 
 // RegisterPromptInteractionsStats - Register prompt interactions for stats
@@ -198,9 +197,9 @@ func RegisterPromptInteractionsStats(s *discordgo.Session, event *discordgo.Read
 		},
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }
 
 func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session, event *discordgo.Ready) {
@@ -208,7 +207,7 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session, event *d
 	// Register the command globally
 	sounds, err := a.model.GetSoundsAll()
 	if err != nil {
-		log.Fatalf("cannot get sounds: %v", err)
+		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
@@ -233,7 +232,7 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session, event *d
 		},
 	})
 	if err != nil {
-		log.Fatalf("cannot create '%s' command: %v", commandName, err)
+		dlog.FatalLog.Fatalf("cannot create '%s' command: %v", commandName, err)
 	}
-	log.Printf("> Prompt command registered: %s by %s\n", commandName, event.User.Username)
+	dlog.InfoLog.Printf("Prompt command registered: %s by %s\n", commandName, event.User.Username)
 }

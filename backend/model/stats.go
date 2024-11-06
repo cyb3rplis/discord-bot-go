@@ -2,7 +2,8 @@ package model
 
 import (
 	"database/sql"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 type SoundInfo struct {
@@ -22,7 +23,7 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 	DESC LIMIT 10;`)
 
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -33,7 +34,7 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 
 		err = rows.Scan(&sound, &count)
 		if err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid {
 			soundStats[sound.String] = int(count.Int64)
@@ -58,7 +59,7 @@ func (m *Model) GetUserStatistics(userID string, limit int) (soundStats []SoundI
 	DESC LIMIT ?;`, userID, limit)
 
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -72,7 +73,7 @@ func (m *Model) GetUserStatistics(userID string, limit int) (soundStats []SoundI
 
 		err = rows.Scan(&sound, &count, &category)
 		if err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid && category.Valid {
 			stat.Name = sound.String
@@ -90,7 +91,7 @@ func (m *Model) GetUserStatistics(userID string, limit int) (soundStats []SoundI
 func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 	rows, err := m.Db.Query("SELECT s.alias, COALESCE(SUM(su.count), 0) AS total_plays FROM sounds AS s LEFT JOIN stats_users AS su ON s.id = su.sound_id GROUP BY s.id, s.alias HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -101,7 +102,7 @@ func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 
 		err = rows.Scan(&sound, &count)
 		if err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid {
 			soundStats[sound.String] = int(count.Int64)

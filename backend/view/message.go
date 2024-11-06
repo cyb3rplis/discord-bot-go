@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Session, mc *discordgo.MessageCreate, delete bool) (*discordgo.Message, error) {
+func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Session, i *discordgo.InteractionCreate, delete bool) (*discordgo.Message, error) {
 	// send complex message
-	message, err := s.ChannelMessageSendComplex(mc.ChannelID, msg)
+	message, err := s.ChannelMessageSendComplex(i.ChannelID, msg)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -21,17 +21,17 @@ func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Sessio
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
 		if err != nil {
-			logger.ErrorLog.Println("error deleting message:", err)
+			dlog.ErrorLog.Println("error deleting message:", err)
 		}
 	}
 	return message, nil
 }
 
-func (a *API) SendMessage(msg string, s *discordgo.Session, mc *discordgo.MessageCreate, delete bool) (*discordgo.Message, error) {
+func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.InteractionCreate, delete bool) (*discordgo.Message, error) {
 	// send message
-	message, err := s.ChannelMessageSend(mc.ChannelID, msg)
+	message, err := s.ChannelMessageSend(i.ChannelID, msg)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -39,7 +39,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, mc *discordgo.Messag
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
 		if err != nil {
-			logger.ErrorLog.Println("error deleting message:", err)
+			dlog.ErrorLog.Println("error deleting message:", err)
 		}
 	}
 	return message, nil
@@ -61,7 +61,7 @@ func (a *API) SendInteractionRespond(msg string, i *discordgo.InteractionCreate,
 			time.Sleep(8 * time.Second)
 			err := s.InteractionResponseDelete(i.Interaction)
 			if err != nil {
-				logger.ErrorLog.Println("error deleting hidden message:", err)
+				dlog.ErrorLog.Println("error deleting hidden message:", err)
 			}
 		}()
 	}

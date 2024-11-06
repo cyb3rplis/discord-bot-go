@@ -4,23 +4,17 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
 func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	//get userID
 	if i.Member == nil {
-		logger.ErrorLog.Println("error getting member from interaction")
+		dlog.ErrorLog.Println("error getting member from interaction")
 		return
 	}
-	m := &discordgo.MessageCreate{
-		Message: &discordgo.Message{
-			ID:        i.ID,
-			ChannelID: i.ChannelID,
-			Author:    &discordgo.User{ID: i.Member.User.ID},
-		},
-	}
+
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "stats":
@@ -29,56 +23,56 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 			case "sounds":
 				err := a.SendInteractionRespond("👉 Getting sound statistics", i, s, true)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.soundStats(s, m)
+				err = a.soundStats(s, i)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "users":
 				err := a.SendInteractionRespond("👉 Getting user statistics", i, s, true)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.userStats(s, m)
+				err = a.userStats(s, i)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			case "me":
 				err := a.SendInteractionRespond("👉 Getting your statistics", i, s, true)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				err = a.meStats(s, m)
+				err = a.meStats(s, i)
 				if err != nil {
-					logger.ErrorLog.Println("error executing stats command:", err)
+					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			}
 		}
 	}
 }
 
-func (a *API) soundStats(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func (a *API) soundStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	soundStats, err := a.model.GetSoundStatistics()
 	if err != nil {
-		logger.ErrorLog.Printf("error getting sound statistics: %v", err)
+		dlog.ErrorLog.Printf("error getting sound statistics: %v", err)
 	}
 	sortedKeys := model.SortMapKeysByValue(soundStats)
 	message := "🔥  Top 10 played sounds: \n\n"
 	for _, c := range sortedKeys {
 		message = message + fmt.Sprintf("> %dx:\t%s\n", soundStats[c], c)
 	}
-	_, err = a.SendMessage(message, s, m, false)
+	_, err = a.SendMessage(message, s, i, false)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 	}
 	return nil
 }
 
-func (a *API) userStats(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func (a *API) userStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	userStats, err := a.model.GetAllUserStatistics()
 	if err != nil {
-		logger.ErrorLog.Printf("error getting all users statistics: %v", err)
+		dlog.ErrorLog.Printf("error getting all users statistics: %v", err)
 	}
 	sortedKeys := model.SortMapKeysByValue(userStats)
 
@@ -89,17 +83,17 @@ func (a *API) userStats(s *discordgo.Session, m *discordgo.MessageCreate) error 
 		message = message + fmt.Sprintf("> %d.\t%s\t\tplayed: %d\n", i, c, userStats[c])
 	}
 
-	_, err = a.SendMessage(message, s, m, false)
+	_, err = a.SendMessage(message, s, i, false)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 	}
 	return nil
 }
 
-func (a *API) meStats(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	userStats, err := a.model.GetUserStatistics(m.Author.ID, 10)
+func (a *API) meStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	userStats, err := a.model.GetUserStatistics(i.Member.User.ID, 10)
 	if err != nil {
-		logger.ErrorLog.Printf("error getting user statistics: %v", err)
+		dlog.ErrorLog.Printf("error getting user statistics: %v", err)
 	}
 	content := []discordgo.MessageComponent{}
 	row := discordgo.ActionsRow{}
@@ -120,13 +114,13 @@ func (a *API) meStats(s *discordgo.Session, m *discordgo.MessageCreate) error {
 		content = append(content, row)
 	}
 	message2 := &discordgo.MessageSend{
-		Content:    "🔥  <@" + m.Author.ID + ">'s top 10 played sounds: \n\n",
+		Content:    "🔥  <@" + i.Member.User.ID + ">'s top 10 played sounds: \n\n",
 		Components: content,
 	}
 
-	_, err = a.SendMessageComplex(message2, s, m, false)
+	_, err = a.SendMessageComplex(message2, s, i, false)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 	}
 	return nil
 }

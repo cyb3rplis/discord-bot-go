@@ -1,4 +1,4 @@
-package logger
+package dlog
 
 import (
 	"log"
@@ -12,6 +12,7 @@ var (
 	FatalLog   *log.Logger
 )
 
+// init initializes the loggers in our custom format
 func init() {
 	InfoLog = log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime|log.Lmsgprefix)
 	WarningLog = log.New(os.Stdout, "WARNING ", log.Ldate|log.Ltime|log.Lmsgprefix)

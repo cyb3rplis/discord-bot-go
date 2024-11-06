@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/logger"
 	"io"
 	"os"
+
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 var Buffer = make([][]byte, 0)
@@ -22,7 +23,7 @@ func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []b
 	}
 	// If the sound already exists, skip the insertion
 	if existingID != 0 {
-		//logger.InfoLog.Printf("Sound with hash %s already exists, skipping insertion", fileHash)
+		//dlog.InfoLog.Printf("Sound with hash %s already exists, skipping insertion", fileHash)
 		return nil
 	}
 	alias := RemoveFileExtension(fileName) // Or any other default value, e.g., ""
@@ -54,7 +55,7 @@ func (m *Model) LoadSound(soundName string) error {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("sound not found: %s", soundName)
 		}
-		logger.ErrorLog.Println("error querying sound file from database:", err)
+		dlog.ErrorLog.Println("error querying sound file from database:", err)
 		return err
 	}
 	// Create a reader for the file data
@@ -68,14 +69,14 @@ func (m *Model) LoadSound(soundName string) error {
 			return nil
 		}
 		if err != nil {
-			logger.ErrorLog.Println("error reading from file data:", err)
+			dlog.ErrorLog.Println("error reading from file data:", err)
 			return err
 		}
 		// Read encoded PCM from the file data.
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
 		if err != nil {
-			logger.ErrorLog.Println("error reading from file data:", err)
+			dlog.ErrorLog.Println("error reading from file data:", err)
 			return err
 		}
 		// Append encoded PCM data to the buffer.
@@ -129,9 +130,9 @@ func (m *Model) GetCategoryByID(folderName string) int {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This should not happen because the category should exist by this point.
-			logger.InfoLog.Printf("Category %s not found in database", folderName)
+			dlog.InfoLog.Printf("Category %s not found in database", folderName)
 		} else {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 	}
 	return categoryID
@@ -140,7 +141,7 @@ func (m *Model) GetCategoryByID(folderName string) int {
 func (m *Model) GetSoundsM() map[int]map[string]string {
 	rows, err := m.Db.Query("SELECT category_id, name, hash FROM sounds")
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -149,7 +150,7 @@ func (m *Model) GetSoundsM() map[int]map[string]string {
 		var categoryID int
 		var fileName, fileHash string
 		if err := rows.Scan(&categoryID, &fileName, &fileHash); err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if sounds[categoryID] == nil {
 			sounds[categoryID] = make(map[string]string)
@@ -168,7 +169,7 @@ func (m *Model) AddCategory(folderName string) error {
 	}
 	// If the category already exists, skip the insertion
 	if existingID != 0 {
-		//logger.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
+		//dlog.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
 		return nil
 	}
 	_, err = m.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
@@ -180,7 +181,7 @@ func (m *Model) LoadSoundFS(soundName string) error {
 	var opusLen int16
 	file, err := os.Open(soundName)
 	if err != nil {
-		logger.ErrorLog.Println("error opening dca file :", err)
+		dlog.ErrorLog.Println("error opening dca file :", err)
 		return err
 	}
 	defer file.Close()
@@ -197,7 +198,7 @@ func (m *Model) LoadSoundFS(soundName string) error {
 			return nil
 		}
 		if err != nil {
-			logger.ErrorLog.Println("Error reading from dca file :", err)
+			dlog.ErrorLog.Println("Error reading from dca file :", err)
 			return err
 		}
 
@@ -205,30 +206,11 @@ func (m *Model) LoadSoundFS(soundName string) error {
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
 		if err != nil {
-			logger.ErrorLog.Println("Error reading from dca file :", err)
+			dlog.ErrorLog.Println("Error reading from dca file :", err)
 			return err
 		}
 
 		// Append encoded pcm data to the buffer.
 		Buffer = append(Buffer, InBuf)
-	}
-}
-
-// CleanUpSoundFile deletes the sound files created during the TTS process.
-func (m *Model) CleanUpSoundFile(module string) {
-	if module == "tts" {
-		err := os.Remove(m.Config.TTSTemp)
-		if err != nil {
-			// Handle error if file deletion fails
-			logger.ErrorLog.Printf("error deleting file: %v\n", err)
-		}
-
-		err = os.Remove(m.Config.TTSOutput)
-		if err != nil {
-			// Handle error if file deletion fails
-			logger.ErrorLog.Printf("error deleting file: %v\n", err)
-		}
-
-		logger.InfoLog.Println("Deleted temp TTS sound files successfully")
 	}
 }

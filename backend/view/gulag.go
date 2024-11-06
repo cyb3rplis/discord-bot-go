@@ -7,13 +7,13 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	//get userID
 	if i.Member == nil {
-		logger.ErrorLog.Println("error getting member from interaction")
+		dlog.ErrorLog.Println("error getting member from interaction")
 		return
 	}
 	m := &discordgo.MessageCreate{
@@ -60,18 +60,18 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					timeout := option.Options[1].StringValue()
 					minutes, err := strconv.Atoi(timeout)
 					if err != nil {
-						err = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), i, s, false)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), i, s, false)
 						return
 					}
 					err = a.model.GulagUser(user, minutes)
 					if err != nil {
-						err = a.SendInteractionRespond(fmt.Sprintf("🧱  error gulagging user: %s --> %v \n", user, err), i, s, false)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", user, err), i, s, false)
 						return
 					}
-					logger.InfoLog.Printf("Admin %s gulagged user: %s for %d Minutes\n", m.Author.GlobalName, user, minutes)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been gulagged for %d minutes\n", user, minutes), i, s, false)
+					dlog.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", m.Author.GlobalName, user, minutes)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", user, minutes), i, s, false)
 					if err != nil {
-						logger.ErrorLog.Println("error sending hidden message:", err)
+						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
 					}
 					return
@@ -81,14 +81,14 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					user := option.Options[0].StringValue()
 					err := a.model.ReleaseUser(user)
 					if err != nil {
-						logger.ErrorLog.Println("error releasing user from gulag:", err)
-						err = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user, err), i, s, false)
+						dlog.ErrorLog.Println("error releasing user from gulag:", err)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user, err), i, s, false)
 						return
 					}
-					logger.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user)
+					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user)
 					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user), i, s, false)
 					if err != nil {
-						logger.ErrorLog.Println("error sending hidden message:", err)
+						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
 					}
 

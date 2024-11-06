@@ -2,9 +2,12 @@
 FROM golang:1.23 AS backend
 RUN go install github.com/bwmarrin/dca/cmd/dca@latest
 ENV GOFLAGS="-mod=vendor"
+ENV GOOS=linux
+ENV GOARCH=amd64
 WORKDIR /app/backend
 COPY backend/ ./
-RUN GOOS=linux GOARCH=amd64 go build -mod vendor -o /dist/discord-bot-go main/main.go
+RUN go vet main/main.go
+RUN go build -o /dist/discord-bot-go main/main.go
 
 # Stage 2: Set up the runtime environment
 FROM debian:bookworm-slim AS discord-bot-go
@@ -18,11 +21,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
-RUN wget https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz \
-    && tar -xzvf piper_linux_x86_64.tar.gz -C /app \
-    && rm piper_linux_x86_64.tar.gz \
-    && wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true -O /app/piper/de_DE-thorsten-medium.onnx \
-    && wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json -O /app/piper/de_DE-thorsten-medium.onnx.json
 
 COPY --from=mwader/static-ffmpeg:latest /ffmpeg /usr/local/bin/
 COPY --from=backend /dist/discord-bot-go ./

@@ -2,13 +2,14 @@ package view
 
 import (
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/model"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/cyb3rplis/discord-bot-go/model"
+
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 var BotReady = false
@@ -25,22 +26,22 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 		Type: discordgo.InteractionResponseDeferredMessageUpdate,
 	})
 	if err != nil {
-		logger.ErrorLog.Println("Failed to respond to interaction:", err)
+		dlog.ErrorLog.Println("Failed to respond to interaction:", err)
 		return
 	}
 
 	// Check if the user is in the Gulag
 	user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
 	if err != nil {
-		logger.ErrorLog.Println("error getting user from username:", err)
+		dlog.ErrorLog.Println("error getting user from username:", err)
 		return
 	} else {
 		if remaining, ok := IsUserInGulag(user); ok {
 			user.Remaining = remaining
 			msg := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
-			_, err = a.SendMessage(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+			_, err = a.SendMessage(msg, s, i, false)
 			if err != nil {
-				logger.ErrorLog.Printf("error sending message: %v", err)
+				dlog.ErrorLog.Printf("error sending message: %v", err)
 			}
 			return
 		}
@@ -58,13 +59,13 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 	if userInteractionCount[user.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
 		msg := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag for one minute."
-		_, err = a.SendMessage(msg, s, &discordgo.MessageCreate{Message: i.Message}, true)
+		_, err = a.SendMessage(msg, s, i, true)
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error sending message:", err)
 		}
 		err := a.model.GulagUser(user.Username, 1)
 		if err != nil {
-			logger.ErrorLog.Println("error gulagging user:", err)
+			dlog.ErrorLog.Println("error gulagging user:", err)
 		}
 
 		return
@@ -79,7 +80,7 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 	case strings.HasPrefix(customID, "stop_sound"):
 		a.handleStopSoundInteraction(s, i)
 	default:
-		logger.ErrorLog.Println("unknown interaction:", customID)
+		dlog.ErrorLog.Println("unknown interaction:", customID)
 	}
 }
 
@@ -94,7 +95,7 @@ func (a *API) handleStopSoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Delete the message that contains the stop button
 	err := s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
 	if err != nil {
-		logger.ErrorLog.Println("error deleting message:", err)
+		dlog.ErrorLog.Println("error deleting message:", err)
 	}
 }
 
@@ -102,7 +103,7 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Extract the subfolder and sound name from the custom ID
 	parts := strings.SplitN(strings.TrimPrefix(customID, "play_sound_"), "_", 2)
 	if len(parts) != 2 {
-		logger.ErrorLog.Println("Invalid custom ID format")
+		dlog.ErrorLog.Println("Invalid custom ID format")
 		return
 	}
 	//subfolder := parts[0]
@@ -111,14 +112,14 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Find the channel that the interaction came from
 	c, err := s.State.Channel(i.ChannelID)
 	if err != nil {
-		logger.ErrorLog.Println("error finding channel:", err)
+		dlog.ErrorLog.Println("error finding channel:", err)
 		return
 	}
 
 	// Find the guild for that channel
 	g, err := s.State.Guild(c.GuildID)
 	if err != nil {
-		logger.ErrorLog.Println("error finding guild:", err)
+		dlog.ErrorLog.Println("error finding guild:", err)
 		return
 	}
 
@@ -128,16 +129,16 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 			// add user and user statistics
 			userID, err := strconv.Atoi(i.Member.User.ID)
 			if err != nil {
-				logger.ErrorLog.Println("error converting user ID to int:", err)
+				dlog.ErrorLog.Println("error converting user ID to int:", err)
 			} else {
 				err = a.model.AddUser(userID, i.Member.User.GlobalName)
 				if err != nil {
-					logger.ErrorLog.Println("error adding user:", err)
+					dlog.ErrorLog.Println("error adding user:", err)
 				}
 
 				err = a.model.AddUserStatistics(userID, soundName)
 				if err != nil {
-					logger.ErrorLog.Println("error adding user statistics:", err)
+					dlog.ErrorLog.Println("error adding user statistics:", err)
 				}
 			}
 
@@ -156,20 +157,20 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 			}
 
 			// Send the message (+stop button)
-			_, err = a.SendMessageComplex(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+			_, err = a.SendMessageComplex(msg, s, i, false)
 			if err != nil {
-				logger.ErrorLog.Println("error sending message:", err)
+				dlog.ErrorLog.Println("error sending message:", err)
 				return
 			}
 
-			logger.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
+			dlog.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
 			// Construct the sound file path
 			// soundFile := fmt.Sprintf("%s/%s/%s.dca", model.Bot.Config.SoundsDir, subfolder, soundName)
 
 			// Play the sound
-			err = a.PlaySound(s, &discordgo.MessageCreate{Message: i.Message}, g.ID, vs.ChannelID, soundName)
+			err = a.PlaySound(s, i, g.ID, vs.ChannelID, soundName)
 			if err != nil {
-				logger.ErrorLog.Println("error playing sound:", err)
+				dlog.ErrorLog.Println("error playing sound:", err)
 			}
 
 			return
@@ -179,12 +180,12 @@ func (a *API) HandlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 
 	// If the user is not in a voice channel, send an error message
-	logger.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
+	dlog.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
 	msg := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
 
-	_, err = a.SendMessage(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+	_, err = a.SendMessage(msg, s, i, false)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 	}
 }
 
@@ -193,21 +194,21 @@ func (a *API) HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	// Extract the category from the custom ID
 	category := strings.TrimPrefix(customID, "list_sounds_")
 	msg := "➡ Sounds in category - " + category
-	_, err := a.SendMessage(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+	_, err := a.SendMessage(msg, s, i, false)
 	if err != nil {
-		logger.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error sending message:", err)
 	}
 
 	// Get all sound files in the subfolder
 	sounds, err := a.model.GetSounds(category)
 	if err != nil {
-		logger.ErrorLog.Println("error listing sounds in subfolder:", err)
+		dlog.ErrorLog.Println("error listing sounds in subfolder:", err)
 	}
 	if len(sounds) == 0 {
 		msg := "No sounds found in this category."
-		_, err = a.SendMessage(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+		_, err = a.SendMessage(msg, s, i, false)
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error sending message:", err)
 		}
 		return
 	}
@@ -217,11 +218,11 @@ func (a *API) HandleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	//build messages
 	messages := model.BuildMessages(buttons, nil)
 
-	logger.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
+	dlog.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
 	for _, msg := range messages {
-		_, err = a.SendMessageComplex(msg, s, &discordgo.MessageCreate{Message: i.Message}, false)
+		_, err = a.SendMessageComplex(msg, s, i, false)
 		if err != nil {
-			logger.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error sending message:", err)
 		}
 	}
 }

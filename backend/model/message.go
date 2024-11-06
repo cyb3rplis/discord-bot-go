@@ -3,7 +3,8 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 func (m *Model) GetCategoriesM() (map[string]int, error) {
@@ -48,7 +49,7 @@ func (m *Model) GetCategories() ([]string, error) {
 func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
 	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages;")
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -60,7 +61,7 @@ func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
 
 		err = rows.Scan(&cID, &mID)
 		if err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if cID.Valid && mID.Valid {
 			messages[cID.String] = append(messages[cID.String], mID.String)
@@ -73,7 +74,7 @@ func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
 func (m *Model) GetAllCommandMessages(command string) (messages map[string][]string, err error) {
 	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages WHERE command = ?;", command)
 	if err != nil {
-		logger.FatalLog.Fatal(err)
+		dlog.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -85,7 +86,7 @@ func (m *Model) GetAllCommandMessages(command string) (messages map[string][]str
 
 		err = rows.Scan(&cID, &mID)
 		if err != nil {
-			logger.FatalLog.Fatal(err)
+			dlog.FatalLog.Fatal(err)
 		}
 		if cID.Valid && mID.Valid {
 			messages[cID.String] = append(messages[cID.String], mID.String)

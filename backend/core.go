@@ -11,7 +11,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/controller"
 	"github.com/cyb3rplis/discord-bot-go/db"
-	"github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/view"
 )
@@ -21,12 +21,12 @@ var readyMutex = &sync.Mutex{}
 func Init() {
 	m, dbClose, err := db.InitModel()
 	if err != nil {
-		logger.FatalLog.Fatalf("Failed to initialize database: %v", err)
+		dlog.FatalLog.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
 		if err != nil {
 			if err := dbClose(); err != nil {
-				logger.FatalLog.Fatalf("Failed to close database: %v", err)
+				dlog.FatalLog.Fatalf("Failed to close database: %v", err)
 			}
 		}
 	}()
@@ -37,23 +37,23 @@ func Init() {
 	// Check if the sound directory exists
 	if _, err := os.Stat(modelInstance.Config.SoundsDir); os.IsNotExist(err) {
 		if err != nil {
-			logger.FatalLog.Fatalf("Failed to check sound directory: %v", err)
+			dlog.FatalLog.Fatalf("Failed to check sound directory: %v", err)
 			return
 		}
 		err = os.Mkdir(m.Config.SoundsDir, 0755)
 		if err != nil {
-			logger.FatalLog.Fatalf("Failed to create sound directory: %v", err)
+			dlog.FatalLog.Fatalf("Failed to create sound directory: %v", err)
 			return
 		}
 	}
 
 	fsSounds, err := modelInstance.ScanDirectory()
 	if err != nil {
-		logger.FatalLog.Printf("cron: error scanning sound directory: %v", err)
+		dlog.FatalLog.Printf("cron: error scanning sound directory: %v", err)
 	}
 	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
-		logger.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
+		dlog.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
 	}
 
 	cfg := config.GetConfig()
@@ -61,7 +61,7 @@ func Init() {
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
-		logger.ErrorLog.Println("error creating Discord session: ", err)
+		dlog.ErrorLog.Println("error creating Discord session: ", err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func Init() {
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.Ready) {
 		readyMutex.Lock()
 		defer readyMutex.Unlock()
-		logger.InfoLog.Println("Bot is ready")
+		dlog.InfoLog.Println("Bot is ready")
 		view.BotReady = true
 	})
 
@@ -105,22 +105,22 @@ func Init() {
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		logger.ErrorLog.Println("error opening Discord session: ", err)
+		dlog.ErrorLog.Println("error opening Discord session: ", err)
 		return
 	}
 
 	// Scan the sound directory for sound files. Sync them with the DB.
 	fsSounds, err = modelInstance.ScanDirectory()
 	if err != nil {
-		logger.FatalLog.Fatalf("error scanning sound directory: %v", err)
+		dlog.FatalLog.Fatalf("error scanning sound directory: %v", err)
 	}
 	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
-		logger.FatalLog.Printf("error syncing sound files: %v", err)
+		dlog.FatalLog.Printf("error syncing sound files: %v", err)
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	logger.InfoLog.Println("Bot is now running")
+	dlog.InfoLog.Println("Bot is now running")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
@@ -147,13 +147,13 @@ func NewBot() {
 // guild is joined.
 func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
-		logger.FatalLog.Println("> Guild is unavailable")
+		dlog.FatalLog.Println("> Guild is unavailable")
 		return
 	}
-	logger.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
-	logger.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
-	//logger.InfoLog.Printf("Channels: %v", event.Guild.Channels)
-	//logger.InfoLog.Printf("Voice States: %v", event.Guild.VoiceStates)
+	dlog.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
+	dlog.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
+	//dlog.InfoLog.Printf("Channels: %v", event.Guild.Channels)
+	//dlog.InfoLog.Printf("Voice States: %v", event.Guild.VoiceStates)
 	config.LoadGuild(event)
 	model.Meta = model.NewInfo()
 }
