@@ -42,10 +42,16 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error executing buttons command:", err)
 					}
 					url := option.Options[0].StringValue()
-					startTime := option.Options[1].StringValue()
-					endTime := option.Options[2].StringValue()
-					soundName := option.Options[3].StringValue()
-					category := option.Options[4].StringValue()
+					soundName := option.Options[1].StringValue()
+					category := option.Options[2].StringValue()
+					startTime := "0"
+					endTime := "0"
+					if len(option.Options) > 3 {
+						startTime = option.Options[3].StringValue()
+					}
+					if len(option.Options) > 4 {
+						endTime = option.Options[4].StringValue()
+					}
 					// Download and convert the audio
 					download := Download{URL: url, Start: startTime, End: endTime, Category: category, SoundName: soundName}
 					// Check if the sound directory exists, if not create it
@@ -61,6 +67,13 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error loading audio:", err)
 						return
 					}
+					// wait for 5 seconds
+					err = a.UpdateInteractionResponse("🎶  Audio is ready, creating button...", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error sending message:", err)
+					}
+					time.Sleep(5 * time.Second)
+
 					err = a.ConvertMP3ToDCA(soundName, download.Category)
 					if err != nil {
 						dlog.ErrorLog.Println("error converting audio:", err)
@@ -134,14 +147,16 @@ func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordg
 	if download.Category == "" {
 		destFile = filepath.Join(a.model.Config.DataDir, download.SoundName+".mp3")
 	}
+	dlog.InfoLog.Printf("Downloading %s to %s", download.URL, destFile)
 	cmdStr := fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", destFile, download.URL)
 	if download.Start != "" && download.End != "" {
 		cmdStr = fmt.Sprintf("yt-dlp -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", download.Start, download.End, destFile, download.URL)
 	}
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", cmdStr)
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w, output: %s", err, string(output))
 	}
 
 	if err := s.ChannelTyping(i.ChannelID); err != nil {

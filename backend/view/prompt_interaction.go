@@ -67,18 +67,6 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session, i *discordgo.Interac
 					},
 					{
 						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "start_time",
-						Description: "The start time of the sound button",
-						Required:    true,
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "end_time",
-						Description: "The end time of the sound button",
-						Required:    true,
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionString,
 						Name:        "name",
 						Description: "The name of the sound button",
 						Required:    true,
@@ -88,6 +76,18 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session, i *discordgo.Interac
 						Name:        "category",
 						Description: "The category of the sound button",
 						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "duration",
+						Description: "The start time of the sound button",
+						Required:    false,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "end_time",
+						Description: "The end time of the sound button",
+						Required:    false,
 					},
 				},
 			}},
