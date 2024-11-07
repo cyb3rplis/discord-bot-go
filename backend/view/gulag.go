@@ -11,11 +11,6 @@ import (
 )
 
 func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//get userID
-	if i.Member == nil {
-		dlog.ErrorLog.Println("error getting member from interaction")
-		return
-	}
 	m := &discordgo.MessageCreate{
 		Message: &discordgo.Message{
 			ID:        i.ID,
@@ -33,16 +28,15 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 				if err != nil {
 					return
 				}
-				var gulaggedUsers []config.User
+				var gulaggedUsers []config.ExtendedUser
 				for _, u := range users {
-					if remaining, ok := IsUserInGulag(u); ok {
-						u.Remaining = remaining
+					if u, ok := SetUserGulagRemaining(u); ok {
 						gulaggedUsers = append(gulaggedUsers, u)
 					}
 				}
 				message := "🧱  Gulagged Users:\n"
 				for _, u := range gulaggedUsers {
-					message = message + fmt.Sprintf("> » User: %s - Remaining: %s\n", u.Username, u.Remaining)
+					message = message + fmt.Sprintf("> » User: %s - Remaining: %s\n", u.User.GlobalName, u.Remaining)
 				}
 				if len(gulaggedUsers) == 0 {
 					message = "🧱  No users are gulagged\n"
@@ -56,20 +50,27 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 				return
 			case "add":
 				if len(option.Options) > 0 {
-					user := option.Options[0].StringValue()
+					userGlobalName := option.Options[0].StringValue()
+					user := config.ExtendedUser{
+						User: &discordgo.User{
+							GlobalName: userGlobalName,
+						},
+					}
 					timeout := option.Options[1].StringValue()
 					minutes, err := strconv.Atoi(timeout)
 					if err != nil {
 						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), s, i)
+						dlog.ErrorLog.Println("error converting timeout to int:", err)
 						return
 					}
 					err = a.model.GulagUser(user, minutes)
 					if err != nil {
-						_ = a.UpdateInteractionResponse(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", user, err), s, i)
+						_ = a.UpdateInteractionResponse(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", user.User.GlobalName, err), s, i)
+						dlog.ErrorLog.Println("error putting user into gulag:", err)
 						return
 					}
-					dlog.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", m.Author.GlobalName, user, minutes)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", user, minutes), s, i)
+					dlog.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", m.Author.GlobalName, user.User.GlobalName, minutes)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", user.User.GlobalName, minutes), s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
@@ -78,15 +79,19 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 				}
 			case "remove":
 				if len(option.Options) > 0 {
-					user := option.Options[0].StringValue()
+					user := config.ExtendedUser{
+						User: &discordgo.User{
+							GlobalName: option.Options[0].StringValue(),
+						},
+					}
 					err := a.model.ReleaseUser(user)
 					if err != nil {
 						dlog.ErrorLog.Println("error releasing user from gulag:", err)
-						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user, err), s, i)
+						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", user.User.GlobalName, err), s, i)
 						return
 					}
-					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user), s, i)
+					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", m.Author.GlobalName, user.User.GlobalName)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", user.User.GlobalName), s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
@@ -99,7 +104,7 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 	}
 }
 
-func IsUserInGulag(user config.User) (time.Duration, bool) {
+func SetUserGulagRemaining(user config.ExtendedUser) (config.ExtendedUser, bool) {
 	var remaining time.Duration
 	now := time.Now()
 
@@ -107,8 +112,9 @@ func IsUserInGulag(user config.User) (time.Duration, bool) {
 		rem := user.Gulagged.Time.Sub(now)
 		if rem > 0 {
 			remaining = rem.Truncate(time.Second)
-			return remaining, true
+			user.Remaining = remaining
+			return user, true
 		}
 	}
-	return remaining, false
+	return user, false
 }

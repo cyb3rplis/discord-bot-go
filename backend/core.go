@@ -74,7 +74,10 @@ func Init() {
 	})
 
 	// Register guildCreate as a callback for the guildCreate events.
-	dg.AddHandler(guildCreate)
+	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
+		guildCreate(s, event)
+		modelInstance.FetchAndStoreGuildMembers(s)
+	})
 
 	dg.AddHandler(viewInstance.InteractionHandler) //interaction handler
 
@@ -159,6 +162,6 @@ func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	dlog.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
 	//dlog.InfoLog.Printf("Channels: %v", event.Guild.Channels)
 	//dlog.InfoLog.Printf("Voice States: %v", event.Guild.VoiceStates)
-	config.LoadGuild(event)
+	config.LoadGuild(event.Guild)
 	model.Meta = model.NewInfo()
 }

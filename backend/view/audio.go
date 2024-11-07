@@ -1,6 +1,7 @@
 package view
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -17,19 +18,24 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "audio":
-			err := a.SendInteractionRespond("👉 Loading audio...", s, i)
+			// Check if the user is in a voice channel
+			_, err := a.VoiceChannelCheck(s, i)
+			if err != nil {
+				dlog.ErrorLog.Println("error checking voice channel:", err)
+				return
+			}
+			err = a.SendInteractionRespond("👉 Loading audio...", s, i)
 			if err != nil {
 				dlog.ErrorLog.Println("error executing audio command:", err)
 			}
 			arg := i.ApplicationCommandData().Options[0].StringValue()
 			// Check if the user is in the Gulag
-			user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
-			if err != nil {
+			user, err := a.model.SetUserGulaggedValue(i.Member.User)
+			if err != nil && err != sql.ErrNoRows {
 				dlog.ErrorLog.Println("error getting user from username:", err)
 			} else {
-				if remaining, ok := IsUserInGulag(user); ok {
-					user.Remaining = remaining
-					message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+				if user, ok := SetUserGulagRemaining(user); ok {
+					message := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
 					_, err = a.SendMessage(message, s, i, true)
 					if err != nil {
 						dlog.ErrorLog.Printf("error sending message: %v", err)
@@ -37,12 +43,7 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 					return
 				}
 			}
-			// Check if the user is in a voice channel
-			err = a.VoiceChannelCheck(s, i)
-			if err != nil {
-				dlog.ErrorLog.Println("error checking voice channel:", err)
-				return
-			}
+
 			err = a.UpdateInteractionResponse("🎶  Preparing Audio, this might take a few seconds...", s, i)
 			if err != nil {
 				dlog.ErrorLog.Println("error sending message:", err)

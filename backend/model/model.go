@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"sync"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
 )
 
 var Meta *Info
 
 type Info struct {
-	Guild *config.Guild
+	Guild *discordgo.Guild
 }
 type Model struct {
 	Db     *sql.DB
@@ -25,5 +26,6 @@ func New(m *Model) *Model {
 
 func NewInfo() *Info {
 	guild := config.GetGuild()
-	return &Info{Guild: guild}
+	Meta = &Info{Guild: guild}
+	return Meta
 }

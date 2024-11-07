@@ -4,15 +4,14 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
 func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//get userID
-	if i.Member == nil {
-		dlog.ErrorLog.Println("error getting member from interaction")
-		return
+	user := config.ExtendedUser{
+		User: i.Member.User,
 	}
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
@@ -24,20 +23,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 				if err != nil {
 					dlog.ErrorLog.Printf("error sending message: %v", err)
 				}
-				// Check if the user is in the Gulag
-				user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
-				if err != nil {
-					dlog.ErrorLog.Println("error getting user from username:", err)
-				}
-				if remaining, ok := IsUserInGulag(user); ok {
-					user.Remaining = remaining
-					message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
-					_, err = a.SendMessage(message, s, i, false)
-					if err != nil {
-						dlog.ErrorLog.Printf("error sending message: %v", err)
-					}
-					return
-				}
+
 				favorites, err := a.model.GetUserFavorites(i.Member.User.ID)
 				if err != nil {
 					dlog.ErrorLog.Printf("error getting user favorites: %v", err)
@@ -57,7 +43,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 				buttons := model.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
 				// Build messages for the favorite sounds
 				initialMessage := &discordgo.MessageSend{
-					Content: "Favourites of <@" + i.Member.User.ID + ">",
+					Content: "Favourites of " + user.User.Mention(),
 				}
 				messages := model.BuildMessages(buttons, initialMessage)
 				for _, message := range messages {
@@ -74,7 +60,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					}
 					arg := option.Options[0].StringValue()
 					// check if sound exists
-					soundID, _ := a.model.GetFavoriteByNameAndUserID(arg, i.Member.User.ID)
+					soundID, _ := a.model.GetFavoriteByNameAndUserID(arg, user)
 					if soundID != "" {
 						err := a.UpdateInteractionResponse("sound already in favorites", s, i)
 						if err != nil {

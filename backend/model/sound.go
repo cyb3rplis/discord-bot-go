@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"io"
 	"os"
+
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 var Buffer = make([][]byte, 0)
@@ -119,9 +120,7 @@ func (m *Model) GetSoundsAll() ([]string, error) {
 			return nil, fmt.Errorf("failed to scan sound: %w", err)
 		}
 		if sound.Valid {
-			if sound.String != "" {
-				sounds = append(sounds, sound.String)
-			}
+			sounds = append(sounds, sound.String)
 		}
 	}
 	return sounds, nil

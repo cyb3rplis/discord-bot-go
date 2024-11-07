@@ -1,11 +1,11 @@
 package view
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,93 +32,78 @@ type Entry struct {
 }
 
 func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//get userID
-	if i.Member == nil {
-		dlog.ErrorLog.Println("error getting member from interaction")
-		return
-	}
+	user := i.Member.User
 
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "play":
 			_ = a.SendInteractionRespond("➡ Playing sound", s, i)
 			// Find the channel that the interaction came from
-			c, err := s.State.Channel(i.ChannelID)
-			if err != nil {
-				dlog.ErrorLog.Println("error finding channel:", err)
-				return
-			}
-
-			// Find the guild for that channel
-			g, err := s.State.Guild(c.GuildID)
+			guild, err := s.State.Guild(model.Meta.Guild.ID)
 			if err != nil {
 				dlog.ErrorLog.Println("error finding guild:", err)
 				return
 			}
 
-			// Look for the interaction user in that guild's current voice states
-			for _, vs := range g.VoiceStates {
-				if vs.UserID == i.Member.User.ID {
-					soundName := i.ApplicationCommandData().Options[0].StringValue()
-					err := a.UpdateInteractionResponse("➡ Playing sound", s, i)
-					if err != nil {
-						log.Printf("error executing play command: %v", err)
-					}
-
-					// Check if the user is in the Gulag
-					user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
-					if err != nil {
-						dlog.ErrorLog.Println("error getting user from username:", err)
-					} else {
-						if remaining, ok := IsUserInGulag(user); ok {
-							user.Remaining = remaining
-							message := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
-							_, err = a.SendMessage(message, s, i, true)
-							if err != nil {
-								dlog.ErrorLog.Printf("error sending message: %v", err)
-							}
-							return
-						}
-					}
-					// Check if the user is in a voice channel
-					err = a.VoiceChannelCheck(s, i)
-					if err != nil {
-						dlog.ErrorLog.Println("error checking voice channel:", err)
-						return
-					}
-
-					content := []discordgo.MessageComponent{}
-					row := discordgo.ActionsRow{}
-					row.Components = append(row.Components, discordgo.Button{
-						Label:    "Stop Sound",
-						Style:    discordgo.DangerButton,
-						CustomID: "stop_sound",
-					})
-					content = append(content, row)
-
-					msg := &discordgo.MessageSend{
-						Content:    "➡ Currently Playing by <@" + i.Member.User.Username + ">: " + soundName,
-						Components: content,
-					}
-
-					// Send the message (+stop button)
-					_, err = a.SendMessageComplex(msg, s, i, false)
-					if err != nil {
-						dlog.ErrorLog.Println("error sending message:", err)
-						return
-					}
-
-					// Play the custom sound
-					err = a.PlaySound(s, i, g.ID, vs.ChannelID, soundName)
-					if err != nil {
-						dlog.ErrorLog.Println("error playing sound:", err)
-					}
-				}
-
+			// Check if the user is in a voice channel
+			vs, err := a.VoiceChannelCheck(s, i)
+			if err != nil {
+				dlog.ErrorLog.Println("error checking voice channel:", err)
+				return
 			}
 
+			// Check if the user is in the Gulag
+			user, err := a.model.SetUserGulaggedValue(user)
+			if err != nil && err != sql.ErrNoRows {
+				dlog.ErrorLog.Println("error getting user from username:", err)
+			} else {
+				if user, ok := SetUserGulagRemaining(user); ok {
+					message := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
+					_, err = a.SendMessage(message, s, i, true)
+					if err != nil {
+						dlog.ErrorLog.Printf("error sending message: %v", err)
+					}
+					return
+				}
+			}
+
+			soundName := i.ApplicationCommandData().Options[0].StringValue()
+
+			content := []discordgo.MessageComponent{}
+			row := discordgo.ActionsRow{}
+			row.Components = append(row.Components, discordgo.Button{
+				Label:    "Stop Sound",
+				Style:    discordgo.DangerButton,
+				CustomID: "stop_sound",
+			})
+			content = append(content, row)
+
+			msg := &discordgo.MessageSend{
+				Content:    "➡ Currently Playing by " + user.User.Mention() + ": " + soundName,
+				Components: content,
+			}
+
+			// Send the message (+stop button)
+			_, err = a.SendMessageComplex(msg, s, i, false)
+			if err != nil {
+				dlog.ErrorLog.Println("error sending message:", err)
+				return
+			}
+
+			err = a.UpdateInteractionResponse("➡ Playing sound", s, i)
+			if err != nil {
+				log.Printf("error executing play command: %v", err)
+			}
+
+			// Play the custom sound
+			err = a.PlaySound(s, i, guild.ID, vs.ChannelID, soundName)
+			if err != nil {
+				dlog.ErrorLog.Println("error playing sound:", err)
+			}
 		}
+
 	}
+
 }
 
 // PlaySound plays the current buffer to the provided channel.
@@ -190,83 +175,61 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 }
 
 func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	// Find the channel that the interaction came from
-	c, err := s.State.Channel(i.ChannelID)
-	if err != nil {
-		dlog.ErrorLog.Println("error finding channel:", err)
-		return err
-	}
-
-	// Find the guild for that channel
-	g, err := s.State.Guild(c.GuildID)
+	guild, err := s.State.Guild(model.Meta.Guild.ID)
 	if err != nil {
 		dlog.ErrorLog.Println("error finding guild:", err)
 		return err
 	}
 
-	// Look for the interaction user in that guild's current voice states
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == i.Member.User.ID {
-			userID, err := strconv.Atoi(i.Member.User.ID)
-			if err != nil {
-				dlog.ErrorLog.Println("error converting user ID to int:", err)
-				return err
-			} else {
-				err = a.model.AddUser(userID, i.Member.User.GlobalName)
-				if err != nil {
-					dlog.ErrorLog.Println("error adding user:", err)
-					return err
-				}
-			}
-
-			content := []discordgo.MessageComponent{}
-			row := discordgo.ActionsRow{}
-			row.Components = append(row.Components, discordgo.Button{
-				Label:    "Stop Sound",
-				Style:    discordgo.DangerButton,
-				CustomID: "stop_sound",
-			})
-			content = append(content, row)
-
-			msg := &discordgo.MessageSend{
-				Content:    "➡ Currently playing audio by <@" + i.Member.User.ID + "> ",
-				Components: content,
-			}
-
-			// Send the message (+stop button)
-			_, err = a.SendMessageComplex(msg, s, i, false)
-			if err != nil {
-				dlog.ErrorLog.Println("error sending message:", err)
-				return err
-			}
-
-			err = a.UpdateInteractionResponse("🎶  Playing audio", s, i)
-			if err != nil {
-				dlog.ErrorLog.Println("error updating interaction response:", err)
-				return err
-			}
-
-			dlog.InfoLog.Printf("User: %s played sound", i.Member.User.GlobalName)
-			// Play the sound
-			err = a.PlaySound(s, i, g.ID, vs.ChannelID, audioName)
-			if err != nil {
-				dlog.ErrorLog.Println("error playing sound:", err)
-				return err
-			}
-
-			return nil
-		}
+	// Check if the user is in a voice channel
+	vs, err := a.VoiceChannelCheck(s, i)
+	if err != nil {
+		dlog.ErrorLog.Println("error checking voice channel:", err)
+		return err
 	}
 
-	// If the user is not in a voice channel, send an error message
-	dlog.InfoLog.Printf("User %s tried to play audio but is not in a voice channel", i.Member.User.GlobalName)
-	msg := "You need to be in a voice channel to play audio <@" + i.Member.User.ID + ">"
+	user := i.Member.User
+	err = a.model.AddUser(user)
+	if err != nil {
+		dlog.ErrorLog.Println("error adding user:", err)
+		return err
+	}
 
-	_, err = a.SendMessage(msg, s, i, false)
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	row.Components = append(row.Components, discordgo.Button{
+		Label:    "Stop Sound",
+		Style:    discordgo.DangerButton,
+		CustomID: "stop_sound",
+	})
+	content = append(content, row)
+
+	msg := &discordgo.MessageSend{
+		Content:    "➡ Currently playing audio by " + user.Mention(),
+		Components: content,
+	}
+
+	// Send the message (+stop button)
+	_, err = a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
 		dlog.ErrorLog.Println("error sending message:", err)
-		return fmt.Errorf("user not in voice channel")
+		return err
 	}
+
+	err = a.UpdateInteractionResponse("🎶  Playing audio", s, i)
+	if err != nil {
+		dlog.ErrorLog.Println("error updating interaction response:", err)
+		return err
+	}
+
+	dlog.InfoLog.Printf("User: %s played sound", i.Member.User.GlobalName)
+	// Play the sound
+	err = a.PlaySound(s, i, guild.ID, vs.ChannelID, audioName)
+	if err != nil {
+		dlog.ErrorLog.Println("error playing sound:", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -358,29 +321,34 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	return nil
 }
 
-func (a *API) VoiceChannelCheck(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func (a *API) VoiceChannelCheck(s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.VoiceState, error) {
 	userInVS := false
+	var voiceState *discordgo.VoiceState
 	// Find the guild for that channel
-	g, err := s.State.Guild(i.GuildID)
+	guild, err := s.State.Guild(model.Meta.Guild.ID)
 	if err != nil {
 		dlog.ErrorLog.Println("error finding guild:", err)
-		return err
+		return voiceState, err
 	}
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == i.Member.User.ID {
+
+	user := i.Member.User
+
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == user.ID {
 			userInVS = true
+			voiceState = vs
 		}
 	}
 	if !userInVS {
 		// If the user is not in a voice channel, send an error message and avoid processing the audio
-		dlog.InfoLog.Printf("User %s tried to play sound but is not in a voice channel", i.Member.User.GlobalName)
-		msg := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
+		dlog.InfoLog.Printf("User %s tried to play sound but is not in a voice channel", user.GlobalName)
+		msg := "You need to be in a voice channel to play sounds " + user.Mention()
 		_, err = a.SendMessage(msg, s, i, false)
 		if err != nil {
 			dlog.ErrorLog.Println("error sending message:", err)
 		}
-		return fmt.Errorf("user not in voice channel, quitting early to avoid delay")
+		return voiceState, fmt.Errorf("user not in voice channel, quitting early to avoid delay")
 	}
 
-	return nil
+	return voiceState, nil
 }

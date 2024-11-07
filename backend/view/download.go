@@ -3,13 +3,14 @@ package view
 import (
 	"context"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/config"
-	"github.com/cyb3rplis/discord-bot-go/model"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/dlog"
@@ -138,6 +139,7 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 	}
 
 }
+
 func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	timeout := time.Duration(a.model.Config.AudioTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -154,11 +156,23 @@ func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordg
 	}
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", cmdStr)
+
+	// Start the command asynchronously and wait for completion
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to run yt-dlp, make sure it is installed (python venv): %w, output: %s", err, string(output))
+		return fmt.Errorf("failed to run yt-dlp: %w, output: %s", err, string(output))
 	}
 
+	// If the context has expired or was canceled before the command completed, handle that here
+	if ctx.Err() == context.DeadlineExceeded {
+		dlog.ErrorLog.Println("Download Audio operation timed out")
+		return ctx.Err()
+	} else if ctx.Err() == context.Canceled {
+		dlog.ErrorLog.Println("Download Audio operation was canceled")
+		return ctx.Err()
+	}
+
+	// If successful, set typing status
 	if err := s.ChannelTyping(i.ChannelID); err != nil {
 		dlog.ErrorLog.Println("error setting typing status:", err)
 	}
@@ -166,25 +180,35 @@ func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordg
 	return nil
 }
 
-func (a *API) ConvertMP3ToDCA(fileNAme, categoryName string) error {
-	var err error
-	var cmd *exec.Cmd
+func (a *API) ConvertMP3ToDCA(fileName, categoryName string) error {
+	timeout := time.Duration(a.model.Config.AudioTimeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	sourceFile := filepath.Join(a.model.Config.SoundsDir, categoryName, fileNAme+".mp3")
-	destFile := filepath.Join(a.model.Config.SoundsDir, categoryName, fileNAme+".dca")
+	sourceFile := filepath.Join(a.model.Config.SoundsDir, categoryName, fileName+".mp3")
+	destFile := filepath.Join(a.model.Config.SoundsDir, categoryName, fileName+".dca")
 	if categoryName == "" {
-		sourceFile = filepath.Join(a.model.Config.DataDir, fileNAme+".mp3")
-		destFile = filepath.Join(a.model.Config.DataDir, fileNAme+".dca")
+		sourceFile = filepath.Join(a.model.Config.DataDir, fileName+".mp3")
+		destFile = filepath.Join(a.model.Config.DataDir, fileName+".dca")
 	}
-	dlog.InfoLog.Printf("Converting %s to %s", sourceFile, destFile)
-	cmd = exec.Command("bash", "-c", fmt.Sprintf("ffmpeg -i %s -filter:a \"loudnorm=I=-14:LRA=7:TP=-2, compand=attacks=0:points=-80/-80|-10/-5|0/-1\" -f s16le -ar 48000 -ac 2 pipe:1 | dca > %s", sourceFile, destFile))
-	err = cmd.Start()
+
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -filter:a \"loudnorm=I=-14:LRA=7:TP=-2, compand=attacks=0:points=-80/-80|-10/-5|0/-1\" -f s16le -ar 48000 -ac 2 pipe:1 | dca > %s", sourceFile, destFile)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", cmdStr)
+
+	// Run the command and capture the output
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to to convert audio from mp3 to dca: %w", err)
+		return fmt.Errorf("failed to run ffmpeg/dca: %w, output: %s", err, string(output))
 	}
-	err = cmd.Wait()
-	if err != nil {
-		return fmt.Errorf("error converting audio: %w, %s to %s", err, sourceFile, destFile)
+
+	// Check if the context was canceled or timed out
+	if ctx.Err() == context.DeadlineExceeded {
+		dlog.ErrorLog.Println("Converting Audio operation timed out")
+		return ctx.Err()
+	} else if ctx.Err() == context.Canceled {
+		dlog.ErrorLog.Println("Converting Audio operation was canceled")
+		return ctx.Err()
 	}
 
 	return nil

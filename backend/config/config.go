@@ -24,16 +24,10 @@ type Config struct {
 	AdminRole    string `json:"admin"`
 }
 
-type User struct {
-	ID        string        `json:"id"`
-	Username  string        `json:"username"`
-	Gulagged  sql.NullTime  `json:"gulagged"`
-	Remaining time.Duration `json:"remaining"`
-}
-
-type Guild struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type ExtendedUser struct {
+	User      *discordgo.User `json:"user"`
+	Gulagged  sql.NullTime    `json:"gulagged"`
+	Remaining time.Duration   `json:"remaining"`
 }
 
 var (
@@ -42,7 +36,7 @@ var (
 )
 
 var (
-	guildInstance *Guild
+	guildInstance *discordgo.Guild
 	guildOnce     sync.Once
 )
 
@@ -104,17 +98,14 @@ func GetConfig() *Config {
 	return configInstance
 }
 
-func LoadGuild(event *discordgo.GuildCreate) *Guild {
+func LoadGuild(guild *discordgo.Guild) *discordgo.Guild {
 	guildOnce.Do(func() {
-		guildInstance = &Guild{
-			ID:   event.Guild.ID,
-			Name: event.Guild.Name,
-		}
+		guildInstance = guild
 	})
 
 	return guildInstance
 }
 
-func GetGuild() *Guild {
+func GetGuild() *discordgo.Guild {
 	return guildInstance
 }

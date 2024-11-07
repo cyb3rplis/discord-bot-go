@@ -168,8 +168,8 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session, i *discordgo
 	var usersChoices []*discordgo.ApplicationCommandOptionChoice
 	for _, user := range users {
 		soundChoice := &discordgo.ApplicationCommandOptionChoice{
-			Name:  user.Username,
-			Value: user.Username,
+			Name:  user.User.GlobalName,
+			Value: user.User.GlobalName,
 		}
 		usersChoices = append(usersChoices, soundChoice)
 	}

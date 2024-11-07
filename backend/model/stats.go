@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
@@ -46,7 +47,7 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 }
 
 // GetUserStatistics returns the top sounds played by a user
-func (m *Model) GetUserStatistics(userID string, limit int) (soundStats []SoundInfo, err error) {
+func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats []SoundInfo, err error) {
 	// this can be used to create buttons when the user gets their stats
 	rows, err := m.Db.Query(`
 	SELECT s.alias, COALESCE(SUM(su.count), 0) AS total_plays, c.name
@@ -56,7 +57,7 @@ func (m *Model) GetUserStatistics(userID string, limit int) (soundStats []SoundI
 	GROUP BY s.id, s.alias
 	HAVING total_plays > 0
 	ORDER BY total_plays
-	DESC LIMIT ?;`, userID, limit)
+	DESC LIMIT ?;`, user.ID, limit)
 
 	if err != nil {
 		dlog.FatalLog.Fatal(err)
@@ -114,8 +115,13 @@ func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 }
 
 // AddUserStatistics adds a sound play to the user statistics
-func (m *Model) AddUserStatistics(userID int, soundName string) error {
-	_, err := m.Db.Exec("INSERT INTO stats_users (user_id, sound_id, count) VALUES (?, (SELECT id FROM sounds WHERE name = ?), 1) ON CONFLICT(user_id, sound_id) DO UPDATE SET count = count + 1;", userID, soundName)
+func (m *Model) AddUserStatistics(user *discordgo.User, soundName string) error {
+	// userID, err := strconv.Atoi(user.ID)
+	// if err != nil {
+	// 	dlog.ErrorLog.Println("error converting user ID to int:", err)
+	// 	return err
+	// }
+	_, err := m.Db.Exec("INSERT INTO stats_users (user_id, sound_id, count) VALUES (?, (SELECT id FROM sounds WHERE name = ?), 1) ON CONFLICT(user_id, sound_id) DO UPDATE SET count = count + 1;", user.ID, soundName)
 	if err != nil {
 		return err
 	}

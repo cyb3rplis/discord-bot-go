@@ -3,7 +3,9 @@ package model
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
 )
 
 type Favorite struct {
@@ -72,10 +74,12 @@ func (m *Model) SoundFavoriteAdd(i *discordgo.InteractionCreate, arg string) err
 }
 
 func (m *Model) SoundFavoriteRemove(i *discordgo.InteractionCreate, arg string) error {
-	userID := i.Member.User.ID
+	user := config.ExtendedUser{
+		User: i.Member.User,
+	}
 	soundName := arg
 	//get soundID by Name
-	soundID, err := m.GetFavoriteByNameAndUserID(soundName, userID)
+	soundID, err := m.GetFavoriteByNameAndUserID(soundName, user)
 	if err != nil {
 		return fmt.Errorf("failed to get sound by name: %w", err)
 	}
@@ -86,8 +90,8 @@ func (m *Model) SoundFavoriteRemove(i *discordgo.InteractionCreate, arg string) 
 	return nil
 }
 
-func (m *Model) GetFavoriteByNameAndUserID(name, userID string) (soundName string, err error) {
-	err = m.Db.QueryRow("SELECT user_favorites.id FROM user_favorites LEFT JOIN sounds s on user_favorites.sound_id = s.id WHERE name = ? AND user_id = ?", name, userID).Scan(&soundName)
+func (m *Model) GetFavoriteByNameAndUserID(name string, user config.ExtendedUser) (soundName string, err error) {
+	err = m.Db.QueryRow("SELECT user_favorites.id FROM user_favorites LEFT JOIN sounds s on user_favorites.sound_id = s.id WHERE name = ? AND user_id = ?", name, user.User.ID).Scan(&soundName)
 	if err != nil {
 		return "", fmt.Errorf("failed to query favorite by name and user ID: %w", err)
 	}

@@ -95,12 +95,13 @@ func (a *API) getStatsUsers() (string, error) {
 }
 
 func (a *API) getStatsMe(i *discordgo.InteractionCreate) (string, error) {
-	userStats, err := a.model.GetUserStatistics(i.Member.User.ID, 10)
+	user := i.Member.User
+	userStats, err := a.model.GetUserStatistics(user, 10)
 	if err != nil {
 		dlog.ErrorLog.Printf("error getting user statistics: %v", err)
 	}
 	content := strings.Builder{}
-	content.Write([]byte("🔥  <@" + i.Member.User.ID + "> 's top 10 played sounds: \n\n"))
+	content.Write([]byte("🔥  " + user.Mention() + "'s top 10 played sounds: \n\n"))
 	for _, s := range userStats {
 		content.Write([]byte(fmt.Sprintf("> %dx:\t%s\n", s.Count, s.Name)))
 	}

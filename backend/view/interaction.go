@@ -1,8 +1,8 @@
 package view
 
 import (
+	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,14 +31,13 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 	}
 
 	// Check if the user is in the Gulag
-	user, err := a.model.GetUserFromUsername(i.Member.User.GlobalName)
-	if err != nil {
+	user, err := a.model.SetUserGulaggedValue(i.Member.User)
+	if err != nil && err != sql.ErrNoRows {
 		dlog.ErrorLog.Println("error getting user from username:", err)
 		return
 	} else {
-		if remaining, ok := IsUserInGulag(user); ok {
-			user.Remaining = remaining
-			msg := fmt.Sprintf("<@"+user.ID+"> you are in the Gulag for another %s", user.Remaining)
+		if user, ok := SetUserGulagRemaining(user); ok {
+			msg := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
 			_, err = a.SendMessage(msg, s, i, false)
 			if err != nil {
 				dlog.ErrorLog.Printf("error sending message: %v", err)
@@ -49,21 +48,21 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 
 	// Check if the user is spamming the buttons and limit the interactions
 	mu.Lock()
-	lastInteraction, exists := userLastInteraction[user.ID]    // Get the last interaction time
-	if exists && time.Since(lastInteraction) < resetDuration { // Check if the user has interacted recently
-		userInteractionCount[user.ID]++
+	lastInteraction, exists := userLastInteraction[user.User.ID] // Get the last interaction time
+	if exists && time.Since(lastInteraction) < resetDuration {   // Check if the user has interacted recently
+		userInteractionCount[user.User.ID]++
 	} else {
-		userInteractionCount[user.ID] = 1 // Reset the interaction count
+		userInteractionCount[user.User.ID] = 1 // Reset the interaction count
 	}
-	userLastInteraction[user.ID] = time.Now()            // Update the last interaction time
-	if userInteractionCount[user.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
+	userLastInteraction[user.User.ID] = time.Now()            // Update the last interaction time
+	if userInteractionCount[user.User.ID] > maxInteractions { // Check if the user has exceeded the interaction limit
 		mu.Unlock()
-		msg := "Stop spamming the buttons <@" + user.ID + ">, you are now being sent to the Gulag for one minute."
+		msg := "Stop spamming the buttons " + user.User.Mention() + ", you are now being sent to the Gulag for one minute."
 		_, err = a.SendMessage(msg, s, i, true)
 		if err != nil {
 			dlog.ErrorLog.Println("error sending message:", err)
 		}
-		err := a.model.GulagUser(user.Username, 1)
+		err := a.model.GulagUser(user, 1)
 		if err != nil {
 			dlog.ErrorLog.Println("error gulagging user:", err)
 		}
@@ -117,88 +116,69 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	//subfolder := parts[0]
 	soundName := parts[1]
 
-	// Find the channel that the interaction came from
-	c, err := s.State.Channel(i.ChannelID)
-	if err != nil {
-		dlog.ErrorLog.Println("error finding channel:", err)
-		return
-	}
-
 	// Find the guild for that channel
-	g, err := s.State.Guild(c.GuildID)
+	guild, err := s.State.Guild(model.Meta.Guild.ID)
 	if err != nil {
 		dlog.ErrorLog.Println("error finding guild:", err)
 		return
 	}
 
-	// Look for the interaction user in that guild's current voice states
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == i.Member.User.ID {
-			// add user and user statistics
-			userID, err := strconv.Atoi(i.Member.User.ID)
-			if err != nil {
-				dlog.ErrorLog.Println("error converting user ID to int:", err)
-			} else {
-				err = a.model.AddUser(userID, i.Member.User.GlobalName)
-				if err != nil {
-					dlog.ErrorLog.Println("error adding user:", err)
-				}
+	user := i.Member.User
 
-				err = a.model.AddUserStatistics(userID, soundName)
-				if err != nil {
-					dlog.ErrorLog.Println("error adding user statistics:", err)
-				}
-			}
-
-			content := []discordgo.MessageComponent{}
-			row := discordgo.ActionsRow{}
-			row.Components = append(row.Components, discordgo.Button{
-				Label:    "Stop Sound",
-				Style:    discordgo.DangerButton,
-				CustomID: "stop_sound",
-			})
-			content = append(content, row)
-
-			msg := &discordgo.MessageSend{
-				Content:    "➡ Currently Playing by <@" + i.Member.User.ID + ">: " + soundName,
-				Components: content,
-			}
-
-			// Send the message (+stop button)
-			_, err = a.SendMessageComplex(msg, s, i, false)
-			if err != nil {
-				dlog.ErrorLog.Println("error sending message:", err)
-				return
-			}
-
-			dlog.InfoLog.Printf("User: %s played sound: %s", i.Member.User.GlobalName, soundName)
-			// Construct the sound file path
-			// soundFile := fmt.Sprintf("%s/%s/%s.dca", model.Bot.Config.SoundsDir, subfolder, soundName)
-
-			// Play the sound
-			err = a.PlaySound(s, i, g.ID, vs.ChannelID, soundName)
-			if err != nil {
-				dlog.ErrorLog.Println("error playing sound:", err)
-			}
-
-			return
-
-		}
-
+	// Check if the user is in a voice channel
+	vs, err := a.VoiceChannelCheck(s, i)
+	if err != nil {
+		dlog.ErrorLog.Println("error checking voice channel:", err)
+		return
 	}
 
-	// If the user is not in a voice channel, send an error message
-	dlog.InfoLog.Printf("User %s tried to play sound \"%s\" but is not in a voice channel", i.Member.User.GlobalName, soundName)
-	msg := "You need to be in a voice channel to play sounds <@" + i.Member.User.ID + ">"
+	// add user and user statistics
+	err = a.model.AddUser(user)
+	if err != nil {
+		dlog.ErrorLog.Println("error adding user:", err)
+	}
 
-	_, err = a.SendMessage(msg, s, i, false)
+	err = a.model.AddUserStatistics(user, soundName)
+	if err != nil {
+		dlog.ErrorLog.Println("error adding user statistics:", err)
+	}
+
+	content := []discordgo.MessageComponent{}
+	row := discordgo.ActionsRow{}
+	row.Components = append(row.Components, discordgo.Button{
+		Label:    "Stop Sound",
+		Style:    discordgo.DangerButton,
+		CustomID: "stop_sound",
+	})
+	content = append(content, row)
+
+	msg := &discordgo.MessageSend{
+		Content:    "➡ Currently Playing by " + user.Mention() + soundName,
+		Components: content,
+	}
+
+	// Send the message (+stop button)
+	_, err = a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
 		dlog.ErrorLog.Println("error sending message:", err)
+		return
 	}
+
+	dlog.InfoLog.Printf("User: %s played sound: %s", user.GlobalName, soundName)
+	// Construct the sound file path
+	// soundFile := fmt.Sprintf("%s/%s/%s.dca", model.Bot.Config.SoundsDir, subfolder, soundName)
+
+	// Play the sound
+	err = a.PlaySound(s, i, guild.ID, vs.ChannelID, soundName)
+	if err != nil {
+		dlog.ErrorLog.Println("error playing sound:", err)
+	}
+
 }
 
 // HandleListSoundsInteraction handles the list sounds interaction
 func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	dlog.InfoLog.Println("Handling list sounds interaction")
 	// Extract the category from the custom ID
 	customID := ""
 	if i.Interaction.Type != 3 {
