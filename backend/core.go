@@ -75,34 +75,27 @@ func Init() {
 
 	// Register guildCreate as a callback for the guildCreate events.
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
-		guildCreate(s, event)
+		guildCreate(event)
 		modelInstance.FetchAndStoreGuildMembers(s)
+		view.RegisterPromptInteractionsButtons(s)
+		view.RegisterPromptInteractionsCreate(s)
+		view.RegisterPromptInteractionsAudio(s)
+		viewInstance.RegisterPromptInteractionsFavorite(s)
+		viewInstance.RegisterPromptInteractionsGulag(s)
+		view.RegisterPromptInteractionsStats(s)
+		viewInstance.RegisterPromptInteractionsPlaySound(s)
 	})
 
 	dg.AddHandler(viewInstance.InteractionHandler) //interaction handler
 
-	// Register prompt handlers
-	//prompt > list
-	dg.AddHandler(view.RegisterPromptInteractionsButtons) //buttons
-	dg.AddHandler(viewInstance.PromptInteractionButtons)  //buttons
-	// prompt > create
-	dg.AddHandler(view.RegisterPromptInteractionsCreate) //create
-	dg.AddHandler(viewInstance.PromptInteractionCreate)  //create
-	//prompt > audio
-	dg.AddHandler(view.RegisterPromptInteractionsAudio) //audio
-	dg.AddHandler(viewInstance.PromptInteractionAudio)  //audio
-	//prompt > favorite
-	dg.AddHandler(viewInstance.RegisterPromptInteractionsFavorite) //favorite
-	dg.AddHandler(viewInstance.PromptInteractionFavorite)          //favorite
-	//prompt > gulag
-	dg.AddHandler(viewInstance.RegisterPromptInteractionsGulag) //gulag
-	dg.AddHandler(viewInstance.PromptInteractionGulag)          //gulag
-
-	dg.AddHandler(view.RegisterPromptInteractionsStats) //stats
-	dg.AddHandler(viewInstance.PromptInteractionStats)  //stats
-
-	dg.AddHandler(viewInstance.RegisterPromptInteractionsPlaySound) //play sound
-	dg.AddHandler(viewInstance.PromptInteractionPlaySound)          //play sound
+	// Register prompt interaction handlers
+	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
+	dg.AddHandler(viewInstance.PromptInteractionCreate)    //create
+	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
+	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
+	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag
+	dg.AddHandler(viewInstance.PromptInteractionStats)     //stats
+	dg.AddHandler(viewInstance.PromptInteractionPlaySound) //play sound
 
 	// messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers
@@ -153,7 +146,7 @@ func NewBot() {
 
 // This function will be called (due to AddHandler above) every time a new
 // guild is joined.
-func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+func guildCreate(event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
 		dlog.FatalLog.Println("> Guild is unavailable")
 		return

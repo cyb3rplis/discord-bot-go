@@ -135,6 +135,11 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 				}
 
 			}
+		default:
+			err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
+			if err != nil {
+				dlog.ErrorLog.Println("fallback to default download handler", err)
+			}
 		}
 	}
 

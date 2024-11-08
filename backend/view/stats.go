@@ -58,6 +58,11 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
 			}
+		default:
+			err := a.SendInteractionRespond("👉  Something went wrong...", s, i)
+			if err != nil {
+				dlog.ErrorLog.Println("fallback to default stats handler", err)
+			}
 		}
 	}
 }
