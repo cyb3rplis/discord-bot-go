@@ -9,6 +9,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
+// GetUsers returns all users from the database
 func (m *Model) GetUsers() (users []config.ExtendedUser, err error) {
 	rows, err := m.Db.Query("SELECT id, username, gulagged FROM users;")
 	if err != nil {
@@ -36,6 +37,7 @@ func (m *Model) GetUsers() (users []config.ExtendedUser, err error) {
 	return users, err
 }
 
+// AddUser adds a user to the database
 func (m *Model) AddUser(user *discordgo.User) error {
 	_, err := m.Db.Exec("INSERT INTO users (id, username) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET username = excluded.username;", user.ID, user.GlobalName)
 	if err != nil {
@@ -45,6 +47,7 @@ func (m *Model) AddUser(user *discordgo.User) error {
 	return nil
 }
 
+// SetUserGulaggedValue sets the gulagged value of a user
 func (m *Model) SetUserGulaggedValue(user *discordgo.User) (config.ExtendedUser, error) {
 	extendedUser := config.ExtendedUser{
 		User: user,
@@ -61,6 +64,7 @@ func (m *Model) SetUserGulaggedValue(user *discordgo.User) (config.ExtendedUser,
 	return extendedUser, nil
 }
 
+// FetchAndStoreGuildMembers fetches all members of the guild and stores them in the database
 func (m *Model) FetchAndStoreGuildMembers(s *discordgo.Session) {
 	if m == nil {
 		dlog.ErrorLog.Println("model is nil")

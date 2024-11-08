@@ -7,6 +7,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
+// GetCategoriesM returns a map of sound categories (from DB)
 func (m *Model) GetCategoriesM() (map[string]int, error) {
 	rows, err := m.Db.Query("SELECT id, name FROM categories")
 	if err != nil {
@@ -26,7 +27,7 @@ func (m *Model) GetCategoriesM() (map[string]int, error) {
 	return categories, nil
 }
 
-// GetCategories returns a list of sound categories (from DB)
+// GetCategories returns a slice of sound categories (from DB)
 func (m *Model) GetCategories() ([]string, error) {
 	rows, err := m.Db.Query("SELECT name FROM categories")
 	if err != nil {
@@ -46,6 +47,7 @@ func (m *Model) GetCategories() ([]string, error) {
 	return categories, nil
 }
 
+// GetAllMessages returns all messages from the database
 func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
 	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages;")
 	if err != nil {
@@ -71,6 +73,7 @@ func (m *Model) GetAllMessages() (messages map[string][]string, err error) {
 	return messages, err
 }
 
+// GetAllCommandMessages returns all messages for a specific command from the database
 func (m *Model) GetAllCommandMessages(command string) (messages map[string][]string, err error) {
 	rows, err := m.Db.Query("SELECT channel_id, message_id FROM messages WHERE command = ?;", command)
 	if err != nil {
@@ -96,6 +99,7 @@ func (m *Model) GetAllCommandMessages(command string) (messages map[string][]str
 	return messages, err
 }
 
+// InsertMessageID inserts a message ID into the database
 func (m *Model) InsertMessageID(channelID, messageID, command string) error {
 	_, err := m.Db.Exec("INSERT INTO messages (channel_id, message_id, command) VALUES (?, ?, ?);", channelID, messageID, command)
 	if err != nil {
@@ -105,6 +109,7 @@ func (m *Model) InsertMessageID(channelID, messageID, command string) error {
 	return nil
 }
 
+// DeleteMessageID deletes a message ID from the database
 func (m *Model) DeleteMessageID(messageID string) error {
 	_, err := m.Db.Exec("DELETE FROM messages WHERE message_id = ?;", messageID)
 	if err != nil {
@@ -114,6 +119,7 @@ func (m *Model) DeleteMessageID(messageID string) error {
 	return nil
 }
 
+// DeleteAllCommandMessages deletes all messages for a specific command from the database
 func (m *Model) DeleteAllCommandMessages(command string) error {
 	_, err := m.Db.Exec("DELETE FROM messages WHERE command = ?;", command)
 	if err != nil {
@@ -123,6 +129,7 @@ func (m *Model) DeleteAllCommandMessages(command string) error {
 	return nil
 }
 
+// DeleteOldCommandMessages deletes all messages for a specific command except the new one
 func (m *Model) DeleteOldCommandMessages(newID, command string) error {
 	_, err := m.Db.Exec("DELETE FROM messages WHERE message_id != ? AND command = ?;", newID, command)
 	if err != nil {
@@ -132,6 +139,7 @@ func (m *Model) DeleteOldCommandMessages(newID, command string) error {
 	return nil
 }
 
+// DeleteAllMessages deletes all messages from the database
 func (m *Model) DeleteAllMessages() error {
 	_, err := m.Db.Exec("DELETE FROM messages;")
 	if err != nil {

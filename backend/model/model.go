@@ -19,11 +19,13 @@ type Model struct {
 	Mu     *sync.Mutex
 }
 
+// New returns a new Model struct
 func New(m *Model) *Model {
 	cfg := config.GetConfig()
 	return &Model{Db: m.Db, Config: cfg}
 }
 
+// NewInfo returns a new Info struct
 func NewInfo() *Info {
 	guild := config.GetGuild()
 	Meta = &Info{Guild: guild}

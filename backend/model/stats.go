@@ -13,6 +13,7 @@ type SoundInfo struct {
 	Category string `json:"category_name"`
 }
 
+// GetAllUserStatistics returns the top sounds played by all users
 func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 	rows, err := m.Db.Query(`
 	SELECT u.username, COALESCE(SUM(su.count), 0) AS total_plays

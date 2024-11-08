@@ -57,7 +57,6 @@ func Init() {
 	}
 
 	cfg := config.GetConfig()
-
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
@@ -74,6 +73,7 @@ func Init() {
 	})
 
 	// Register guildCreate as a callback for the guildCreate events.
+	// This will be called every time a new guild is joined.
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
 		guildCreate(event)
 		modelInstance.FetchAndStoreGuildMembers(s)
@@ -86,9 +86,9 @@ func Init() {
 		viewInstance.RegisterPromptInteractionsPlaySound(s)
 	})
 
-	dg.AddHandler(viewInstance.InteractionHandler) //interaction handler
-
 	// Register prompt interaction handlers
+	// This will be called every time a new interaction is created.
+	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
 	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
 	dg.AddHandler(viewInstance.PromptInteractionCreate)    //create
 	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
@@ -153,8 +153,6 @@ func guildCreate(event *discordgo.GuildCreate) {
 	}
 	dlog.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
 	dlog.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
-	//dlog.InfoLog.Printf("Channels: %v", event.Guild.Channels)
-	//dlog.InfoLog.Printf("Voice States: %v", event.Guild.VoiceStates)
 	config.LoadGuild(event.Guild)
 	model.Meta = model.NewInfo()
 }

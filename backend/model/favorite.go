@@ -17,6 +17,7 @@ type Favorite struct {
 	CategoryName string
 }
 
+// GetUserFavorites returns all favorites of a user
 func (m *Model) GetUserFavorites(user config.ExtendedUser) ([]Favorite, error) {
 	rows, err := m.Db.Query("SELECT user_favorites.id, user_favorites.user_id, user_favorites.sound_id, sounds.name, categories.id, categories.name "+
 		"FROM user_favorites "+
@@ -58,6 +59,7 @@ func (m *Model) GetUserFavorites(user config.ExtendedUser) ([]Favorite, error) {
 	return favorites, nil
 }
 
+// SoundFavoriteAdd adds a sound to the favorites of a user
 func (m *Model) SoundFavoriteAdd(i *discordgo.InteractionCreate, arg string) error {
 	userID := i.Member.User.ID
 	soundName := arg
@@ -73,6 +75,7 @@ func (m *Model) SoundFavoriteAdd(i *discordgo.InteractionCreate, arg string) err
 	return nil
 }
 
+// SoundFavoriteRemove removes a sound from the favorites of a user
 func (m *Model) SoundFavoriteRemove(i *discordgo.InteractionCreate, arg string) error {
 	user := config.ExtendedUser{
 		User: i.Member.User,
@@ -90,6 +93,7 @@ func (m *Model) SoundFavoriteRemove(i *discordgo.InteractionCreate, arg string) 
 	return nil
 }
 
+// GetFavoriteByNameAndUserID returns the sound name of a favorite by name and user ID
 func (m *Model) GetFavoriteByNameAndUserID(name string, user config.ExtendedUser) (soundName string, err error) {
 	err = m.Db.QueryRow("SELECT user_favorites.id FROM user_favorites LEFT JOIN sounds s on user_favorites.sound_id = s.id WHERE name = ? AND user_id = ?", name, user.User.ID).Scan(&soundName)
 	if err != nil {
@@ -98,6 +102,7 @@ func (m *Model) GetFavoriteByNameAndUserID(name string, user config.ExtendedUser
 	return soundName, nil
 }
 
+// GetSoundIDByName returns the sound ID by name
 func (m *Model) GetSoundIDByName(name string) (soundName string, err error) {
 	err = m.Db.QueryRow("SELECT id FROM sounds WHERE name = ?", name).Scan(&soundName)
 	if err != nil {

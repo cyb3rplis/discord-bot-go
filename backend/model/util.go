@@ -76,6 +76,7 @@ func SortMapByValue(m map[string]int) map[string]int {
 	return sortedM
 }
 
+// SortMapKeysByValue sorts a map by its values and returns the keys in descending order
 func SortMapKeysByValue(m map[string]int) []string {
 	var keys []string
 	for k := range m {

@@ -137,6 +137,7 @@ func (m *Model) GetSoundsAll() ([]string, error) {
 	return sounds, nil
 }
 
+// GetCategoryByID returns the ID of a category by its name.
 func (m *Model) GetCategoryByID(folderName string) int {
 	var categoryID int
 	err := m.Db.QueryRow("SELECT id FROM categories WHERE name = ?", folderName).Scan(&categoryID)
@@ -151,6 +152,7 @@ func (m *Model) GetCategoryByID(folderName string) int {
 	return categoryID
 }
 
+// GetSoundsM returns a map of sounds with their hashes (from DB)
 func (m *Model) GetSoundsM() map[int]map[string]string {
 	rows, err := m.Db.Query("SELECT category_id, name, hash FROM sounds")
 	if err != nil {
@@ -173,6 +175,7 @@ func (m *Model) GetSoundsM() map[int]map[string]string {
 	return sounds
 }
 
+// AddCategory adds a category to the database.
 func (m *Model) AddCategory(folderName string) error {
 	// Check if the category with the same name already exists
 	var existingID int
