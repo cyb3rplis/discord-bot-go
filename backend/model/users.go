@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -36,12 +37,6 @@ func (m *Model) GetUsers() (users []config.ExtendedUser, err error) {
 }
 
 func (m *Model) AddUser(user *discordgo.User) error {
-	// userID, err := strconv.Atoi(user.ID)
-	// if err != nil {
-	// 	dlog.ErrorLog.Println("error converting user ID to int:", err)
-	// 	return err
-	// }
-
 	_, err := m.Db.Exec("INSERT INTO users (id, username) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET username = excluded.username;", user.ID, user.GlobalName)
 	if err != nil {
 		return err
@@ -80,7 +75,7 @@ func (m *Model) FetchAndStoreGuildMembers(s *discordgo.Session) {
 	after := "" // empty string means starting from the first member
 	for {
 		// Fetch a batch of up to 1,000 members
-		members, err := s.GuildMembers(guildID, after, 1000)
+		members, err := s.GuildMembers(guildID, after, 25)
 		if err != nil {
 			dlog.FatalLog.Printf("Failed to fetch members: %v", err)
 		}
@@ -92,13 +87,16 @@ func (m *Model) FetchAndStoreGuildMembers(s *discordgo.Session) {
 
 		// Insert members into the database
 		for _, member := range members {
-			if !member.User.Bot {
-				err = m.AddUser(member.User)
-				if err != nil {
-					dlog.ErrorLog.Printf("Failed to insert member %s: %v", member.User.ID, err)
+			// add only non-bot users with a global name and joined within the last 7 days
+			if !member.User.Bot && member.User.GlobalName != "" && member.JoinedAt.After(time.Now().AddDate(0, 0, -14)) {
+				{
+					err = m.AddUser(member.User)
+					if err != nil {
+						dlog.ErrorLog.Printf("Failed to insert member %s: %v", member.User.ID, err)
+					}
 				}
-			}
 
+			}
 		}
 
 		// Set the 'after' parameter to the last member's ID for pagination

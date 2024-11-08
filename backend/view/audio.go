@@ -79,12 +79,12 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 					dlog.ErrorLog.Println("error converting audio:", err)
 					return
 				}
-				// wait for 5 seconds
+				// wait for 8 seconds
 				err = a.UpdateInteractionResponse("🎶  Audio is ready, playing now...", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error sending message:", err)
 				}
-				time.Sleep(5 * time.Second)
+				time.Sleep(8 * time.Second)
 				// Play the custom audio
 				err = a.PlayAudio(download.SoundName, s, i)
 				if err != nil {

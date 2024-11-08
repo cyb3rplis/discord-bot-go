@@ -68,12 +68,12 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error loading audio:", err)
 						return
 					}
-					// wait for 5 seconds
+					// wait for 8 seconds
 					err = a.UpdateInteractionResponse("🎶  Audio is ready, creating button...", s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending message:", err)
 					}
-					time.Sleep(5 * time.Second)
+					time.Sleep(8 * time.Second)
 
 					err = a.ConvertMP3ToDCA(soundName, download.Category)
 					if err != nil {
