@@ -23,7 +23,6 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 					dlog.ErrorLog.Println("error checking voice channel:", err)
 					return
 				}
-
 				err = a.SendInteractionRespond("🎶  Playing last played Audio...", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing audio command:", err)

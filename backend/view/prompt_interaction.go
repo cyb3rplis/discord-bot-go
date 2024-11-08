@@ -37,7 +37,7 @@ func RegisterPromptInteractionsAudio(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	//deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -66,7 +66,7 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	//deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -126,7 +126,7 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	//deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -195,7 +195,7 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -271,7 +271,7 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -310,7 +310,7 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
@@ -353,7 +353,7 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 		},
 	}
 
-	deletePromptInteraction(s, commandName)
+	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])

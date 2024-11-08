@@ -128,21 +128,15 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 					if err != nil {
 						dlog.ErrorLog.Println("error playing audio:", err)
 					}
+				default:
+					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("fallback to default download handler", err)
+					}
 				}
-				err := a.UpdateInteractionResponse(" Button created successfully", s, i)
-				if err != nil {
-					dlog.ErrorLog.Println("error executing buttons command:", err)
-				}
-
-			}
-		default:
-			err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
-			if err != nil {
-				dlog.ErrorLog.Println("fallback to default download handler", err)
 			}
 		}
 	}
-
 }
 
 func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordgo.InteractionCreate) error {
