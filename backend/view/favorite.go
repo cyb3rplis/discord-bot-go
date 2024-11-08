@@ -10,7 +10,7 @@ import (
 )
 
 func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	user := config.ExtendedUser{
+	interactionUser := config.ExtendedUser{
 		User: i.Member.User,
 	}
 	if i.Type == discordgo.InteractionApplicationCommand {
@@ -24,7 +24,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					dlog.ErrorLog.Printf("error sending message: %v", err)
 				}
 
-				favorites, err := a.model.GetUserFavorites(i.Member.User.ID)
+				favorites, err := a.model.GetUserFavorites(interactionUser)
 				if err != nil {
 					dlog.ErrorLog.Printf("error getting user favorites: %v", err)
 				}
@@ -43,7 +43,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 				buttons := model.BuildSoundButtons(soundNames, "favorites", discordgo.SuccessButton)
 				// Build messages for the favorite sounds
 				initialMessage := &discordgo.MessageSend{
-					Content: "Favourites of " + user.User.Mention(),
+					Content: "Favourites of " + interactionUser.User.Mention(),
 				}
 				messages := model.BuildMessages(buttons, initialMessage)
 				for _, message := range messages {
@@ -60,7 +60,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					}
 					arg := option.Options[0].StringValue()
 					// check if sound exists
-					soundID, _ := a.model.GetFavoriteByNameAndUserID(arg, user)
+					soundID, _ := a.model.GetFavoriteByNameAndUserID(arg, interactionUser)
 					if soundID != "" {
 						err := a.UpdateInteractionResponse("sound already in favorites", s, i)
 						if err != nil {

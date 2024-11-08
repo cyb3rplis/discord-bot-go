@@ -23,11 +23,22 @@ func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []b
 	}
 	// If the sound already exists, skip the insertion
 	if existingID != 0 {
-		//dlog.InfoLog.Printf("Sound with hash %s already exists, skipping insertion", fileHash)
 		return nil
 	}
-	alias := RemoveFileExtension(fileName) // Or any other default value, e.g., ""
-	_, err = m.Db.Exec("INSERT INTO sounds (name, alias, category_id, hash, file) VALUES (?, ?, ?, ?, ?)", fileName, alias, categoryID, fileHash, fileData)
+
+	_, err = m.Db.Exec(`
+    INSERT INTO sounds (name, category_id, hash, file)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(name) DO UPDATE SET
+        hash = excluded.hash,
+        file = excluded.file,
+        category_id = excluded.category_id
+	`, fileName, categoryID, fileHash, fileData)
+
+	if err != nil {
+		dlog.ErrorLog.Printf("Error inserting sound into database: %v", err)
+	}
+
 	return err
 }
 

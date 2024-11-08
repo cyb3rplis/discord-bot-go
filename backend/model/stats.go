@@ -8,7 +8,7 @@ import (
 )
 
 type SoundInfo struct {
-	Name     string `json:"alias"`
+	Name     string `json:"name"`
 	Count    int    `json:"total_plays"`
 	Category string `json:"category_name"`
 }
@@ -50,11 +50,11 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats []SoundInfo, err error) {
 	// this can be used to create buttons when the user gets their stats
 	rows, err := m.Db.Query(`
-	SELECT s.alias, COALESCE(SUM(su.count), 0) AS total_plays, c.name
+	SELECT s.name, COALESCE(SUM(su.count), 0) AS total_plays, c.name
 	FROM sounds AS s
 	LEFT JOIN stats_users AS su ON s.id = su.sound_id AND su.user_id = ?
 	JOIN categories AS c ON s.category_id = c.id
-	GROUP BY s.id, s.alias
+	GROUP BY s.id, s.name
 	HAVING total_plays > 0
 	ORDER BY total_plays
 	DESC LIMIT ?;`, user.ID, limit)
@@ -90,7 +90,7 @@ func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats [
 
 // GetSoundStatistics returns the top sounds played
 func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
-	rows, err := m.Db.Query("SELECT s.alias, COALESCE(SUM(su.count), 0) AS total_plays FROM sounds AS s LEFT JOIN stats_users AS su ON s.id = su.sound_id GROUP BY s.id, s.alias HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
+	rows, err := m.Db.Query("SELECT s.name, COALESCE(SUM(su.count), 0) AS total_plays FROM sounds AS s LEFT JOIN stats_users AS su ON s.id = su.sound_id GROUP BY s.id, s.name HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
 	if err != nil {
 		dlog.FatalLog.Fatal(err)
 	}

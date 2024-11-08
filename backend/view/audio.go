@@ -10,11 +10,8 @@ import (
 )
 
 func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//get userID
-	if i.Member == nil {
-		dlog.ErrorLog.Println("error getting member from interaction")
-		return
-	}
+	interactionUser := i.Member.User
+
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
 		case "audio":
@@ -29,8 +26,9 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 				dlog.ErrorLog.Println("error executing audio command:", err)
 			}
 			arg := i.ApplicationCommandData().Options[0].StringValue()
+
 			// Check if the user is in the Gulag
-			user, err := a.model.SetUserGulaggedValue(i.Member.User)
+			user, err := a.model.SetUserGulaggedValue(interactionUser)
 			if err != nil && err != sql.ErrNoRows {
 				dlog.ErrorLog.Println("error getting user from username:", err)
 			} else {

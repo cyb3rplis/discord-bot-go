@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/dlog"
@@ -76,5 +77,31 @@ func (a *API) UpdateInteractionResponse(msg string, s *discordgo.Session, i *dis
 	if err != nil {
 		return fmt.Errorf("error updating interaction response: %v", err)
 	}
+	return nil
+}
+
+// DeleteOldStopSoundButtons deletes all old stop sound buttons before the last one
+func (a *API) DeleteOldStopSoundButtons(s *discordgo.Session, st *discordgo.Message) error {
+	// Fetch messages in the channel (limit to the most recent 100)
+	messages, err := s.ChannelMessages(st.ChannelID, 5, st.ID, "", "")
+	if err != nil {
+		dlog.ErrorLog.Printf("Error fetching messages: %v", err)
+		return err
+	}
+
+	// Get the bot's user ID
+	botUserID := s.State.User.ID
+
+	// Loop through each message and check for buttons from the bot with the specified custom_id
+	for _, message := range messages {
+		// Only process messages sent by the bot
+		if message.Author.ID == botUserID && strings.HasPrefix(message.Content, "➡ Currently Playing ") {
+			err := s.ChannelMessageDelete(message.ChannelID, message.ID)
+			if err != nil {
+				dlog.ErrorLog.Printf("Error removing deleting message %s: %v", message.ID, err)
+			}
+		}
+	}
+
 	return nil
 }

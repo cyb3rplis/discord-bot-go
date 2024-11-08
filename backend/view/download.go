@@ -172,11 +172,6 @@ func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordg
 		return ctx.Err()
 	}
 
-	// If successful, set typing status
-	if err := s.ChannelTyping(i.ChannelID); err != nil {
-		dlog.ErrorLog.Println("error setting typing status:", err)
-	}
-
 	return nil
 }
 

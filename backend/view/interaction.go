@@ -123,7 +123,7 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 		return
 	}
 
-	user := i.Member.User
+	interactionUser := i.Member.User
 
 	// Check if the user is in a voice channel
 	vs, err := a.VoiceChannelCheck(s, i)
@@ -133,12 +133,12 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 
 	// add user and user statistics
-	err = a.model.AddUser(user)
+	err = a.model.AddUser(interactionUser)
 	if err != nil {
 		dlog.ErrorLog.Println("error adding user:", err)
 	}
 
-	err = a.model.AddUserStatistics(user, soundName)
+	err = a.model.AddUserStatistics(interactionUser, soundName)
 	if err != nil {
 		dlog.ErrorLog.Println("error adding user statistics:", err)
 	}
@@ -153,18 +153,23 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	content = append(content, row)
 
 	msg := &discordgo.MessageSend{
-		Content:    "➡ Currently Playing by " + user.Mention() + soundName,
+		Content:    "➡ Currently Playing by " + interactionUser.Mention() + soundName,
 		Components: content,
 	}
 
 	// Send the message (+stop button)
-	_, err = a.SendMessageComplex(msg, s, i, false)
+	st, err := a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
 		dlog.ErrorLog.Println("error sending message:", err)
 		return
 	}
 
-	dlog.InfoLog.Printf("User: %s played sound: %s", user.GlobalName, soundName)
+	err = a.DeleteOldStopSoundButtons(s, st)
+	if err != nil {
+		dlog.ErrorLog.Println("error deleting all stop sound buttons:", err)
+	}
+
+	dlog.InfoLog.Printf("User: %s played sound: %s", interactionUser.GlobalName, soundName)
 	// Construct the sound file path
 	// soundFile := fmt.Sprintf("%s/%s/%s.dca", model.Bot.Config.SoundsDir, subfolder, soundName)
 
@@ -174,10 +179,15 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 		dlog.ErrorLog.Println("error playing sound:", err)
 	}
 
+	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+	if err != nil {
+		dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
+	}
 }
 
 // HandleListSoundsInteraction handles the list sounds interaction
 func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	interactionUser := i.Member.User
 	dlog.InfoLog.Println("Handling list sounds interaction")
 	// Extract the category from the custom ID
 	customID := ""
@@ -214,7 +224,7 @@ func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	//build messages
 	messages := model.BuildMessages(buttons, nil)
 
-	dlog.InfoLog.Printf("User: %s listed sounds in category: %s", i.Member.User.GlobalName, category)
+	dlog.InfoLog.Printf("User: %s listed sounds in category: %s", interactionUser.GlobalName, category)
 	for _, msg := range messages {
 		_, err = a.SendMessageComplex(msg, s, i, false)
 		if err != nil {

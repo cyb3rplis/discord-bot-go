@@ -17,11 +17,11 @@ type Favorite struct {
 	CategoryName string
 }
 
-func (m *Model) GetUserFavorites(userID string) ([]Favorite, error) {
+func (m *Model) GetUserFavorites(user config.ExtendedUser) ([]Favorite, error) {
 	rows, err := m.Db.Query("SELECT user_favorites.id, user_favorites.user_id, user_favorites.sound_id, sounds.name, categories.id, categories.name "+
 		"FROM user_favorites "+
 		"LEFT JOIN sounds ON sounds.id = user_favorites.sound_id "+
-		"LEFT JOIN categories ON categories.id = sounds.category_id WHERE user_id = ?", userID)
+		"LEFT JOIN categories ON categories.id = sounds.category_id WHERE user_id = ?", user.User.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query favorites: %w", err)
 	}
@@ -101,7 +101,7 @@ func (m *Model) GetFavoriteByNameAndUserID(name string, user config.ExtendedUser
 func (m *Model) GetSoundIDByName(name string) (soundName string, err error) {
 	err = m.Db.QueryRow("SELECT id FROM sounds WHERE name = ?", name).Scan(&soundName)
 	if err != nil {
-		return "", fmt.Errorf("failed to query sound by alias: %w", err)
+		return "", fmt.Errorf("failed to query sound by name: %w", err)
 	}
 	return soundName, nil
 }

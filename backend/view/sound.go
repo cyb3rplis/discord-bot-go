@@ -32,7 +32,7 @@ type Entry struct {
 }
 
 func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	user := i.Member.User
+	interactionUser := i.Member.User
 
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
@@ -53,7 +53,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			}
 
 			// Check if the user is in the Gulag
-			user, err := a.model.SetUserGulaggedValue(user)
+			user, err := a.model.SetUserGulaggedValue(interactionUser)
 			if err != nil && err != sql.ErrNoRows {
 				dlog.ErrorLog.Println("error getting user from username:", err)
 			} else {
@@ -84,10 +84,15 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			}
 
 			// Send the message (+stop button)
-			_, err = a.SendMessageComplex(msg, s, i, false)
+			st, err := a.SendMessageComplex(msg, s, i, false)
 			if err != nil {
 				dlog.ErrorLog.Println("error sending message:", err)
 				return
+			}
+
+			err = a.DeleteOldStopSoundButtons(s, st)
+			if err != nil {
+				dlog.ErrorLog.Println("error deleting stop sound buttons:", err)
 			}
 
 			err = a.UpdateInteractionResponse("➡ Playing sound", s, i)
@@ -205,12 +210,12 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 	content = append(content, row)
 
 	msg := &discordgo.MessageSend{
-		Content:    "➡ Currently playing audio by " + user.Mention(),
+		Content:    "➡ Currently Playing audio by " + user.Mention(),
 		Components: content,
 	}
 
 	// Send the message (+stop button)
-	_, err = a.SendMessageComplex(msg, s, i, false)
+	st, err := a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
 		dlog.ErrorLog.Println("error sending message:", err)
 		return err
@@ -220,6 +225,11 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 	if err != nil {
 		dlog.ErrorLog.Println("error updating interaction response:", err)
 		return err
+	}
+
+	err = a.DeleteOldStopSoundButtons(s, st)
+	if err != nil {
+		dlog.ErrorLog.Println("error deleting stop sound buttons:", err)
 	}
 
 	dlog.InfoLog.Printf("User: %s played sound", i.Member.User.GlobalName)
@@ -257,20 +267,16 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 
 		// Add new sounds for this category
 		for _, file := range files {
-			soundPath := filepath.Join(a.model.Config.SoundsDir, folder, file+".mp3")
-			fileData, err := os.ReadFile(soundPath)
+			soundPathMP3 := filepath.Join(a.model.Config.SoundsDir, folder, file+".mp3")
+			soundPathDCA := filepath.Join(a.model.Config.SoundsDir, folder, file+".dca")
+			_, err := os.ReadFile(soundPathMP3)
 			if err != nil {
-				return fmt.Errorf("error reading dca sound file: %w", err)
+				return fmt.Errorf("error reading mp3 sound file: %w", err)
 			}
 
-			fileHash, err := model.ComputeFileHash(soundPath)
+			fileHash, err := model.ComputeFileHash(soundPathMP3)
 			if err != nil {
 				dlog.WarningLog.Printf("Failed to compute hash for file %s: %v", file, err)
-				continue
-			}
-
-			if model.FileExistsInDB(existingSounds, categoryID, file, fileHash) {
-				// File exists and hasn't changed, skip
 				continue
 			}
 
@@ -282,12 +288,20 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 			}
 			time.Sleep(3 * time.Second)
 
-			// File does not exist in the DB, add it
-			if err := a.model.AddSound(categoryID, file, fileHash, fileData); err != nil {
-				//ignore this error if the sound already exists
-				if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-					dlog.WarningLog.Printf("Failed to add sound %s to category %s: %v", file, folder, err)
-				}
+			if model.FileExistsInDB(existingSounds, categoryID, file, fileHash) {
+				// File exists and hasn't changed, skip
+				continue
+			}
+
+			soundBytes, err := os.ReadFile(soundPathDCA)
+			if err != nil {
+				dlog.WarningLog.Printf("Failed to read sound file %s: %v", soundPathDCA, err)
+				continue
+			}
+
+			// File does not exist in the DB or hasn't changed, add it
+			if err := a.model.AddSound(categoryID, file, fileHash, soundBytes); err != nil {
+				dlog.WarningLog.Printf("Failed to add sound %s to category %s: %v", file, folder, err)
 			}
 		}
 	}

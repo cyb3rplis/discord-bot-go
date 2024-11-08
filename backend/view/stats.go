@@ -11,10 +11,7 @@ import (
 
 func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	//get userID
-	if i.Member == nil {
-		dlog.ErrorLog.Println("error getting member from interaction")
-		return
-	}
+	interactionUser := i.Member.User
 
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
@@ -52,7 +49,7 @@ func (a *API) PromptInteractionStats(s *discordgo.Session, i *discordgo.Interact
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
-				stats, err := a.getStatsMe(i)
+				stats, err := a.getStatsMe(interactionUser)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing stats command:", err)
 				}
@@ -94,8 +91,7 @@ func (a *API) getStatsUsers() (string, error) {
 	return content.String(), nil
 }
 
-func (a *API) getStatsMe(i *discordgo.InteractionCreate) (string, error) {
-	user := i.Member.User
+func (a *API) getStatsMe(user *discordgo.User) (string, error) {
 	userStats, err := a.model.GetUserStatistics(user, 10)
 	if err != nil {
 		dlog.ErrorLog.Printf("error getting user statistics: %v", err)

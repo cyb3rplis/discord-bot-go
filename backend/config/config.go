@@ -80,7 +80,6 @@ func LoadConfig() *Config {
 	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
 	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
 	fmt.Println(" > DB:\t\t", configInstance.DB)
-
 	fmt.Println(" > AUDIO_TEMP:\t", configInstance.AudioTemp)
 	fmt.Println(" > AUDIO_TIMEOUT:\t", configInstance.AudioTimeout)
 	fmt.Println(" > ADMIN_ROLE:\t", configInstance.AdminRole)
