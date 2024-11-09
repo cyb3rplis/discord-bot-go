@@ -57,7 +57,7 @@ func (m *Model) RemoveSound(categoryID int, fileName string) error {
 
 // LoadSound attempts to load an encoded sound file from disk.
 func (m *Model) LoadSound(soundName string) error {
-	var opusLen int16
+	var opusLen int32
 	var fileData []byte
 
 	// get sounds from database
@@ -83,6 +83,13 @@ func (m *Model) LoadSound(soundName string) error {
 			dlog.ErrorLog.Println("error reading from file data:", err)
 			return err
 		}
+
+		// Validate opusLen
+		if opusLen <= 0 || opusLen > 2147483647 { // 2^31 - 1, max value for int32
+			dlog.ErrorLog.Println("invalid opus frame length:", opusLen)
+			return fmt.Errorf("invalid opus frame length: %d", opusLen)
+		}
+
 		// Read encoded PCM from the file data.
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
