@@ -57,10 +57,10 @@ func (m *Model) RemoveSound(categoryID int, fileName string) error {
 
 // LoadSound attempts to load an encoded sound file from disk.
 func (m *Model) LoadSound(soundName string) error {
-	var opusLen int32
+	var opusLen int16
 	var fileData []byte
 
-	// get sounds from database
+	// Get sounds from database
 	err := m.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -69,35 +69,42 @@ func (m *Model) LoadSound(soundName string) error {
 		dlog.ErrorLog.Println("error querying sound file from database:", err)
 		return err
 	}
+
 	// Create a reader for the file data
 	file := bytes.NewReader(fileData)
-	for {
-		// Read opus frame length from the file data.
-		err = binary.Read(file, binary.LittleEndian, &opusLen)
 
-		// If this is the end of the file, just return.
+	// Read initial opusLen from the file
+	err = binary.Read(file, binary.LittleEndian, &opusLen)
+	if err != nil {
+		dlog.ErrorLog.Println("failed to read initial opusLen:", err)
+		return fmt.Errorf("failed to read initial opusLen: %v", err)
+	}
+
+	for {
+		// Read opus frame length from the file data
+		err = binary.Read(file, binary.LittleEndian, &opusLen)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			// End of file reached
 			return nil
 		}
 		if err != nil {
-			dlog.ErrorLog.Println("error reading from file data:", err)
+			dlog.ErrorLog.Println("error reading opus frame length from file data:", err)
 			return err
 		}
 
-		// Validate opusLen
-		if opusLen <= 0 || opusLen > 2147483647 { // 2^31 - 1, max value for int32
+		if opusLen <= 0 || int(opusLen) > len(fileData)-int(file.Size()) {
 			dlog.ErrorLog.Println("invalid opus frame length:", opusLen)
 			return fmt.Errorf("invalid opus frame length: %d", opusLen)
 		}
 
-		// Read encoded PCM from the file data.
+		// Read encoded PCM from the file data
 		InBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &InBuf)
 		if err != nil {
-			dlog.ErrorLog.Println("error reading from file data:", err)
+			dlog.ErrorLog.Println("error reading PCM data from file data:", err)
 			return err
 		}
-		// Append encoded PCM data to the buffer.
+
 		Buffer = append(Buffer, InBuf)
 	}
 }
