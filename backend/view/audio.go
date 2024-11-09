@@ -69,7 +69,7 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 				}
 				// Download and convert the audio
 				download := Download{URL: url, Start: "", End: "", Category: "", SoundName: a.model.Config.AudioTemp}
-				err = a.DownloadAudio(download, s, i)
+				err = a.DownloadAudio(download)
 				if err != nil {
 					dlog.ErrorLog.Println("error loading audio:", err)
 					return

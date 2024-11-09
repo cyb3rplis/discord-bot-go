@@ -63,7 +63,7 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 							return
 						}
 					}
-					err = a.DownloadAudio(download, s, i)
+					err = a.DownloadAudio(download)
 					if err != nil {
 						dlog.ErrorLog.Println("error loading audio:", err)
 						return
@@ -139,7 +139,8 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 	}
 }
 
-func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+// DownloadAudio downloads the audio from the provided URL
+func (a *API) DownloadAudio(download Download) error {
 	timeout := time.Duration(a.model.Config.AudioTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -148,7 +149,7 @@ func (a *API) DownloadAudio(download Download, s *discordgo.Session, i *discordg
 	if download.Category == "" {
 		destFile = filepath.Join(a.model.Config.DataDir, download.SoundName+".mp3")
 	}
-	dlog.InfoLog.Printf("Downloading %s to %s", download.URL, destFile)
+	dlog.InfoLog.Printf("Downloading %s to %s. START: %s, END: %s", download.URL, destFile, download.Start, download.End)
 	cmdStr := fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", destFile, download.URL)
 	if download.Start != "" && download.End != "" {
 		cmdStr = fmt.Sprintf("yt-dlp -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", download.Start, download.End, destFile, download.URL)

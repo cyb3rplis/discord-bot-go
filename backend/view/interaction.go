@@ -94,7 +94,11 @@ func (a *API) handleStopSoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Delete the message that contains the stop button
 	err := s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
 	if err != nil {
-		dlog.ErrorLog.Println("error deleting message:", err)
+		if strings.Contains(err.Error(), "code: 10008") {
+			dlog.WarningLog.Println("The message to delete was not found (code 10008). It might have been already deleted.")
+		} else {
+			dlog.ErrorLog.Println("error deleting message:", err)
+		}
 	}
 }
 
