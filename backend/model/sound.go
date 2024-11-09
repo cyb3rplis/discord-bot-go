@@ -124,7 +124,7 @@ func (m *Model) GetSounds(category string) ([]string, error) {
 
 // GetSoundsAll returns a list of sounds in the specified category (from DB)
 func (m *Model) GetSoundsAll() ([]string, error) {
-	rows, err := m.Db.Query("SELECT sounds.name FROM sounds ORDER BY sounds.name")
+	rows, err := m.Db.Query("SELECT sounds.name FROM sounds ORDER BY sounds.name LIMIT 25")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sounds: %w", err)
 	}

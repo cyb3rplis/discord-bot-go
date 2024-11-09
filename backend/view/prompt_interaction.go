@@ -140,7 +140,7 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session) {
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
 func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	commandName := "favorite"
-	sounds, err := a.model.GetSoundsAll()
+	/*sounds, err := a.model.GetSoundsAll()
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
@@ -152,7 +152,7 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 			Value: sound,
 		}
 		soundsChoices = append(soundsChoices, soundChoice)
-	}
+	}*/
 	// Register the command globally
 	commands := []*discordgo.ApplicationCommand{
 		{
@@ -174,7 +174,6 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 							Name:        "sound",
 							Description: "The name of the sound to add",
 							Required:    true,
-							Choices:     soundsChoices,
 						},
 					},
 				},
@@ -209,7 +208,7 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 // RegisterPromptInteractionsGulag - Register prompt interactions for gulag
 func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 	commandName := "gulag"
-	users, err := a.model.GetUsers()
+	/*users, err := a.model.GetUsers()
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
@@ -221,7 +220,7 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 			Value: user.User.GlobalName,
 		}
 		usersChoices = append(usersChoices, soundChoice)
-	}
+	}*/
 	// Register the command globally
 	commands := []*discordgo.ApplicationCommand{
 		{
@@ -243,7 +242,6 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 							Name:        "user",
 							Description: "The name of the user to add to the gulag",
 							Required:    true,
-							Choices:     usersChoices,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
@@ -263,7 +261,6 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 							Name:        "user",
 							Description: " The name of the user to remove from the gulag",
 							Required:    true,
-							Choices:     usersChoices,
 						},
 					},
 				},
@@ -324,7 +321,7 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	commandName := "play"
 	// Register the command globally
-	sounds, err := a.model.GetSoundsAll()
+	/*sounds, err := a.model.GetSoundsAll()
 	if err != nil {
 		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
@@ -336,7 +333,7 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 			Value: sound,
 		}
 		soundsChoices = append(soundsChoices, soundChoice)
-	}
+	}*/
 	commands := []*discordgo.ApplicationCommand{
 		{
 			Name:        commandName,
@@ -347,7 +344,6 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 					Name:        "sound",
 					Description: "The name of the sound to play",
 					Required:    true,
-					Choices:     soundsChoices,
 				},
 			},
 		},
