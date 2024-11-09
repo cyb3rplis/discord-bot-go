@@ -5,13 +5,98 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"io"
 	"os"
-
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
-var Buffer = make([][]byte, 0)
+// getSound retrieves sound data from the database.
+func (m *Model) getSound(soundName string) ([]byte, error) {
+	var fileData []byte
+	err := m.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("sound not found: %s", soundName)
+		}
+		dlog.ErrorLog.Println("error querying sound file from database:", err)
+		return nil, err
+	}
+	return fileData, nil
+}
+
+// openSound opens a sound file from the filesystem.
+func openSound(fileName string) (*os.File, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		dlog.ErrorLog.Println("error opening sound file:", err)
+		return nil, err
+	}
+	return file, nil
+}
+
+// encodeSound reads encoded PCM data from a file reader and returns the buffer of frames.
+func encodeSound(file io.Reader) ([][]byte, error) {
+	var opusLen int16
+	var buffer [][]byte
+
+	for {
+		// Read opus frame length from file
+		err := binary.Read(file, binary.LittleEndian, &opusLen)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			// End of file reached
+			break
+		}
+		if err != nil {
+			dlog.ErrorLog.Println("error reading opus frame length:", err)
+			return nil, err
+		}
+
+		if opusLen <= 0 {
+			dlog.ErrorLog.Println("invalid opus frame length:", opusLen)
+			return nil, fmt.Errorf("invalid opus frame length: %d", opusLen)
+		}
+
+		// Read encoded PCM data
+		inBuf := make([]byte, opusLen)
+		err = binary.Read(file, binary.LittleEndian, &inBuf)
+		if err != nil {
+			dlog.ErrorLog.Println("error reading PCM data:", err)
+			return nil, err
+		}
+
+		buffer = append(buffer, inBuf)
+	}
+
+	return buffer, nil
+}
+
+// LoadSound loads a sound from the database and returns the buffer.
+func (m *Model) LoadSound(soundName string) ([][]byte, error) {
+	fileData, err := m.getSound(soundName)
+	if err != nil {
+		return nil, err
+	}
+	file := bytes.NewReader(fileData)
+	encodedFile, err := encodeSound(file)
+	if err != nil {
+		return nil, err
+	}
+	return encodedFile, nil
+}
+
+// LoadSoundFS loads a sound from the filesystem and returns the buffer.
+func (m *Model) LoadSoundFS(soundName string) ([][]byte, error) {
+	file, err := openSound(soundName)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	encodedFile, err := encodeSound(file)
+	if err != nil {
+		return nil, err
+	}
+	return encodedFile, nil
+}
 
 // AddSound adds a sound to the database.
 func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []byte) error {
@@ -53,60 +138,6 @@ func (m *Model) RemoveCategory(categoryID int) error {
 func (m *Model) RemoveSound(categoryID int, fileName string) error {
 	_, err := m.Db.Exec("DELETE FROM sounds WHERE category_id = ? AND name = ?", categoryID, fileName)
 	return err
-}
-
-// LoadSound attempts to load an encoded sound file from disk.
-func (m *Model) LoadSound(soundName string) error {
-	var opusLen int16
-	var fileData []byte
-
-	// Get sounds from database
-	err := m.Db.QueryRow("SELECT file FROM sounds WHERE name = ?", soundName).Scan(&fileData)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("sound not found: %s", soundName)
-		}
-		dlog.ErrorLog.Println("error querying sound file from database:", err)
-		return err
-	}
-
-	// Create a reader for the file data
-	file := bytes.NewReader(fileData)
-
-	// Read initial opusLen from the file
-	err = binary.Read(file, binary.LittleEndian, &opusLen)
-	if err != nil {
-		dlog.ErrorLog.Println("failed to read initial opusLen:", err)
-		return fmt.Errorf("failed to read initial opusLen: %v", err)
-	}
-
-	for {
-		// Read opus frame length from the file data
-		err = binary.Read(file, binary.LittleEndian, &opusLen)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			// End of file reached
-			return nil
-		}
-		if err != nil {
-			dlog.ErrorLog.Println("error reading opus frame length from file data:", err)
-			return err
-		}
-
-		if opusLen <= 0 || int(opusLen) > len(fileData)-int(file.Size()) {
-			dlog.ErrorLog.Println("invalid opus frame length:", opusLen)
-			return fmt.Errorf("invalid opus frame length: %d", opusLen)
-		}
-
-		// Read encoded PCM from the file data
-		InBuf := make([]byte, opusLen)
-		err = binary.Read(file, binary.LittleEndian, &InBuf)
-		if err != nil {
-			dlog.ErrorLog.Println("error reading PCM data from file data:", err)
-			return err
-		}
-
-		Buffer = append(Buffer, InBuf)
-	}
 }
 
 // GetSounds returns a list of sounds in the specified category (from DB)
@@ -204,43 +235,4 @@ func (m *Model) AddCategory(folderName string) error {
 	}
 	_, err = m.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
 	return err
-}
-
-// LoadSoundFS loads the sound file from the filesystem.
-func (m *Model) LoadSoundFS(soundName string) error {
-	var opusLen int16
-	file, err := os.Open(soundName)
-	if err != nil {
-		dlog.ErrorLog.Println("error opening dca file :", err)
-		return err
-	}
-	defer file.Close()
-	for {
-		// Read opus frame length from dca file.
-		err = binary.Read(file, binary.LittleEndian, &opusLen)
-
-		// If this is the end of the file, just return.
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			err := file.Close()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		if err != nil {
-			dlog.ErrorLog.Println("Error reading from dca file :", err)
-			return err
-		}
-
-		// Read encoded pcm from dca file.
-		InBuf := make([]byte, opusLen)
-		err = binary.Read(file, binary.LittleEndian, &InBuf)
-		if err != nil {
-			dlog.ErrorLog.Println("Error reading from dca file :", err)
-			return err
-		}
-
-		// Append encoded pcm data to the buffer.
-		Buffer = append(Buffer, InBuf)
-	}
 }

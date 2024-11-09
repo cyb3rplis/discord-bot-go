@@ -121,10 +121,11 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 
 	// Load the sound file.
 	var err error
+	var buffer [][]byte
 	if soundName == a.model.Config.AudioTemp {
-		err = a.model.LoadSoundFS(filepath.Join(a.model.Config.DataDir, soundName+".dca")) //play file from system if function (audio) is played
+		buffer, err = a.model.LoadSoundFS(filepath.Join(a.model.Config.DataDir, soundName+".dca")) //play file from system if function (audio) is played
 	} else {
-		err = a.model.LoadSound(soundName)
+		buffer, err = a.model.LoadSound(soundName)
 	}
 
 	if err != nil {
@@ -150,13 +151,13 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	_ = vc.Speaking(true)
 
 	// Send the buffer data.
-	for _, buff := range model.Buffer {
+	for _, buff := range buffer {
 		select {
 		case <-stopChannel:
 			// Stop sending buffer data if stop signal is received
 			_ = vc.Speaking(false)
 			botSpeaking = false
-			model.Buffer = make([][]byte, 0)
+			buffer = make([][]byte, 0)
 			return nil
 		default:
 			vc.OpusSend <- buff
@@ -173,7 +174,7 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	//vc.Disconnect()
 
 	// empty buffer to not play older sounds
-	model.Buffer = make([][]byte, 0)
+	buffer = make([][]byte, 0)
 	botSpeaking = false
 
 	return nil
