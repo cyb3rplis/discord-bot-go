@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,16 +76,21 @@ func LoadConfig() *Config {
 		}
 	})
 
-	fmt.Println("---------------------------------------------------")
-	fmt.Println(" > TOKEN:\t", configInstance.Token[0:10]+"...")
-	fmt.Println(" > PREFIX:\t", configInstance.Prefix)
-	fmt.Println(" > SOUNDS_DIR:\t", configInstance.SoundsDir)
-	fmt.Println(" > DB:\t\t", configInstance.DB)
-	fmt.Println(" > AUDIO_TEMP:\t", configInstance.AudioTemp)
-	fmt.Println(" > AUDIO_TIMEOUT:\t", configInstance.AudioTimeout)
-	fmt.Println(" > ADMIN_ROLE:\t", configInstance.AdminRole)
-
-	fmt.Println("---------------------------------------------------")
+	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "TOKEN", configInstance.Token[0:10]+"...")
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "PREFIX", configInstance.Prefix)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "SOUNDS_DIR", configInstance.SoundsDir)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "DB", configInstance.DB)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "AUDIO_TEMP", configInstance.AudioTemp)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20d |\n", "AUDIO_TIMEOUT", configInstance.AudioTimeout)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "ADMIN_ROLE", configInstance.AdminRole)
+	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
 
 	return configInstance
 }

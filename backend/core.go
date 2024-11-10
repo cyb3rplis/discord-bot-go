@@ -38,30 +38,27 @@ func Init() {
 	if _, err := os.Stat(modelInstance.Config.SoundsDir); os.IsNotExist(err) {
 		if err != nil {
 			dlog.FatalLog.Fatalf("Failed to check sound directory: %v", err)
-			return
 		}
 		err = os.Mkdir(m.Config.SoundsDir, 0755)
 		if err != nil {
 			dlog.FatalLog.Fatalf("Failed to create sound directory: %v", err)
-			return
 		}
 	}
 
 	fsSounds, err := modelInstance.ScanDirectory()
 	if err != nil {
-		dlog.FatalLog.Printf("cron: error scanning sound directory: %v", err)
+		dlog.FatalLog.Fatalf("cron: error scanning sound directory: %v", err)
 	}
 	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
-		dlog.FatalLog.Printf("cron: error syncing database with filesystem: %v", err)
+		dlog.FatalLog.Fatalf("cron: error syncing database with filesystem: %v", err)
 	}
 
 	cfg := config.GetConfig()
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
-		dlog.ErrorLog.Println("error creating Discord session: ", err)
-		return
+		dlog.FatalLog.Fatalf("error creating Discord session: %v", err)
 	}
 
 	//set bot ready
@@ -105,18 +102,21 @@ func Init() {
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		dlog.ErrorLog.Println("error opening Discord session: ", err)
-		return
+		dlog.ErrorLog.Fatalf("error opening Discord session: %v", err)
 	}
 
 	// Scan the sound directory for sound files. Sync them with the DB.
 	fsSounds, err = modelInstance.ScanDirectory()
 	if err != nil {
 		dlog.FatalLog.Fatalf("error scanning sound directory: %v", err)
+	} else {
+		dlog.InfoLog.Println("Scanning sound directory for new audio")
 	}
 	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
 	if err != nil {
 		dlog.FatalLog.Printf("error syncing sound files: %v", err)
+	} else {
+		dlog.InfoLog.Println("Inserting new sounds into database")
 	}
 
 	//background TODO: move this to controller
@@ -150,8 +150,7 @@ func NewBot() {
 // guild is joined.
 func guildCreate(event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
-		dlog.FatalLog.Println("> Guild is unavailable")
-		return
+		dlog.FatalLog.Fatalf("Guild is unavailable")
 	}
 	dlog.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
 	dlog.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
