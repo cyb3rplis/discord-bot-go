@@ -45,15 +45,6 @@ func Init() {
 		}
 	}
 
-	fsSounds, err := modelInstance.ScanDirectory()
-	if err != nil {
-		dlog.FatalLog.Fatalf("cron: error scanning sound directory: %v", err)
-	}
-	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
-	if err != nil {
-		dlog.FatalLog.Fatalf("cron: error syncing database with filesystem: %v", err)
-	}
-
 	cfg := config.GetConfig()
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
@@ -105,21 +96,6 @@ func Init() {
 		dlog.ErrorLog.Fatalf("error opening Discord session: %v", err)
 	}
 
-	// Scan the sound directory for sound files. Sync them with the DB.
-	fsSounds, err = modelInstance.ScanDirectory()
-	if err != nil {
-		dlog.FatalLog.Fatalf("error scanning sound directory: %v", err)
-	} else {
-		dlog.InfoLog.Println("Scanning sound directory for new audio")
-	}
-	err = viewInstance.SyncDatabaseWithFileSystem(fsSounds)
-	if err != nil {
-		dlog.FatalLog.Printf("error syncing sound files: %v", err)
-	} else {
-		dlog.InfoLog.Println("Inserting new sounds into database")
-	}
-
-	//background TODO: move this to controller
 	go ctrl.SyncSoundDirectories()
 
 	// Wait here until CTRL-C or other term signal is received.

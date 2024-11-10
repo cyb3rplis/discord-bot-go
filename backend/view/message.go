@@ -21,9 +21,7 @@ func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Sessio
 		// delete message again to keep the channel clean
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
-		if strings.Contains(err.Error(), "code: 10008") {
-			dlog.WarningLog.Println("The message to delete was not found (code 10008). It might have been already deleted.")
-		} else {
+		if err != nil {
 			dlog.ErrorLog.Println("error deleting message:", err)
 		}
 	}
@@ -41,9 +39,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 		// delete message again to keep the channel clean
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
-		if strings.Contains(err.Error(), "code: 10008") {
-			dlog.WarningLog.Println("The message to delete was not found (code 10008). It might have been already deleted.")
-		} else {
+		if err != nil {
 			dlog.ErrorLog.Println("error deleting message:", err)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -267,8 +268,8 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	existingCategories, _ := a.model.GetCategoriesM()
 	existingSounds := a.model.GetSoundsM()
 
-	var wg sync.WaitGroup                          // WaitGroup to wait for all Goroutines to finish
-	soundProcessingChan := make(chan struct{}, 10) // limit concurrency to 10 Goroutines
+	var wg sync.WaitGroup                                        // WaitGroup to wait for all Goroutines to finish
+	soundProcessingChan := make(chan struct{}, runtime.NumCPU()) // limit parallelism to maximum available threads Goroutines
 
 	for folder, files := range folderMap {
 		categoryID, err := a.getOrCreateCategoryID(folder, existingCategories)
@@ -340,6 +341,11 @@ func (a *API) processSoundFile(folder, file string, categoryID int, existingSoun
 
 	if err := a.model.AddSound(categoryID, file, fileHash, soundBytes); err != nil {
 		return fmt.Errorf("failed to add sound: %v", err)
+	}
+
+	err = os.Remove(soundPathDCA)
+	if err != nil {
+		return fmt.Errorf("failed to remove dca file after insert into db: %v", err)
 	}
 
 	return nil
