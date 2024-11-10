@@ -131,12 +131,75 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 				default:
 					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("fallback to default download handler", err)
+						dlog.ErrorLog.Println("fallback to default create handler", err)
 					}
 				}
 			}
 		}
 	}
+}
+
+func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type == discordgo.InteractionApplicationCommand {
+		switch i.ApplicationCommandData().Name {
+		case "delete":
+			option := i.ApplicationCommandData().Options[0]
+			switch option.Name {
+			case "button":
+				err := a.SendInteractionRespond("👉 Deleting button..", s, i)
+				if err != nil {
+					dlog.ErrorLog.Println("error executing buttons command:", err)
+				}
+				soundName := option.Options[0].StringValue()
+
+				// Check if the sound exists in the database by name
+				sound, err := a.model.GetSound(soundName)
+				if err != nil {
+					dlog.ErrorLog.Println("error getting sound:", err)
+					return
+				}
+				if sound.Name == "" {
+					err = a.UpdateInteractionResponse("🎶  Sound not found...", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error sending message:", err)
+					}
+					return
+				}
+				//check if file exists in fs
+				filePath := filepath.Join(a.model.Config.SoundsDir, sound.Category, soundName+".mp3")
+				if _, err := os.Stat(filePath); os.IsNotExist(err) {
+					err = a.UpdateInteractionResponse("🎶  Sound not found...", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error sending message:", err)
+					}
+					return
+				}
+				//delete file from fs
+				err = os.Remove(filePath)
+				if err != nil {
+					dlog.ErrorLog.Println("error deleting file:", err)
+					return
+				}
+				//delete file from db
+				err = a.model.DeleteSound(soundName)
+				if err != nil {
+					dlog.ErrorLog.Println("error deleting sound from db:", err)
+					return
+				}
+				err = a.UpdateInteractionResponse("🎶  Button deleted...", s, i)
+				if err != nil {
+					dlog.ErrorLog.Println("error sending message:", err)
+				}
+
+			default:
+				err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
+				if err != nil {
+					dlog.ErrorLog.Println("fallback to default delete handler", err)
+				}
+			}
+		}
+	}
+
 }
 
 // DownloadAudio downloads the audio from the provided URL

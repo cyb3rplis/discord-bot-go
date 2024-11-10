@@ -127,6 +127,15 @@ func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []b
 	return err
 }
 
+// DeleteSound deletes a sound from the database.
+func (m *Model) DeleteSound(soundName string) error {
+	_, err := m.Db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
+	if err != nil {
+		dlog.ErrorLog.Printf("Error deleting sound from database: %v", err)
+	}
+	return err
+}
+
 // RemoveCategory removes a category from the database.
 func (m *Model) RemoveCategory(categoryID int) error {
 	// ON DELETE CASCADE - sounds will get deleted automatically when the category is deleted
@@ -195,6 +204,26 @@ func (m *Model) GetCategoryByID(folderName string) int {
 		}
 	}
 	return categoryID
+}
+
+// GetSound returns the sound and the category name by soundName (from DB)
+func (m *Model) GetSound(soundName string) (SoundInfo, error) {
+	var category, name sql.NullString
+	sound := SoundInfo{
+		Name:     "",
+		Category: "",
+	}
+	err := m.Db.QueryRow("SELECT categories.name, sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE sounds.name = ?", soundName).Scan(&category, &sound)
+	if err != nil {
+		return sound, fmt.Errorf("failed to query sound: %w", err)
+	}
+	if category.Valid {
+		sound.Category = category.String
+	}
+	if name.Valid {
+		sound.Name = name.String
+	}
+	return sound, nil
 }
 
 // GetSoundsM returns a map of sounds with their hashes (from DB)

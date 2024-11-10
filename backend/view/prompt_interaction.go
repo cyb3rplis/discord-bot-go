@@ -125,9 +125,40 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session) {
 				}},
 		},
 	}
+	// Now register the new command
+	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	if err != nil {
+		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+	}
 
-	//deletePromptInteraction(s, commandName)
+	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
+}
 
+// RegisterPromptInteractionsDelete - Register prompt interactions
+func RegisterPromptInteractionsDelete(s *discordgo.Session) {
+	commandName := "delete"
+	// Register the command globally
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        commandName,
+			Description: "Manage your favorite sounds",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "button",
+					Description: "Delete a sound button by name",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "name",
+							Description: "The name of the sound button to delete",
+							Required:    true,
+						},
+					},
+				},
+			},
+		},
+	}
 	// Now register the new command
 	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {

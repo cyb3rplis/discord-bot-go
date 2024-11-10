@@ -79,6 +79,7 @@ func Init() {
 		modelInstance.FetchAndStoreGuildMembers(s)
 		view.RegisterPromptInteractionsButtons(s)
 		view.RegisterPromptInteractionsCreate(s)
+		view.RegisterPromptInteractionsDelete(s)
 		view.RegisterPromptInteractionsAudio(s)
 		viewInstance.RegisterPromptInteractionsFavorite(s)
 		viewInstance.RegisterPromptInteractionsGulag(s)
@@ -91,6 +92,7 @@ func Init() {
 	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
 	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
 	dg.AddHandler(viewInstance.PromptInteractionCreate)    //create
+	dg.AddHandler(viewInstance.PromptInteractionDelete)    //delete
 	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
 	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
 	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag

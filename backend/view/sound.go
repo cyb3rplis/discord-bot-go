@@ -127,10 +127,9 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	} else {
 		buffer, err = a.model.LoadSound(soundName)
 	}
-
 	if err != nil {
 		dlog.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
-		_, err := a.SendMessage("Sound does not exist\n> Sikerim", s, i, true)
+		_, err := a.SendMessage("Sound does not exist\n>", s, i, true)
 		if err != nil {
 			dlog.ErrorLog.Println("error sending message:", err)
 		}
