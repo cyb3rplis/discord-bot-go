@@ -92,12 +92,11 @@ func (a *API) handleStopSoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 
 	// Delete the message that contains the stop button
-	err := s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
-	if err != nil {
-		if strings.Contains(err.Error(), "code: 10008") {
-			dlog.WarningLog.Println("The message to delete was not found (code 10008). It might have been already deleted.")
-		} else {
-			dlog.ErrorLog.Println("error deleting message:", err)
+	st, err := s.ChannelMessage(i.ChannelID, i.ID)
+	if err == nil {
+		err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+		if err != nil {
+			dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
 		}
 	}
 }
@@ -183,9 +182,13 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 		dlog.ErrorLog.Println("error playing sound:", err)
 	}
 
-	err = s.ChannelMessageDelete(st.ChannelID, st.ID)
-	if err != nil {
-		dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
+	time.Sleep(250 * time.Millisecond)
+	st, err = s.ChannelMessage(st.ChannelID, st.ID)
+	if err == nil {
+		err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+		if err != nil {
+			dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
+		}
 	}
 }
 

@@ -109,6 +109,15 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 					log.Printf("error executing play command: %v", err)
 				}
 			}
+
+			time.Sleep(250 * time.Millisecond)
+			st, err = s.ChannelMessage(st.ChannelID, st.ID)
+			if err == nil {
+				err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+				if err != nil {
+					dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
+				}
+			}
 		}
 
 	}
@@ -156,7 +165,7 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 			// Stop sending buffer data if stop signal is received
 			_ = vc.Speaking(false)
 			botSpeaking = false
-			buffer = make([][]byte, 0)
+			buffer = nil
 			return nil
 		default:
 			vc.OpusSend <- buff
@@ -173,7 +182,7 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	//vc.Disconnect()
 
 	// empty buffer to not play older sounds
-	buffer = make([][]byte, 0)
+	buffer = nil
 	botSpeaking = false
 
 	return nil
@@ -238,6 +247,16 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 	if err != nil {
 		dlog.ErrorLog.Println("error playing sound:", err)
 		return err
+	}
+
+	time.Sleep(250 * time.Millisecond)
+
+	st, err = s.ChannelMessage(st.ChannelID, st.ID)
+	if err == nil {
+		err = s.ChannelMessageDelete(st.ChannelID, st.ID)
+		if err != nil {
+			dlog.ErrorLog.Println("error deleting stop sound button after sound finished:", err)
+		}
 	}
 
 	return nil

@@ -87,7 +87,7 @@ func (a *API) UpdateInteractionResponse(msg string, s *discordgo.Session, i *dis
 // DeleteOldStopSoundButtons deletes all old stop sound buttons before the last one
 func (a *API) DeleteOldStopSoundButtons(s *discordgo.Session, st *discordgo.Message) error {
 	// Fetch messages in the channel (limit to the most recent 100)
-	messages, err := s.ChannelMessages(st.ChannelID, 5, st.ID, "", "")
+	messages, err := s.ChannelMessages(st.ChannelID, 10, st.ID, "", "")
 	if err != nil {
 		dlog.ErrorLog.Printf("Error fetching messages: %v", err)
 		return err
@@ -95,15 +95,20 @@ func (a *API) DeleteOldStopSoundButtons(s *discordgo.Session, st *discordgo.Mess
 
 	// Get the bot's user ID
 	botUserID := s.State.User.ID
+	var bulkDelete []string
 
 	// Loop through each message and check for buttons from the bot with the specified custom_id
 	for _, message := range messages {
 		// Only process messages sent by the bot
 		if message.Author.ID == botUserID && strings.HasPrefix(message.Content, "➡ Currently Playing ") {
-			err := s.ChannelMessageDelete(message.ChannelID, message.ID)
-			if err != nil {
-				dlog.ErrorLog.Printf("Error removing deleting message %s: %v", message.ID, err)
-			}
+			bulkDelete = append(bulkDelete, message.ID)
+		}
+	}
+
+	if len(bulkDelete) > 0 {
+		err = s.ChannelMessagesBulkDelete(st.ChannelID, bulkDelete)
+		if err != nil {
+			dlog.ErrorLog.Printf("Error deleting messages in bulk: %v", err)
 		}
 	}
 
