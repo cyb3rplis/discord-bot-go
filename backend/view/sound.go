@@ -104,6 +104,10 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			err = a.PlaySound(s, i, guild.ID, vs.ChannelID, soundName)
 			if err != nil {
 				dlog.ErrorLog.Println("error playing sound:", err)
+				err = a.UpdateInteractionResponse("➡ Sound not found", s, i)
+				if err != nil {
+					log.Printf("error executing play command: %v", err)
+				}
 			}
 		}
 
@@ -129,10 +133,6 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	}
 	if err != nil {
 		dlog.ErrorLog.Printf("error loading sound %s, %v ", soundName, err)
-		_, err := a.SendMessage("Sound does not exist\n>", s, i, true)
-		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
-		}
 		return err
 	}
 
