@@ -99,7 +99,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 						}
 						return
 					}
-					_, err = a.SendMessage(fmt.Sprintf("Sound %s has been removed from your favorites", arg), s, i, false)
+					err = a.UpdateInteractionResponse(fmt.Sprintf("Sound %s has been removed from your favorites", arg), s, i)
 					if err != nil {
 						dlog.ErrorLog.Printf("error sending message: %v", err)
 					}
