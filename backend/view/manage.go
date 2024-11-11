@@ -146,7 +146,7 @@ func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.Interac
 			option := i.ApplicationCommandData().Options[0]
 			switch option.Name {
 			case "button":
-				err := a.SendInteractionRespond("👉 Deleting button..", s, i)
+				err := a.SendInteractionRespond("👉 Deleting button", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error executing buttons command:", err)
 				}
@@ -159,7 +159,7 @@ func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.Interac
 					return
 				}
 				if sound.Name == "" {
-					err = a.UpdateInteractionResponse("🎶  Sound not found...", s, i)
+					err = a.UpdateInteractionResponse("🎶  Sound not found", s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending message:", err)
 					}
@@ -168,16 +168,16 @@ func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.Interac
 				//check if file exists in fs
 				filePath := filepath.Join(a.model.Config.SoundsDir, sound.Category, soundName+".mp3")
 				if _, err := os.Stat(filePath); os.IsNotExist(err) {
-					err = a.UpdateInteractionResponse("🎶  Sound not found...", s, i)
+					err = a.UpdateInteractionResponse("🎶  Sound not found", s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending message:", err)
 					}
 					return
 				}
-				//delete file from fs
-				err = os.Remove(filePath)
+				//rename file in fs, since that will not sync the file anymore
+				err = os.Rename(filePath, filePath+".deleted")
 				if err != nil {
-					dlog.ErrorLog.Println("error deleting file:", err)
+					dlog.ErrorLog.Println("error renaming file:", err)
 					return
 				}
 				//delete file from db
@@ -186,7 +186,7 @@ func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.Interac
 					dlog.ErrorLog.Println("error deleting sound from db:", err)
 					return
 				}
-				err = a.UpdateInteractionResponse("🎶  Button deleted...", s, i)
+				err = a.UpdateInteractionResponse("🎶  Button deleted", s, i)
 				if err != nil {
 					dlog.ErrorLog.Println("error sending message:", err)
 				}
@@ -199,7 +199,6 @@ func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.Interac
 			}
 		}
 	}
-
 }
 
 // DownloadAudio downloads the audio from the provided URL

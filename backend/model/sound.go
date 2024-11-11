@@ -137,6 +137,16 @@ func (m *Model) DeleteSound(soundName string) error {
 	return err
 }
 
+// move sounds to another category
+func (m *Model) MoveSound(categoryID, newCategoryID int, soundName string) error {
+	_, err := m.Db.Exec("UPDATE sounds SET category_id = ? WHERE category_id = ? AND WHERE name = ?", newCategoryID, categoryID, soundName)
+	if err != nil {
+		dlog.ErrorLog.Printf("Error moving sound to another category: %v", err)
+	}
+
+	return err
+}
+
 // RemoveCategory removes a category from the database.
 func (m *Model) RemoveCategory(categoryID int) error {
 	// ON DELETE CASCADE - sounds will get deleted automatically when the category is deleted
@@ -209,21 +219,15 @@ func (m *Model) GetCategoryByID(folderName string) int {
 
 // GetSound returns the sound and the category name by soundName (from DB)
 func (m *Model) GetSound(soundName string) (SoundInfo, error) {
-	var category, name sql.NullString
 	sound := SoundInfo{
 		Name:     "",
 		Category: "",
 	}
-	err := m.Db.QueryRow("SELECT categories.name, sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE sounds.name = ?", soundName).Scan(&category, &sound)
+	err := m.Db.QueryRow("SELECT categories.name, sounds.name FROM sounds LEFT JOIN categories ON sounds.category_id = categories.id WHERE sounds.name = ?", soundName).Scan(&sound.Category, &sound.Name)
 	if err != nil {
 		return sound, fmt.Errorf("failed to query sound: %w", err)
 	}
-	if category.Valid {
-		sound.Category = category.String
-	}
-	if name.Valid {
-		sound.Name = name.String
-	}
+
 	return sound, nil
 }
 
