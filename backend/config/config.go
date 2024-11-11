@@ -16,7 +16,6 @@ import (
 
 type Config struct {
 	Token        string `json:"token"`
-	Prefix       string `json:"prefix"`
 	DataDir      string `json:"data_dir"`
 	SoundsDir    string `json:"sounds_dir"`
 	DB           string `json:"db"`
@@ -29,6 +28,14 @@ type ExtendedUser struct {
 	User      *discordgo.User `json:"user"`
 	Gulagged  sql.NullTime    `json:"gulagged"`
 	Remaining time.Duration   `json:"remaining"`
+}
+
+type Sound struct {
+	ID         int          `json:"id"`
+	Name       string       `json:"name"`
+	CreatedAt  sql.NullTime `json:"created_at"`
+	CategoryID int          `json:"category_id"`
+	Hash       string       `json:"hash"`
 }
 
 var (
@@ -53,7 +60,6 @@ func LoadConfig() *Config {
 
 		configInstance = &Config{
 			Token:        os.Getenv("TOKEN"), // Read the token from .env
-			Prefix:       ".",
 			DataDir:      filepath.Join(AppPath(), "data"),
 			SoundsDir:    filepath.Join(AppPath(), "data", "sounds"),
 			DB:           filepath.Join(AppPath(), "data", "soundbot.db"),
@@ -78,8 +84,6 @@ func LoadConfig() *Config {
 
 	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20s |\n", "TOKEN", configInstance.Token[0:10]+"...")
-	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
-	fmt.Printf("| %-15s | %-20s |\n", "PREFIX", configInstance.Prefix)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20s |\n", "SOUNDS_DIR", configInstance.SoundsDir)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))

@@ -64,7 +64,6 @@ func Init() {
 	// This will be called every time a new guild is joined.
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
 		guildCreate(event)
-		modelInstance.FetchAndStoreGuildMembers(s)
 		view.RegisterPromptInteractionsButtons(s)
 		view.RegisterPromptInteractionsCreate(s)
 		view.RegisterPromptInteractionsDelete(s)
@@ -73,6 +72,7 @@ func Init() {
 		viewInstance.RegisterPromptInteractionsGulag(s)
 		view.RegisterPromptInteractionsStats(s)
 		viewInstance.RegisterPromptInteractionsPlaySound(s)
+		go ctrl.SyncUsers(s, modelInstance)
 	})
 
 	// Register prompt interaction handlers
@@ -88,7 +88,7 @@ func Init() {
 	dg.AddHandler(viewInstance.PromptInteractionPlaySound) //play sound
 
 	// messages and voice states.
-	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers
+	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers | discordgo.IntentsGuildPresences
 
 	// Open the websocket and begin listening.
 	err = dg.Open()

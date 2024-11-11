@@ -2,13 +2,13 @@ package controller
 
 import (
 	"context"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
-	"github.com/go-co-op/gocron"
-	"sync"
 	"time"
-)
 
-type backgroundFunc func(context.Context)
+	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
+	"github.com/cyb3rplis/discord-bot-go/model"
+	"github.com/go-co-op/gocron"
+)
 
 func (c *Controller) SyncCronjob(ctx context.Context) {
 	interval := time.Minute
@@ -20,18 +20,6 @@ func (c *Controller) SyncCronjob(ctx context.Context) {
 			return
 		}
 	}
-}
-
-func startBackgroundFunctions(ctx context.Context, fncs ...backgroundFunc) {
-	var wg sync.WaitGroup
-	for _, fnc := range fncs {
-		wg.Add(1)
-		go func(fnc backgroundFunc) {
-			defer wg.Done()
-			fnc(ctx)
-		}(fnc)
-	}
-	wg.Wait()
 }
 
 func (c *Controller) SyncSoundDirectories() {
@@ -52,4 +40,13 @@ func (c *Controller) SyncSoundDirectories() {
 	s.StartAsync()
 	// starts the scheduler and blocks current execution path
 	//s.StartBlocking()
+}
+
+func (c *Controller) SyncUsers(s *discordgo.Session, m *model.Model) {
+	interval := time.Minute * 15
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.Every(interval).Do(func() {
+		m.FetchAndStoreGuildMembers(s)
+	})
+	scheduler.StartAsync()
 }

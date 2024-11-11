@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
@@ -20,15 +19,9 @@ func (m *Model) GetUsers() (users []config.ExtendedUser, err error) {
 	for rows.Next() {
 		var u config.ExtendedUser
 		u.User = &discordgo.User{}
-		gulagged := sql.NullTime{}
-
-		err = rows.Scan(&u.User.ID, &u.User.GlobalName, &gulagged)
+		err = rows.Scan(&u.User.ID, &u.User.GlobalName, &u.Gulagged)
 		if err != nil {
 			dlog.FatalLog.Fatal(err)
-		}
-
-		if gulagged.Valid {
-			u.Gulagged = gulagged
 		}
 
 		users = append(users, u)
@@ -91,15 +84,19 @@ func (m *Model) FetchAndStoreGuildMembers(s *discordgo.Session) {
 
 		// Insert members into the database
 		for _, member := range members {
-			// add only non-bot users with a global name and joined within the last 7 days
-			if !member.User.Bot && member.User.GlobalName != "" && member.JoinedAt.After(time.Now().AddDate(0, 0, -14)) {
+			// add only non-bot users with a global name, they also have to be NOT offline
+			presence, err := s.State.Presence(guildID, member.User.ID)
+			if err != nil {
+				continue
+			}
+
+			if !member.User.Bot && member.User.GlobalName != "" && presence.Status != discordgo.StatusOffline {
 				{
 					err = m.AddUser(member.User)
 					if err != nil {
 						dlog.ErrorLog.Printf("Failed to insert member %s: %v", member.User.ID, err)
 					}
 				}
-
 			}
 		}
 

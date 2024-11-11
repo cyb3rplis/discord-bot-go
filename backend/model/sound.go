@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"io"
 	"os"
+
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 // getSound retrieves sound data from the database.
@@ -264,4 +265,44 @@ func (m *Model) AddCategory(folderName string) error {
 	}
 	_, err = m.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)
 	return err
+}
+
+// GetCategoriesM returns a map of sound categories (from DB)
+func (m *Model) GetCategoriesM() (map[string]int, error) {
+	rows, err := m.Db.Query("SELECT id, name FROM categories")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	categories := make(map[string]int)
+	for rows.Next() {
+		var id int
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return categories, err
+		}
+		categories[name] = id
+	}
+	return categories, nil
+}
+
+// GetCategories returns a slice of sound categories (from DB)
+func (m *Model) GetCategories() ([]string, error) {
+	rows, err := m.Db.Query("SELECT name FROM categories")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query categories: %w", err)
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var category string
+		err := rows.Scan(&category)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan category: %w", err)
+		}
+		categories = append(categories, category)
+	}
+	return categories, nil
 }

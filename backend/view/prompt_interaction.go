@@ -40,12 +40,10 @@ func RegisterPromptInteractionsAudio(s *discordgo.Session) {
 	//deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsButtons - Register prompt interactions
@@ -69,12 +67,10 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session) {
 	//deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsCreate - Register prompt interactions
@@ -126,12 +122,10 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session) {
 		},
 	}
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsDelete - Register prompt interactions
@@ -160,12 +154,10 @@ func RegisterPromptInteractionsDelete(s *discordgo.Session) {
 		},
 	}
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
@@ -228,12 +220,10 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsGulag - Register prompt interactions for gulag
@@ -302,12 +292,10 @@ func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
 	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 // RegisterPromptInteractionsStats - Register prompt interactions for stats
@@ -341,12 +329,10 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
@@ -383,12 +369,10 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	// deletePromptInteraction(s, commandName)
 
 	// Now register the new command
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
-
-	dlog.InfoLog.Printf("'%s' command registered - ID: %s", commandName, ccmd.ID)
 }
 
 func deletePromptInteraction(s *discordgo.Session, commandName string) {

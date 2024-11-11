@@ -68,7 +68,6 @@ func InitDB() (*sql.DB, func() error, error) {
 	schema, err := fs.ReadFile("schema.sql")
 	if err != nil {
 		dlog.FatalLog.Fatalf("Failed to read schema file: %v", err)
-		return nil, nil, err
 	}
 
 	// Execute the schema file contents within a transaction
@@ -77,9 +76,10 @@ func InitDB() (*sql.DB, func() error, error) {
 		dlog.FatalLog.Fatal(err)
 	}
 
+	// Execute the schema file contents
 	_, err = tx.Exec(string(schema))
 	if err != nil {
-		err = tx.Rollback() // Rollback in case of an error
+		err = tx.Rollback()
 		if err != nil {
 			dlog.FatalLog.Fatalf("Failed to rollback transaction: %v", err)
 		}

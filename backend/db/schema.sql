@@ -10,16 +10,10 @@ CREATE TABLE IF NOT EXISTS categories (
     name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    channel_id INTEGER NOT NULL,
-    message_id INTEGER NOT NULL,
-    command TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS sounds (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE CHECK (name <> ''),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     category_id INTEGER NOT NULL,
     hash TEXT NOT NULL UNIQUE,
     file BLOB NOT NULL,
@@ -59,3 +53,5 @@ CREATE TABLE IF NOT EXISTS user_favorites (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+DROP TABLE IF EXISTS messages;
