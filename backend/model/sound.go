@@ -138,8 +138,8 @@ func (m *Model) DeleteSound(soundName string) error {
 }
 
 // move sounds to another category
-func (m *Model) MoveSound(categoryID, newCategoryID int, soundName string) error {
-	_, err := m.Db.Exec("UPDATE sounds SET category_id = ? WHERE category_id = ? AND WHERE name = ?", newCategoryID, categoryID, soundName)
+func (m *Model) MoveSound(categoryID int, soundName string) error {
+	_, err := m.Db.Exec("UPDATE sounds SET category_id = ? WHERE name = ?", categoryID, soundName)
 	if err != nil {
 		dlog.ErrorLog.Printf("Error moving sound to another category: %v", err)
 	}

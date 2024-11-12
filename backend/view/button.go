@@ -28,6 +28,11 @@ func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.Intera
 					if err != nil {
 						dlog.ErrorLog.Println("error handling buttons command:", err)
 					}
+				default:
+					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("fallback to default buttons handler", err)
+					}
 
 				}
 			}

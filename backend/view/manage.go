@@ -24,11 +24,11 @@ type Download struct {
 	SoundName string `json:"sound_name"`
 }
 
-func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type == discordgo.InteractionApplicationCommand {
 		switch i.ApplicationCommandData().Name {
-		case "create":
-			//case list, create:
+		case "manage":
+			//case create, delete, move:
 			if len(i.ApplicationCommandData().Options) == 0 {
 				err := a.handleList(s, i)
 				if err != nil {
@@ -37,8 +37,8 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 			} else {
 				option := i.ApplicationCommandData().Options[0]
 				switch option.Name {
-				case "button":
-					err := a.SendInteractionRespond("👉 Creating button from URL..", s, i)
+				case "create":
+					err := a.SendInteractionRespond("👉 Creating button from URL.", s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error executing buttons command:", err)
 					}
@@ -73,7 +73,7 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 					if err != nil {
 						dlog.ErrorLog.Println("error sending message:", err)
 					}
-					time.Sleep(8 * time.Second)
+					time.Sleep(3 * time.Second)
 
 					err = a.ConvertMP3ToDCA(soundName, download.Category)
 					if err != nil {
@@ -128,73 +128,83 @@ func (a *API) PromptInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 					if err != nil {
 						dlog.ErrorLog.Println("error playing audio:", err)
 					}
+				case "delete":
+					soundName := option.Options[0].StringValue()
+					response := fmt.Sprintf("👉  Deleting button %s", soundName)
+					err := a.SendInteractionRespond(response, s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error executing buttons command:", err)
+					}
+
+					// Check if the sound exists in the database by name
+					sound, err := a.model.GetSound(soundName)
+					if err != nil {
+						dlog.ErrorLog.Println("error getting sound:", err)
+						return
+					}
+					if sound.Name == "" {
+						response = fmt.Sprintf("🎶  Sound %s not found", soundName)
+						err = a.UpdateInteractionResponse(response, s, i)
+						if err != nil {
+							dlog.ErrorLog.Println("error sending message:", err)
+						}
+						return
+					}
+
+					//delete file from db
+					err = a.model.DeleteSound(soundName)
+					if err != nil {
+						dlog.ErrorLog.Println("error deleting sound from db:", err)
+						return
+					}
+					response = fmt.Sprintf("🎶  Sound %s deleted", soundName)
+					err = a.UpdateInteractionResponse(response, s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error sending message:", err)
+					}
+				case "move":
+					soundName := option.Options[0].StringValue()
+					category := option.Options[1].StringValue()
+					response := fmt.Sprintf("👉  Moving sound %s to category %s", soundName, category)
+					err := a.SendInteractionRespond(response, s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error executing buttons command:", err)
+					}
+
+					var categoryID int
+					existingCategories, _ := a.model.GetCategoriesM() // Get current folders/categories in DB
+
+					// Check if the folder (category) exists in the database
+					if dbCategoryID, exists := existingCategories[category]; exists {
+						categoryID = dbCategoryID // The folder already exists
+					} else {
+						// The folder doesn't exist in the database, so we need to add it
+						if err := a.model.AddCategory(category); err != nil {
+							if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
+								dlog.WarningLog.Printf("Failed to add category %s: %v", category, err)
+							}
+							return
+						}
+						// Fetch the new category ID after insertion
+						categoryID = a.model.GetCategoryByID(category)
+					}
+
+					err = a.model.MoveSound(categoryID, soundName)
+					if err != nil {
+						dlog.ErrorLog.Println("error moving sound to another category:", err)
+						return
+					}
+
+					response = fmt.Sprintf("🎶  Moved sound %s to category %s", soundName, category)
+					err = a.UpdateInteractionResponse(response, s, i)
+					if err != nil {
+						dlog.ErrorLog.Println("error executing buttons command:", err)
+					}
 				default:
 					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("fallback to default create handler", err)
+						dlog.ErrorLog.Println("fallback to default manage handler", err)
 					}
-				}
-			}
-		}
-	}
-}
-
-func (a *API) PromptInteractionDelete(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type == discordgo.InteractionApplicationCommand {
-		switch i.ApplicationCommandData().Name {
-		case "delete":
-			option := i.ApplicationCommandData().Options[0]
-			switch option.Name {
-			case "button":
-				err := a.SendInteractionRespond("👉 Deleting button", s, i)
-				if err != nil {
-					dlog.ErrorLog.Println("error executing buttons command:", err)
-				}
-				soundName := option.Options[0].StringValue()
-
-				// Check if the sound exists in the database by name
-				sound, err := a.model.GetSound(soundName)
-				if err != nil {
-					dlog.ErrorLog.Println("error getting sound:", err)
-					return
-				}
-				if sound.Name == "" {
-					err = a.UpdateInteractionResponse("🎶  Sound not found", s, i)
-					if err != nil {
-						dlog.ErrorLog.Println("error sending message:", err)
-					}
-					return
-				}
-				//check if file exists in fs
-				filePath := filepath.Join(a.model.Config.SoundsDir, sound.Category, soundName+".mp3")
-				if _, err := os.Stat(filePath); os.IsNotExist(err) {
-					err = a.UpdateInteractionResponse("🎶  Sound not found", s, i)
-					if err != nil {
-						dlog.ErrorLog.Println("error sending message:", err)
-					}
-					return
-				}
-				//rename file in fs, since that will not sync the file anymore
-				err = os.Rename(filePath, filePath+".deleted")
-				if err != nil {
-					dlog.ErrorLog.Println("error renaming file:", err)
-					return
-				}
-				//delete file from db
-				err = a.model.DeleteSound(soundName)
-				if err != nil {
-					dlog.ErrorLog.Println("error deleting sound from db:", err)
-					return
-				}
-				err = a.UpdateInteractionResponse("🎶  Button deleted", s, i)
-				if err != nil {
-					dlog.ErrorLog.Println("error sending message:", err)
-				}
-
-			default:
-				err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
-				if err != nil {
-					dlog.ErrorLog.Println("fallback to default delete handler", err)
 				}
 			}
 		}

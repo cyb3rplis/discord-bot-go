@@ -65,8 +65,7 @@ func Init() {
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
 		guildCreate(event)
 		view.RegisterPromptInteractionsButtons(s)
-		view.RegisterPromptInteractionsCreate(s)
-		view.RegisterPromptInteractionsDelete(s)
+		view.RegisterPromptInteractionsManage(s)
 		view.RegisterPromptInteractionsAudio(s)
 		viewInstance.RegisterPromptInteractionsFavorite(s)
 		viewInstance.RegisterPromptInteractionsGulag(s)
@@ -79,8 +78,7 @@ func Init() {
 	// This will be called every time a new interaction is created.
 	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
 	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
-	dg.AddHandler(viewInstance.PromptInteractionCreate)    //create
-	dg.AddHandler(viewInstance.PromptInteractionDelete)    //delete
+	dg.AddHandler(viewInstance.PromptInteractionManage)    //manage
 	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
 	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
 	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag

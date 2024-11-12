@@ -74,17 +74,72 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session) {
 }
 
 // RegisterPromptInteractionsCreate - Register prompt interactions
-func RegisterPromptInteractionsCreate(s *discordgo.Session) {
-	commandName := "create"
+// func RegisterPromptInteractionsCreate(s *discordgo.Session) {
+// 	commandName := "create"
+// 	// Register the command globally
+// 	commands := []*discordgo.ApplicationCommand{
+// 		{
+// 			Name:        commandName,
+// 			Description: "Manage your favorite sounds",
+// 			Options: []*discordgo.ApplicationCommandOption{
+// 				{
+// 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+// 					Name:        "button",
+// 					Description: "Create a new sound button using a URL (e.G. YouTube, Vimeo, etc.)",
+// 					Options: []*discordgo.ApplicationCommandOption{
+// 						{
+// 							Type:        discordgo.ApplicationCommandOptionString,
+// 							Name:        "url",
+// 							Description: "The URL of the video you want to create a sound button for",
+// 							Required:    true,
+// 						},
+// 						{
+// 							Type:        discordgo.ApplicationCommandOptionString,
+// 							Name:        "name",
+// 							Description: "The name of the sound button",
+// 							Required:    true,
+// 						},
+// 						{
+// 							Type:        discordgo.ApplicationCommandOptionString,
+// 							Name:        "category",
+// 							Description: "The category of the sound button",
+// 							Required:    true,
+// 						},
+// 						{
+// 							Type:        discordgo.ApplicationCommandOptionString,
+// 							Name:        "start_time",
+// 							Description: "The start time of the sound button",
+// 							Required:    false,
+// 						},
+// 						{
+// 							Type:        discordgo.ApplicationCommandOptionString,
+// 							Name:        "end_time",
+// 							Description: "The end time of the sound button",
+// 							Required:    false,
+// 						},
+// 					},
+// 				}},
+// 		},
+// 	}
+// 	// Now register the new command
+// 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+// 	if err != nil {
+// 		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+// 	}
+// }
+
+// RegisterPromptInteractionsDelete - Register prompt interactions
+func RegisterPromptInteractionsManage(s *discordgo.Session) {
+	commandName := "manage"
 	// Register the command globally
 	commands := []*discordgo.ApplicationCommand{
 		{
 			Name:        commandName,
-			Description: "Manage your favorite sounds",
+			Description: "Manage all sounds on the server",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "button",
+					Name:        "create",
 					Description: "Create a new sound button using a URL (e.G. YouTube, Vimeo, etc.)",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
@@ -118,34 +173,35 @@ func RegisterPromptInteractionsCreate(s *discordgo.Session) {
 							Required:    false,
 						},
 					},
-				}},
-		},
-	}
-	// Now register the new command
-	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
-	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
-	}
-}
-
-// RegisterPromptInteractionsDelete - Register prompt interactions
-func RegisterPromptInteractionsDelete(s *discordgo.Session) {
-	commandName := "delete"
-	// Register the command globally
-	commands := []*discordgo.ApplicationCommand{
-		{
-			Name:        commandName,
-			Description: "Manage your favorite sounds",
-			Options: []*discordgo.ApplicationCommandOption{
+				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "button",
+					Name:        "delete",
 					Description: "Delete a sound button by name",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
 							Name:        "name",
 							Description: "The name of the sound button to delete",
+							Required:    true,
+						},
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "move",
+					Description: "Move a sound to a different category",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "name",
+							Description: "The name of the sound button to delete",
+							Required:    true,
+						},
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "category",
+							Description: "The new category the sound button should be moved to",
 							Required:    true,
 						},
 					},
