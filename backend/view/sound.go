@@ -266,7 +266,6 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 // SyncDatabaseWithFileSystem synchronizes the database with the filesystem.
 func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 	existingCategories, _ := a.model.GetCategoriesM()
-	existingSounds := a.model.GetSoundsM()
 
 	var wg sync.WaitGroup                                        // WaitGroup to wait for all Goroutines to finish
 	soundProcessingChan := make(chan struct{}, runtime.NumCPU()) // limit parallelism to maximum available threads Goroutines
@@ -286,15 +285,15 @@ func (a *API) SyncDatabaseWithFileSystem(folderMap map[string][]string) error {
 				defer wg.Done()
 				defer func() { <-soundProcessingChan }()
 
-				if err := a.processSoundFile(folder, file, categoryID, existingSounds); err != nil {
+				if err := a.processSoundFile(folder, file, categoryID); err != nil {
 					dlog.WarningLog.Printf("failed to process file %s in folder %s: %v", file, folder, err)
 				}
 			}(folder, file, categoryID)
 		}
 	}
 
-	wg.Wait()                                                       // wait for all Goroutines to finish
-	a.cleanUpEntries(folderMap, existingCategories, existingSounds) // remove orphaned entries from the database
+	wg.Wait()                                          // wait for all Goroutines to finish
+	a.cleanUpCategories(folderMap, existingCategories) // remove orphaned entries from the database
 
 	return nil
 }
@@ -313,7 +312,7 @@ func (a *API) getOrCreateCategoryID(folder string, existingCategories map[string
 }
 
 // processSoundFile handles the conversion and addition of a sound file.
-func (a *API) processSoundFile(folder, file string, categoryID int, existingSounds map[int]map[string]string) error {
+func (a *API) processSoundFile(folder, file string, categoryID int) error {
 	soundPathMP3 := filepath.Join(a.model.Config.SoundsDir, folder, file+".mp3")
 	soundPathDCA := filepath.Join(a.model.Config.SoundsDir, folder, file+".dca")
 
@@ -324,10 +323,6 @@ func (a *API) processSoundFile(folder, file string, categoryID int, existingSoun
 	fileHash, err := model.ComputeFileHash(soundPathMP3)
 	if err != nil {
 		return fmt.Errorf("failed to compute hash: %v", err)
-	}
-
-	if model.FileExistsInDB(existingSounds, categoryID, file, fileHash) {
-		return nil // No need to process if file already exists and hasn't changed
 	}
 
 	if err := a.ConvertMP3ToDCA(file, folder); err != nil {
@@ -348,26 +343,22 @@ func (a *API) processSoundFile(folder, file string, categoryID int, existingSoun
 		return fmt.Errorf("failed to remove dca file after insert into db: %v", err)
 	}
 
+	err = os.Rename(soundPathMP3, soundPathMP3+".done")
+	if err != nil {
+		return fmt.Errorf("failed to rename mp3 file after insert into db: %v", err)
+	}
+
 	return nil
 }
 
-// cleanupOrphanedEntries removes database entries that no longer exist in the filesystem.
-func (a *API) cleanUpEntries(folderMap map[string][]string, existingCategories map[string]int, existingSounds map[int]map[string]string) {
+// cleanUpCategories removes database categories (subfolders) that no longer exist in the filesystem.
+func (a *API) cleanUpCategories(folderMap map[string][]string, existingCategories map[string]int) {
 	for folder, categoryID := range existingCategories {
 		if _, exists := folderMap[folder]; !exists {
 			if err := a.model.RemoveCategory(categoryID); err == nil {
 				dlog.InfoLog.Printf("Removed category %s (ID: %d)", folder, categoryID)
 			}
 			continue
-		}
-		dbFiles := existingSounds[categoryID]
-		fsFiles := folderMap[folder]
-		for dbFile := range dbFiles {
-			if !model.FileExistsInFS(fsFiles, dbFile) {
-				if err := a.model.RemoveSound(categoryID, dbFile); err == nil {
-					dlog.InfoLog.Printf("Removed sound %s from category %s", dbFile, folder)
-				}
-			}
 		}
 	}
 }
