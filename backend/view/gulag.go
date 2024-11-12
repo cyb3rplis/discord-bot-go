@@ -85,7 +85,7 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 						return
 					}
 					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", interactionUser.GlobalName, gulagUser.User.GlobalName)
-					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", interactionUser.GlobalName), s, i)
+					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", gulagUser.User.GlobalName), s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error sending hidden message:", err)
 						return
