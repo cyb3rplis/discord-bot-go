@@ -72,6 +72,7 @@ func Init() {
 		view.RegisterPromptInteractionsStats(s)
 		viewInstance.RegisterPromptInteractionsPlaySound(s)
 		go ctrl.SyncUsers(s, modelInstance)
+		go ctrl.CheckBotActivity(s, modelInstance)
 	})
 
 	// Register prompt interaction handlers

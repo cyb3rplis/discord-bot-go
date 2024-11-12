@@ -13,16 +13,16 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Categories
 - [x] Sync and Play music from local files
 - [x] Interact with buttons to play music (no need to type commands)
-- [x] Play music from video platform
+- [x] Play music from video platform via yt-dlp
 - [x] Statistics (Sounds, User)
 - [x] Most used sounds (Top 10, Top 20)
 - [x] Add, Remove and List Favorites
 - [ ] Playlists
 - [ ] Volume Control (might only be possible when converting audio)
 - [ ] Pin New Sounds as Message (with buttons?)
-- [ ] Delete sounds (admins only)
-- [ ] Move sounds (admins only, e.g. ".move fart2 custom")
-- [ ] Add sounds via yt-dlp (admins only, ".save https:// soundName categoryName \<start\> \<end\>")
+- [x] Delete sounds
+- [x] Move sounds
+- [x] Add sounds via yt-dlp
 - [x] Jail users for a specified amount of time (cant use sounds)
 
 ## Executing the bot

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 // ScanDirectory scans the sound directory and returns a map of folders and files.
@@ -189,4 +190,25 @@ func FileExistsInFS(fsFiles []string, fileName string) bool {
 		}
 	}
 	return false
+}
+
+func (m *Model) InactiveLeaveVoiceChannel(s *discordgo.Session) error {
+	botInVC := false
+	vc := s.VoiceConnections[Meta.Guild.ID]
+
+	// Check if the bot is in a voice channel
+	if vc != nil {
+		botInVC = true
+	}
+
+	// if the bot is in a voice channel and the bot is inactive, leave the voice channel
+	if botInVC {
+		err := vc.Disconnect()
+		if err != nil {
+			dlog.ErrorLog.Println("error closing voice connection:", err)
+			return err
+		}
+	}
+
+	return nil
 }

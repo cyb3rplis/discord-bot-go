@@ -186,6 +186,8 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	buffer = nil
 	botSpeaking = false
 
+	// Update the bot activity
+	model.UpdateBotActivity()
 	return nil
 }
 

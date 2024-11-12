@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -47,6 +48,25 @@ func (c *Controller) SyncUsers(s *discordgo.Session, m *model.Model) {
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(interval).Do(func() {
 		m.FetchAndStoreGuildMembers(s)
+	})
+	scheduler.StartAsync()
+}
+
+func (c *Controller) CheckBotActivity(s *discordgo.Session, m *model.Model) {
+	botTimeout, err := strconv.Atoi(m.Config.BotTimeout)
+	if err != nil {
+		dlog.FatalLog.Fatalf("Failed to convert bot timeout to integer: %v", err)
+	}
+
+	interval := time.Minute * 5
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.Every(interval).Do(func() {
+		thresholdTime := model.Meta.BotActivity.Add(time.Duration(botTimeout) * time.Minute)
+
+		if time.Now().After(thresholdTime) {
+			dlog.InfoLog.Printf("Bot is inactive since %d Minutes, leaving voice channel", botTimeout)
+			m.InactiveLeaveVoiceChannel(s)
+		}
 	})
 	scheduler.StartAsync()
 }

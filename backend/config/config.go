@@ -21,6 +21,7 @@ type Config struct {
 	DB           string `json:"db"`
 	AudioTemp    string `json:"audio_temp"`
 	AudioTimeout int    `json:"audio_timeout"`
+	BotTimeout   string `json:"bot_timeout"`
 	AdminRole    string `json:"admin"`
 }
 
@@ -57,6 +58,11 @@ var AppPath = func() string {
 
 func LoadConfig() *Config {
 	configOnce.Do(func() {
+		timeout := os.Getenv("BOT_TIMEOUT")
+		if timeout == "" {
+			dlog.InfoLog.Println("environment variable BOT_TIMEOUT not set, using default value of 120 Minutes")
+			timeout = "120"
+		}
 
 		configInstance = &Config{
 			Token:        os.Getenv("TOKEN"), // Read the token from .env
@@ -65,6 +71,7 @@ func LoadConfig() *Config {
 			DB:           filepath.Join(AppPath(), "data", "soundbot.db"),
 			AudioTemp:    "temp",
 			AudioTimeout: 20,
+			BotTimeout:   timeout,
 			AdminRole:    os.Getenv("ADMIN_ROLE"),
 		}
 		// Check if Token is actually set
@@ -92,6 +99,8 @@ func LoadConfig() *Config {
 	fmt.Printf("| %-15s | %-20s |\n", "AUDIO_TEMP", configInstance.AudioTemp)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20d |\n", "AUDIO_TIMEOUT", configInstance.AudioTimeout)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "BOT_TIMEOUT", configInstance.BotTimeout)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20s |\n", "ADMIN_ROLE", configInstance.AdminRole)
 	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
