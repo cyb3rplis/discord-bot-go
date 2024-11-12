@@ -156,7 +156,7 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	content = append(content, row)
 
 	msg := &discordgo.MessageSend{
-		Content:    "➡ Currently Playing by " + interactionUser.Mention() + soundName,
+		Content:    "➡ Currently Playing by " + interactionUser.Mention() + " " + soundName,
 		Components: content,
 	}
 
