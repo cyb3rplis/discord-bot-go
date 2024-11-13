@@ -210,25 +210,36 @@ func FileExistsInFS(fsFiles []string, fileName string) bool {
 	return false
 }
 
-func (m *Model) InactiveLeaveVoiceChannel(s *discordgo.Session) error {
-	botInVC := false
+func (m *Model) LeaveVoiceChannel(s *discordgo.Session) {
+	// Get the voice connection for the guild
 	vc := s.VoiceConnections[Meta.Guild.ID]
-
-	// Check if the bot is in a voice channel
-	if vc != nil {
-		botInVC = true
+	if vc == nil {
+		// Bot is not in a voice channel
+		return
 	}
 
-	// if the bot is in a voice channel and the bot is inactive, leave the voice channel
+	// Check if the bot is currently connected to a voice channel in the guild
+	guild, err := s.State.Guild(Meta.Guild.ID)
+	if err != nil {
+		dlog.ErrorLog.Println("error finding guild:", err)
+		return
+	}
+
+	botInVC := false
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == s.State.User.ID {
+			botInVC = true
+			break
+		}
+	}
+
+	// If the bot is in a voice channel, attempt to disconnect
 	if botInVC {
 		err := vc.Disconnect()
 		if err != nil {
-			dlog.ErrorLog.Println("error closing voice connection:", err)
-			return err
+			dlog.ErrorLog.Println("error disconnecting from voice channel:", err)
+			return
 		}
-
-		dlog.InfoLog.Printf("Bot is inactive since a prolonged period, leaving voice channel")
+		dlog.InfoLog.Println("Bot successfully left the voice channel after inactivity.")
 	}
-
-	return nil
 }

@@ -64,7 +64,7 @@ func (c *Controller) CheckBotActivity(s *discordgo.Session, m *model.Model) {
 		thresholdTime := model.Meta.BotActivity.Add(time.Duration(botTimeout) * time.Minute)
 
 		if time.Now().After(thresholdTime) {
-			m.InactiveLeaveVoiceChannel(s)
+			m.LeaveVoiceChannel(s)
 		}
 	})
 	scheduler.StartAsync()
