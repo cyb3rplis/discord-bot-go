@@ -7,11 +7,10 @@ go.work.sum
 
 # dist folder
 dist
+data
 
 # venv's
 .venv
 venv
 
 identifier.sqlite
-yt-dlp
-data/
