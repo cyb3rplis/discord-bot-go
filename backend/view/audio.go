@@ -57,7 +57,7 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 						message := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
 						_, err = a.SendMessage(message, s, i, true)
 						if err != nil {
-							dlog.ErrorLog.Printf("error sending message: %v", err)
+							dlog.ErrorLog.Printf("error[audio1] sending message: %v", err)
 						}
 						return
 					}
@@ -65,7 +65,7 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 
 				err = a.UpdateInteractionResponse("🎶  Preparing Audio, this might take a few seconds...", s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("error sending message:", err)
+					dlog.ErrorLog.Println("error[audio2] sending message:", err)
 				}
 				// Download and convert the audio
 				download := Download{URL: url, Start: "", End: "", Category: "", SoundName: a.model.Config.AudioTemp}
@@ -82,7 +82,7 @@ func (a *API) PromptInteractionAudio(s *discordgo.Session, i *discordgo.Interact
 				// wait for 8 seconds
 				err = a.UpdateInteractionResponse("🎶  Audio is ready, playing now...", s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("error sending message:", err)
+					dlog.ErrorLog.Println("error[audio3] sending message:", err)
 				}
 				time.Sleep(8 * time.Second)
 				// Play the custom audio

@@ -62,7 +62,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 					message := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
 					_, err = a.SendMessage(message, s, i, true)
 					if err != nil {
-						dlog.ErrorLog.Printf("error sending message: %v", err)
+						dlog.ErrorLog.Printf("error[sound1] sending message: %v", err)
 					}
 					return
 				}
@@ -87,7 +87,7 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 			// Send the message (+stop button)
 			st, err := a.SendMessageComplex(msg, s, i, false)
 			if err != nil {
-				dlog.ErrorLog.Println("error sending message:", err)
+				dlog.ErrorLog.Println("error[sound2] sending message:", err)
 				return
 			}
 
@@ -229,13 +229,13 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 	// Send the message (+stop button)
 	st, err := a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error[sound3] sending message:", err)
 		return err
 	}
 
 	err = a.UpdateInteractionResponse("🎶  Playing audio", s, i)
 	if err != nil {
-		dlog.ErrorLog.Println("error updating interaction response:", err)
+		dlog.ErrorLog.Println("error[sound4] updating interaction response:", err)
 		return err
 	}
 
@@ -389,7 +389,7 @@ func (a *API) VoiceChannelCheck(s *discordgo.Session, i *discordgo.InteractionCr
 		msg := "You need to be in a voice channel to play sounds " + user.Mention()
 		_, err = a.SendMessage(msg, s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[sound5] sending message:", err)
 		}
 		return voiceState, fmt.Errorf("user not in voice channel, quitting early to avoid delay")
 	}

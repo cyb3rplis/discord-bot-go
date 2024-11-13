@@ -49,7 +49,7 @@ func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	if len(categories) == 0 {
 		_, err = a.SendMessage("No sound categories found.", s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[list1] sending message:", err)
 		}
 		return err
 	}
@@ -58,7 +58,7 @@ func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	for _, message := range messages {
 		_, err = a.SendMessageComplex(message, s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[list2] sending message:", err)
 		}
 	}
 	return nil

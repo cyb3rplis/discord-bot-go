@@ -38,7 +38,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 				option := i.ApplicationCommandData().Options[0]
 				switch option.Name {
 				case "create":
-					err := a.SendInteractionRespond("👉 Creating button from URL.", s, i)
+					err := a.SendInteractionRespond("👉  Creating button from URL.", s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error executing buttons command:", err)
 					}
@@ -68,10 +68,9 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error loading audio:", err)
 						return
 					}
-					// wait for 8 seconds
 					err = a.UpdateInteractionResponse("🎶  Audio is ready, creating button...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error sending message:", err)
+						dlog.ErrorLog.Println("error[manage1] sending message:", err)
 					}
 					time.Sleep(3 * time.Second)
 
@@ -80,10 +79,48 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error converting audio:", err)
 						return
 					}
+
 					soundPath := filepath.Join(a.model.Config.SoundsDir, download.Category, download.SoundName+".dca")
 					fileData, err := os.ReadFile(soundPath)
 					if err != nil {
 						dlog.WarningLog.Printf("Failed to read sound file %s: %v", soundPath, err)
+
+						// sometimes there is a race condition where the cronjob of the sound insert is faster
+						// that causes the mp3 file to be renamed to .done, which causes the dca conversion to fail
+						// but the dca conversion happened already, since the mp3 was renamed.
+						soundID, err := a.model.GetSoundIDByName(soundName)
+						if err != nil {
+							dlog.WarningLog.Printf("Failed to get sound ID for %s: %v", soundName, err)
+							message := "🎶  Something went wrong, try again"
+							err = a.UpdateInteractionResponse(message, s, i)
+							if err != nil {
+								dlog.ErrorLog.Println("error[manage2] updating interaction response:", err)
+							}
+							return
+						}
+
+						// sound is not in the DB, there was an actual error
+						if soundID == "" {
+							dlog.WarningLog.Printf("Sound %s not found in database", soundName)
+							message := "🎶  Something went wrong, try again"
+							err = a.UpdateInteractionResponse(message, s, i)
+							if err != nil {
+								dlog.ErrorLog.Println("error[manage3] updating interaction response:", err)
+							}
+							return
+						}
+
+						dlog.InfoLog.Printf("Sound %s already exists, just send response to user", soundName)
+						// if we reached this point, we can assume that the sound exists already
+						// Build button for the new sound
+						message := "🎶  New sound added, try it out"
+						component := model.BuildSingleSoundButton(soundName, category, discordgo.SuccessButton)
+
+						err = a.UpdateInteractionResponseWithButton(message, component, s, i)
+						if err != nil {
+							dlog.ErrorLog.Printf("error[manage4] updating interaction response: %v", err)
+						}
+
 						return
 					}
 
@@ -123,11 +160,15 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 							dlog.WarningLog.Printf("Failed to add sound %s to category %s: %v", download.SoundName, download.Category, err)
 						}
 					}
-					// Play the custom audio
-					err = a.PlayAudio(download.SoundName, s, i)
+					// Build button for the new sound
+					message := "🎶  New sound added, try it out"
+					component := model.BuildSingleSoundButton(soundName, category, discordgo.SuccessButton)
+
+					err = a.UpdateInteractionResponseWithButton(message, component, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error playing audio:", err)
+						dlog.ErrorLog.Printf("error[manage5] updating interaction response: %v", err)
 					}
+					return
 				case "delete":
 					soundName := option.Options[0].StringValue()
 					response := fmt.Sprintf("👉  Deleting button %s", soundName)
@@ -146,7 +187,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						response = fmt.Sprintf("🎶  Sound %s not found", soundName)
 						err = a.UpdateInteractionResponse(response, s, i)
 						if err != nil {
-							dlog.ErrorLog.Println("error sending message:", err)
+							dlog.ErrorLog.Println("error[manage6] sending message:", err)
 						}
 						return
 					}
@@ -160,7 +201,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					response = fmt.Sprintf("🎶  Sound %s deleted", soundName)
 					err = a.UpdateInteractionResponse(response, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error sending message:", err)
+						dlog.ErrorLog.Println("error[manage7] sending message:", err)
 					}
 				case "move":
 					soundName := option.Options[0].StringValue()

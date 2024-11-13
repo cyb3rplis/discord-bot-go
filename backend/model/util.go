@@ -113,6 +113,24 @@ func BuildSoundButtons(sounds []string, category string, buttonStyle discordgo.B
 	return content
 }
 
+// BuildSingleSoundButton creates a single button
+func BuildSingleSoundButton(soundName, category string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
+	content := []discordgo.MessageComponent{}
+	button := discordgo.Button{
+		Label:    soundName,
+		Style:    buttonStyle,
+		CustomID: fmt.Sprintf("play_sound_%s_%s", category, soundName),
+	}
+
+	actionRow := discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{button},
+	}
+
+	content = append(content, actionRow)
+
+	return content
+}
+
 // BuildListButtons creates a list of buttons for the provided categories
 func BuildListButtons(categories []string, buttonStyle discordgo.ButtonStyle) []discordgo.MessageComponent {
 	content := []discordgo.MessageComponent{}

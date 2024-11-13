@@ -40,7 +40,7 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 			msg := fmt.Sprintf(user.User.Mention()+" you are in the Gulag for another %s", user.Remaining)
 			_, err = a.SendMessage(msg, s, i, false)
 			if err != nil {
-				dlog.ErrorLog.Printf("error sending message: %v", err)
+				dlog.ErrorLog.Printf("error[int1] sending message: %v", err)
 			}
 			return
 		}
@@ -60,7 +60,7 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 		msg := "Stop spamming the buttons " + user.User.Mention() + ", you are now being sent to the Gulag for one minute."
 		_, err = a.SendMessage(msg, s, i, true)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[int2] sending message:", err)
 		}
 		err := a.model.GulagUser(user, 1)
 		if err != nil {
@@ -163,7 +163,7 @@ func (a *API) handlePlaySoundInteraction(s *discordgo.Session, i *discordgo.Inte
 	// Send the message (+stop button)
 	st, err := a.SendMessageComplex(msg, s, i, false)
 	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error[int3] sending message:", err)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	msg := "➡ Sounds in category - " + category
 	_, err := a.SendMessage(msg, s, i, false)
 	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error[int4] sending message:", err)
 	}
 
 	// Get all sound files in the subfolder
@@ -221,7 +221,7 @@ func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 		msg := "No sounds found in this category."
 		_, err = a.SendMessage(msg, s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[int5] sending message:", err)
 		}
 		return
 	}
@@ -235,7 +235,7 @@ func (a *API) handleListSoundsInteraction(s *discordgo.Session, i *discordgo.Int
 	for _, msg := range messages {
 		_, err = a.SendMessageComplex(msg, s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error sending message:", err)
+			dlog.ErrorLog.Println("error[int6] sending message:", err)
 		}
 	}
 }

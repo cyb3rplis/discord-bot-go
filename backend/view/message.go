@@ -14,7 +14,7 @@ func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Sessio
 	// send complex message
 	message, err := s.ChannelMessageSendComplex(i.ChannelID, msg)
 	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error[msg1] sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -32,7 +32,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 	// send message
 	message, err := s.ChannelMessageSend(i.ChannelID, msg)
 	if err != nil {
-		dlog.ErrorLog.Println("error sending message:", err)
+		dlog.ErrorLog.Println("error[msg2] sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -46,6 +46,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 	return message, nil
 }
 
+// SendInteractionRespond sends the initial response to an interaction
 func (a *API) SendInteractionRespond(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -55,27 +56,30 @@ func (a *API) SendInteractionRespond(msg string, s *discordgo.Session, i *discor
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("error responding to interaction: %v", err)
+		return fmt.Errorf("error SendInteractionRespond: %v", err)
 	}
 	return nil
 }
 
-func (a *API) SendInteractionRespondFollowup(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-		Content: msg,
-	})
-	if err != nil {
-		return fmt.Errorf("error sending followup message: %v", err)
-	}
-	return nil
-}
-
+// UpdateInteractionResponse updates the interaction response with a new message
 func (a *API) UpdateInteractionResponse(msg string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content: &msg,
 	})
 	if err != nil {
-		return fmt.Errorf("error updating interaction response: %v", err)
+		return fmt.Errorf("error UpdateInteractionResponse:%v", err)
+	}
+	return nil
+}
+
+// UpdateInteractionResponseWithButton updates the interaction response with a new message and a buttons
+func (a *API) UpdateInteractionResponseWithButton(msg string, component []discordgo.MessageComponent, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content:    &msg,
+		Components: &component,
+	})
+	if err != nil {
+		return fmt.Errorf("error UpdateInteractionResponseWithButton: %v", err)
 	}
 	return nil
 }
