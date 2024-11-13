@@ -64,7 +64,6 @@ func (c *Controller) CheckBotActivity(s *discordgo.Session, m *model.Model) {
 		thresholdTime := model.Meta.BotActivity.Add(time.Duration(botTimeout) * time.Minute)
 
 		if time.Now().After(thresholdTime) {
-			dlog.InfoLog.Printf("Bot is inactive since %d Minutes, leaving voice channel", botTimeout)
 			m.InactiveLeaveVoiceChannel(s)
 		}
 	})

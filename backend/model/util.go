@@ -226,6 +226,8 @@ func (m *Model) InactiveLeaveVoiceChannel(s *discordgo.Session) error {
 			dlog.ErrorLog.Println("error closing voice connection:", err)
 			return err
 		}
+
+		dlog.InfoLog.Printf("Bot is inactive since a prolonged period, leaving voice channel")
 	}
 
 	return nil
