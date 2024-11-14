@@ -27,7 +27,7 @@ The bot also features interactive buttons for a seamless user experience, elimin
 
 INFO: Setting ${APP_PATH} is optional. If not set, it will default to the current directory.
 
-Place all your sound files in DCA format in `${APP_PATH}/data/sounds`.
+Place all your sound files in MP3 format in `${APP_PATH}/data/sounds`.
 They should all be within subfolders, which act as categories for the sound bot.
 
 ```
