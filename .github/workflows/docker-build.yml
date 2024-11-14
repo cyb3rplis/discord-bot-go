@@ -47,7 +47,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: $ {{ REGISTRY_IMAGE }}:latest
+          tags: $ {{ env.REGISTRY_IMAGE }}:latest
           labels: ${{ steps.meta.outputs.labels }}
 #      - name: Generate artifact attestation
 #        uses: actions/attest-build-provenance@v1
