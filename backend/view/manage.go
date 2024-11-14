@@ -171,7 +171,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					return
 				case "delete":
 					soundName := option.Options[0].StringValue()
-					response := fmt.Sprintf("👉  Deleting button %s", soundName)
+					response := fmt.Sprintf("👉  Deleting button: %s", soundName)
 					err := a.SendInteractionRespond(response, s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error executing buttons command:", err)
@@ -184,7 +184,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						return
 					}
 					if sound.Name == "" {
-						response = fmt.Sprintf("🎶  Sound %s not found", soundName)
+						response = fmt.Sprintf("🎶  Sound not found: %s", soundName)
 						err = a.UpdateInteractionResponse(response, s, i)
 						if err != nil {
 							dlog.ErrorLog.Println("error[manage6] sending message:", err)
@@ -198,7 +198,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						dlog.ErrorLog.Println("error deleting sound from db:", err)
 						return
 					}
-					response = fmt.Sprintf("🎶  Sound %s deleted", soundName)
+					response = fmt.Sprintf("🎶  Sound deleted: %s", soundName)
 					err = a.UpdateInteractionResponse(response, s, i)
 					if err != nil {
 						dlog.ErrorLog.Println("error[manage7] sending message:", err)

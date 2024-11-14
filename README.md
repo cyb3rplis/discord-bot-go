@@ -17,9 +17,7 @@ The bot also features interactive buttons for a seamless user experience, elimin
 - [x] Statistics (Sounds, User)
 - [x] Most used sounds (Top 10, Top 20)
 - [x] Add, Remove and List Favorites
-- [ ] Playlists
-- [ ] Volume Control (might only be possible when converting audio)
-- [ ] Pin New Sounds as Message (with buttons?)
+- [x] Pin New Sounds as Message
 - [x] Delete sounds
 - [x] Move sounds
 - [x] Add sounds via yt-dlp

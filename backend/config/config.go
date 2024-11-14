@@ -23,6 +23,7 @@ type Config struct {
 	AudioTimeout int    `json:"audio_timeout"`
 	BotTimeout   string `json:"bot_timeout"`
 	AdminRole    string `json:"admin"`
+	BotChannel   string `json:"bot_channel"`
 }
 
 type ExtendedUser struct {
@@ -73,6 +74,7 @@ func LoadConfig() *Config {
 			AudioTimeout: 20,
 			BotTimeout:   timeout,
 			AdminRole:    os.Getenv("ADMIN_ROLE"),
+			BotChannel:   os.Getenv("BOT_CHANNEL"),
 		}
 		// Check if Token is actually set
 		if configInstance.Token == "" {
@@ -101,6 +103,8 @@ func LoadConfig() *Config {
 	fmt.Printf("| %-15s | %-20d |\n", "AUDIO_TIMEOUT", configInstance.AudioTimeout)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20s |\n", "BOT_TIMEOUT", configInstance.BotTimeout)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "BOT_CHANNEL", configInstance.BotChannel)
 	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-15s | %-20s |\n", "ADMIN_ROLE", configInstance.AdminRole)
 	fmt.Printf("+%s+\n", strings.Repeat("-", 40))

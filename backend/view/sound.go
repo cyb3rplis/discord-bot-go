@@ -222,7 +222,7 @@ func (a *API) PlayAudio(audioName string, s *discordgo.Session, i *discordgo.Int
 	content = append(content, row)
 
 	msg := &discordgo.MessageSend{
-		Content:    "➡ Currently Playing audio by " + user.Mention(),
+		Content:    "➡ Currently Playing by " + user.Mention() + ": " + audioName,
 		Components: content,
 	}
 

@@ -243,3 +243,145 @@ func (m *Model) LeaveVoiceChannel(s *discordgo.Session) {
 		dlog.InfoLog.Println("Bot successfully left the voice channel after inactivity.")
 	}
 }
+
+// getChannelByName returns a channel by its name
+func getChannelByName(s *discordgo.Session, channelName string) (*discordgo.Channel, error) {
+	guild, err := s.State.Guild(Meta.Guild.ID)
+	if err != nil {
+		dlog.FatalLog.Fatalf("Failed to get guild: %v", err)
+	}
+
+	channels, err := s.GuildChannels(guild.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Loop through channels to find one that matches the name
+	for _, channel := range channels {
+		if channel.Name == channelName {
+			return channel, nil
+		}
+	}
+
+	// Return an error if no channel was found with the specified name
+	return nil, fmt.Errorf("channel with name %s not found", channelName)
+}
+
+// PinNewSoundButtons pins the new sound buttons to the bot channel
+func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
+	channel, err := getChannelByName(s, m.Config.BotChannel)
+	if err != nil {
+		dlog.ErrorLog.Printf("Failed to get channel by name: %v", err)
+		return
+	}
+
+	pinnedMessages, err := s.ChannelMessagesPinned(channel.ID)
+	if err != nil {
+		dlog.ErrorLog.Printf("Failed to get pinned messages: %v", err)
+		return
+	}
+
+	// we only want to have messages from the bot
+	botMessages := []*discordgo.Message{}
+	for _, message := range pinnedMessages {
+		if message.Author.ID == s.State.User.ID {
+			botMessages = append(botMessages, message)
+		}
+	}
+
+	newSounds, err := m.GetNewSounds()
+	if err != nil {
+		dlog.ErrorLog.Printf("Failed to get new sounds: %v", err)
+		return
+	}
+
+	// if there are no new sounds, we also want to delete the old pinned messages
+	// that means there are no new sounds within the last 24 hours, so they are considered old and dont need a pinned message
+	if len(newSounds) == 0 {
+		for _, message := range botMessages {
+			err = s.ChannelMessageUnpin(channel.ID, message.ID)
+			if err != nil {
+				dlog.ErrorLog.Printf("Failed to unpin message: %v", err)
+			}
+		}
+		return
+	}
+
+	if ok := m.CompareNewSoundsWithPinnedSounds(newSounds, botMessages); !ok {
+		// sounds didnt change, just return
+		return
+	}
+
+	for _, message := range botMessages {
+		err = s.ChannelMessageUnpin(channel.ID, message.ID)
+		if err != nil {
+			dlog.ErrorLog.Printf("Failed to unpin message: %v", err)
+			return
+		}
+	}
+
+	message := fmt.Sprintf("Here are the %d newest sounds:", len(newSounds))
+	_, err = s.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		dlog.ErrorLog.Printf("error sending new sounds message: %v", err)
+		return
+	}
+
+	buttons := BuildSoundButtons(newSounds, "new", discordgo.SuccessButton)
+	buttonMessage := &discordgo.MessageSend{
+		Components: buttons,
+	}
+	st, err := s.ChannelMessageSendComplex(channel.ID, buttonMessage)
+	if err != nil {
+		dlog.ErrorLog.Printf("error sending new sounds message: %v", err)
+		return
+	}
+
+	err = s.ChannelMessagePin(channel.ID, st.ID)
+	if err != nil {
+		dlog.ErrorLog.Printf("Failed to pin message: %v", err)
+		return
+	}
+}
+
+// CompareNewSoundsWithPinnedSounds compares the new sounds with the pinned sounds and returns false if they are equal
+func (m *Model) CompareNewSoundsWithPinnedSounds(sounds []string, pinnedMessages []*discordgo.Message) bool {
+	var pinnedSounds []string
+
+	for _, message := range pinnedMessages {
+		for _, component := range message.Components {
+			actionRow, ok := component.(*discordgo.ActionsRow)
+			if !ok {
+				continue
+			}
+
+			for _, item := range actionRow.Components {
+				button, ok := item.(*discordgo.Button)
+				if !ok {
+					continue
+				}
+
+				pinnedSounds = append(pinnedSounds, button.Label)
+			}
+		}
+	}
+
+	sort.Strings(pinnedSounds)
+	sort.Strings(sounds)
+
+	// compare if both slices are equal
+	if len(pinnedSounds) == len(sounds) {
+		equal := true
+		for i := range pinnedSounds {
+			if pinnedSounds[i] != sounds[i] {
+				equal = false
+				break
+			}
+		}
+		if equal {
+			return false
+		}
+	}
+
+	return true
+}

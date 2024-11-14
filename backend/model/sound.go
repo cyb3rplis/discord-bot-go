@@ -180,6 +180,26 @@ func (m *Model) GetSounds(category string) ([]string, error) {
 	return sounds, nil
 }
 
+// GetNewSounds returns a list of sounds which were added within the last 24 hours (from DB)
+func (m *Model) GetNewSounds() ([]string, error) {
+	rows, err := m.Db.Query("SELECT sounds.name FROM sounds WHERE sounds.created_at >= datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 25")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query new sounds: %w", err)
+	}
+	defer rows.Close()
+
+	var sounds []string
+	for rows.Next() {
+		var sound string
+		err := rows.Scan(&sound)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan sound: %w", err)
+		}
+		sounds = append(sounds, sound)
+	}
+	return sounds, nil
+}
+
 // GetSoundsAll returns a list of sounds in the specified category (from DB)
 func (m *Model) GetSoundsAll() ([]string, error) {
 	rows, err := m.Db.Query("SELECT sounds.name FROM sounds ORDER BY sounds.name LIMIT 25")
