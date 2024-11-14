@@ -80,6 +80,12 @@ To stop the container:
 $ docker compose down
 ```
 
+To fetch the newest version of the docker image:
+
+```
+$ docker compose pull
+```
+
 ## Development
 
 Run the container like so (omit --watch if you don't want to rebuild the running container on changes):
