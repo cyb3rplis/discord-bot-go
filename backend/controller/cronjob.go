@@ -71,7 +71,7 @@ func (c *Controller) CheckBotActivity(s *discordgo.Session, m *model.Model) {
 }
 
 func (c *Controller) CheckNewSounds(s *discordgo.Session, m *model.Model) {
-	interval := time.Minute * 1
+	interval := time.Minute * 15
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(interval).Do(func() {
 		m.PinNewSoundButtons(s)
