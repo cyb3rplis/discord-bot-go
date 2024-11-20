@@ -67,10 +67,11 @@ func Init() {
 		view.RegisterPromptInteractionsButtons(s)
 		view.RegisterPromptInteractionsManage(s)
 		view.RegisterPromptInteractionsAudio(s)
-		viewInstance.RegisterPromptInteractionsFavorite(s)
-		viewInstance.RegisterPromptInteractionsGulag(s)
+		view.RegisterPromptInteractionsFavorite(s)
+		view.RegisterPromptInteractionsGulag(s)
 		view.RegisterPromptInteractionsStats(s)
-		viewInstance.RegisterPromptInteractionsPlaySound(s)
+		view.RegisterPromptInteractionsPlaySound(s)
+		view.RegisterPromptInteractionsMisc(s)
 		go ctrl.SyncUsers(s, modelInstance)
 		go ctrl.CheckBotActivity(s, modelInstance)
 		go ctrl.CheckNewSounds(s, modelInstance)
@@ -86,6 +87,7 @@ func Init() {
 	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag
 	dg.AddHandler(viewInstance.PromptInteractionStats)     //stats
 	dg.AddHandler(viewInstance.PromptInteractionPlaySound) //play sound
+	dg.AddHandler(viewInstance.PromptInteractionMisc)      //misc
 
 	// messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers | discordgo.IntentsGuildPresences

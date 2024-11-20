@@ -162,7 +162,7 @@ func RegisterPromptInteractionsManage(s *discordgo.Session) {
 }
 
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
-func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
+func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	commandName := "favorite"
 	/*sounds, err := a.model.GetSoundsAll()
 	if err != nil {
@@ -228,7 +228,7 @@ func (a *API) RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 }
 
 // RegisterPromptInteractionsGulag - Register prompt interactions for gulag
-func (a *API) RegisterPromptInteractionsGulag(s *discordgo.Session) {
+func RegisterPromptInteractionsGulag(s *discordgo.Session) {
 	commandName := "gulag"
 	/*users, err := a.model.GetUsers()
 	if err != nil {
@@ -336,7 +336,7 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 	}
 }
 
-func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
+func RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	commandName := "play"
 	// Register the command globally
 	/*sounds, err := a.model.GetSoundsAll()
@@ -362,6 +362,31 @@ func (a *API) RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 					Name:        "sound",
 					Description: "The name of the sound to play",
 					Required:    true,
+				},
+			},
+		},
+	}
+
+	// deletePromptInteraction(s, commandName)
+
+	// Now register the new command
+	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
+	if err != nil {
+		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+	}
+}
+
+func RegisterPromptInteractionsMisc(s *discordgo.Session) {
+	commandName := "misc"
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        commandName,
+			Description: "Miscellaneous commands",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "leave",
+					Description: "Leave the voice channel",
 				},
 			},
 		},
