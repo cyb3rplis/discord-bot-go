@@ -28,7 +28,7 @@ The bot also features interactive buttons for a seamless user experience, elimin
 INFO: Setting ${APP_PATH} is optional. If not set, it will default to the current directory.
 
 Place all your sound files in MP3 format in `${APP_PATH}/data/sounds`.
-They should all be within subfolders, which act as categories for the sound bot.
+They all have to be within subdirectories, which act as categories for the sound bot.
 
 ```
 $ ls -lR ${APP_PATH}/data/sounds
@@ -38,7 +38,7 @@ drwxr-xr-x 2 user user 4096 Oct 30 18:56 test
 
 ${APP_PATH}/data/sounds/test:
 total 4
--rw-r--r-- 1 user user 5 Oct 30 18:56 file.dca
+-rw-r--r-- 1 user user 5 Oct 30 18:56 file.mp3
 ```
 
 IMPORTANT: the `./data` directory will also contain the `soundbot.db` database, so make sure to create a backup of the folder regularly.
@@ -48,13 +48,12 @@ Make sure to place your token in the `.env` file in the root directory of the pr
 Run the container:
 
 ```
-$ docker compose up
-```
-
-Or directly send it to the background:
-
-```
 $ docker compose up -d
+```
+
+Check logs with `docker logs`
+
+```
 $ docker logs luren-bot
 ```
 
@@ -77,7 +76,7 @@ on-failure: Only restarts the container if it exits with a non-zero exit code.
 To stop the container:
 
 ```
-$ docker compose down
+$ docker compose stop
 ```
 
 To fetch the newest version of the docker image:
@@ -91,7 +90,7 @@ $ docker compose pull
 Run the container like so (omit --watch if you don't want to rebuild the running container on changes):
 
 ```
-$ docker compose -f compose.dev.yml up --watch --build
+$ docker compose -f compose.dev.yml up -d --watch --build
 ```
 
 This will rebuild the image once any changes are made to the backend.
