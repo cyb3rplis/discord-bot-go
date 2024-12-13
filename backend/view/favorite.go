@@ -5,8 +5,9 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -21,17 +22,17 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 			case "buttons":
 				err := a.SendInteractionRespond("👉 Listing favorites", s, i)
 				if err != nil {
-					dlog.ErrorLog.Printf("error[fav1] sending message: %v", err)
+					log.ErrorLog.Printf("error[fav1] sending message: %v", err)
 				}
 
 				favorites, err := a.model.GetUserFavorites(interactionUser)
 				if err != nil {
-					dlog.ErrorLog.Printf("error getting user favorites: %v", err)
+					log.ErrorLog.Printf("error getting user favorites: %v", err)
 				}
 				if len(favorites) == 0 {
 					err = a.UpdateInteractionResponse("No favorites in your list", s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav2] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav2] sending message: %v", err)
 					}
 					return
 				}
@@ -49,14 +50,14 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 				for _, message := range messages {
 					_, err = a.SendMessageComplex(message, s, i, false)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav3] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav3] sending message: %v", err)
 					}
 				}
 			case "add":
 				if len(option.Options) > 0 {
 					err := a.SendInteractionRespond("👉 Adding sound to favorites", s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav4] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav4] sending message: %v", err)
 					}
 					sound := option.Options[0].StringValue()
 					// check if sound exists
@@ -64,23 +65,23 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					if soundID != "" {
 						err := a.UpdateInteractionResponse("sound already in favorites", s, i)
 						if err != nil {
-							dlog.ErrorLog.Printf("error[fav5] sending message: %v", err)
+							log.ErrorLog.Printf("error[fav5] sending message: %v", err)
 						}
 						return
 					}
 					// add sound to favorites
 					err = a.model.SoundFavoriteAdd(i, sound)
 					if err != nil {
-						dlog.ErrorLog.Printf("error adding sound to favorites: %v", err)
+						log.ErrorLog.Printf("error adding sound to favorites: %v", err)
 						err := a.UpdateInteractionResponse("error adding sound to favorites", s, i)
 						if err != nil {
-							dlog.ErrorLog.Printf("error[fav6] sending message: %v", err)
+							log.ErrorLog.Printf("error[fav6] sending message: %v", err)
 						}
 						return
 					}
 					err = a.UpdateInteractionResponse(fmt.Sprintf("🎶  Sound %s has been added to your favorites", sound), s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav6] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav6] sending message: %v", err)
 					}
 
 					// Build button for the favorite sound
@@ -89,7 +90,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 
 					err = a.UpdateInteractionResponseWithButton(message, component, s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav7] updating interaction response: %v", err)
+						log.ErrorLog.Printf("error[fav7] updating interaction response: %v", err)
 					}
 					return
 				}
@@ -97,7 +98,7 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 				if len(option.Options) > 0 {
 					err := a.SendInteractionRespond("👉 Removing sound from favorites", s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav8] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav8] sending message: %v", err)
 					}
 					arg := option.Options[0].StringValue()
 					// remove sound from favorites
@@ -105,20 +106,20 @@ func (a *API) PromptInteractionFavorite(s *discordgo.Session, i *discordgo.Inter
 					if err != nil {
 						err := a.UpdateInteractionResponse("error removing sound from favorites", s, i)
 						if err != nil {
-							dlog.ErrorLog.Printf("error[fav9] sending message: %v", err)
+							log.ErrorLog.Printf("error[fav9] sending message: %v", err)
 						}
 						return
 					}
 					err = a.UpdateInteractionResponse(fmt.Sprintf("Sound %s has been removed from your favorites", arg), s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[fav10] sending message: %v", err)
+						log.ErrorLog.Printf("error[fav10] sending message: %v", err)
 					}
 					return
 				}
 			default:
 				err := a.SendInteractionRespond("👉  Something went wrong...", s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("fallback to default favorite handler", err)
+					log.ErrorLog.Println("fallback to default favorite handler", err)
 				}
 			}
 		}

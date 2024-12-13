@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/cyb3rplis/discord-bot-go/config"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 )
 
 type Download struct {
@@ -32,7 +32,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 			if len(i.ApplicationCommandData().Options) == 0 {
 				err := a.handleList(s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("error handling list:", err)
+					log.ErrorLog.Println("error handling list:", err)
 				}
 			} else {
 				option := i.ApplicationCommandData().Options[0]
@@ -40,7 +40,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 				case "create":
 					err := a.SendInteractionRespond("👉  Creating button from URL.", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error executing buttons command:", err)
+						log.ErrorLog.Println("error executing buttons command:", err)
 					}
 					url := option.Options[0].StringValue()
 					soundName := option.Options[1].StringValue()
@@ -65,52 +65,52 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					}
 					err = a.DownloadAudio(download)
 					if err != nil {
-						dlog.ErrorLog.Println("error loading audio:", err)
+						log.ErrorLog.Println("error loading audio:", err)
 						return
 					}
 					err = a.UpdateInteractionResponse("🎶  Audio is ready, creating button...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error[manage1] sending message:", err)
+						log.ErrorLog.Println("error[manage1] sending message:", err)
 					}
 					time.Sleep(3 * time.Second)
 
 					err = a.ConvertMP3ToDCA(soundName, download.Category)
 					if err != nil {
-						dlog.ErrorLog.Println("error converting audio:", err)
+						log.ErrorLog.Println("error converting audio:", err)
 						return
 					}
 
 					soundPath := filepath.Join(a.model.Config.SoundsDir, download.Category, download.SoundName+".dca")
 					fileData, err := os.ReadFile(soundPath)
 					if err != nil {
-						dlog.WarningLog.Printf("Failed to read sound file %s: %v", soundPath, err)
+						log.WarningLog.Printf("Failed to read sound file %s: %v", soundPath, err)
 
 						// sometimes there is a race condition where the cronjob of the sound insert is faster
 						// that causes the mp3 file to be renamed to .done, which causes the dca conversion to fail
 						// but the dca conversion happened already, since the mp3 was renamed.
 						soundID, err := a.model.GetSoundIDByName(soundName)
 						if err != nil {
-							dlog.WarningLog.Printf("Failed to get sound ID for %s: %v", soundName, err)
+							log.WarningLog.Printf("Failed to get sound ID for %s: %v", soundName, err)
 							message := "🎶  Something went wrong, try again"
 							err = a.UpdateInteractionResponse(message, s, i)
 							if err != nil {
-								dlog.ErrorLog.Println("error[manage2] updating interaction response:", err)
+								log.ErrorLog.Println("error[manage2] updating interaction response:", err)
 							}
 							return
 						}
 
 						// sound is not in the DB, there was an actual error
 						if soundID == "" {
-							dlog.WarningLog.Printf("Sound %s not found in database", soundName)
+							log.WarningLog.Printf("Sound %s not found in database", soundName)
 							message := "🎶  Something went wrong, try again"
 							err = a.UpdateInteractionResponse(message, s, i)
 							if err != nil {
-								dlog.ErrorLog.Println("error[manage3] updating interaction response:", err)
+								log.ErrorLog.Println("error[manage3] updating interaction response:", err)
 							}
 							return
 						}
 
-						dlog.InfoLog.Printf("Sound %s already exists, just send response to user", soundName)
+						log.InfoLog.Printf("Sound %s already exists, just send response to user", soundName)
 						// if we reached this point, we can assume that the sound exists already
 						// Build button for the new sound
 						message := "🎶  New sound added, try it out"
@@ -118,7 +118,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 
 						err = a.UpdateInteractionResponseWithButton(message, component, s, i)
 						if err != nil {
-							dlog.ErrorLog.Printf("error[manage4] updating interaction response: %v", err)
+							log.ErrorLog.Printf("error[manage4] updating interaction response: %v", err)
 						}
 
 						return
@@ -126,7 +126,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 
 					fileHash, err := model.ComputeFileHash(filepath.Join(a.model.Config.SoundsDir, download.Category, download.SoundName+".mp3")) //use mp3 hash for comparing
 					if err != nil {
-						dlog.WarningLog.Printf("Failed to compute hash for file %s: %v", download.SoundName, err)
+						log.WarningLog.Printf("Failed to compute hash for file %s: %v", download.SoundName, err)
 						return
 					}
 
@@ -140,7 +140,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						// The folder doesn't exist in the database, so we need to add it
 						if err := a.model.AddCategory(download.Category); err != nil {
 							if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-								dlog.WarningLog.Printf("Failed to add category %s: %v", download.Category, err)
+								log.WarningLog.Printf("Failed to add category %s: %v", download.Category, err)
 							}
 							return
 						}
@@ -157,7 +157,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					if err := a.model.AddSound(categoryID, download.SoundName, fileHash, fileData); err != nil {
 						//ignore this error if the sound already exists
 						if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-							dlog.WarningLog.Printf("Failed to add sound %s to category %s: %v", download.SoundName, download.Category, err)
+							log.WarningLog.Printf("Failed to add sound %s to category %s: %v", download.SoundName, download.Category, err)
 						}
 					}
 					// Build button for the new sound
@@ -166,7 +166,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 
 					err = a.UpdateInteractionResponseWithButton(message, component, s, i)
 					if err != nil {
-						dlog.ErrorLog.Printf("error[manage5] updating interaction response: %v", err)
+						log.ErrorLog.Printf("error[manage5] updating interaction response: %v", err)
 					}
 					return
 				case "delete":
@@ -174,20 +174,20 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					response := fmt.Sprintf("👉  Deleting button: %s", soundName)
 					err := a.SendInteractionRespond(response, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error executing buttons command:", err)
+						log.ErrorLog.Println("error executing buttons command:", err)
 					}
 
 					// Check if the sound exists in the database by name
 					sound, err := a.model.GetSound(soundName)
 					if err != nil {
-						dlog.ErrorLog.Println("error getting sound:", err)
+						log.ErrorLog.Println("error getting sound:", err)
 						return
 					}
 					if sound.Name == "" {
 						response = fmt.Sprintf("🎶  Sound not found: %s", soundName)
 						err = a.UpdateInteractionResponse(response, s, i)
 						if err != nil {
-							dlog.ErrorLog.Println("error[manage6] sending message:", err)
+							log.ErrorLog.Println("error[manage6] sending message:", err)
 						}
 						return
 					}
@@ -195,13 +195,13 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					//delete file from db
 					err = a.model.DeleteSound(soundName)
 					if err != nil {
-						dlog.ErrorLog.Println("error deleting sound from db:", err)
+						log.ErrorLog.Println("error deleting sound from db:", err)
 						return
 					}
 					response = fmt.Sprintf("🎶  Sound deleted: %s", soundName)
 					err = a.UpdateInteractionResponse(response, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error[manage7] sending message:", err)
+						log.ErrorLog.Println("error[manage7] sending message:", err)
 					}
 				case "move":
 					soundName := option.Options[0].StringValue()
@@ -209,7 +209,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 					response := fmt.Sprintf("👉  Moving sound %s to category %s", soundName, category)
 					err := a.SendInteractionRespond(response, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error executing buttons command:", err)
+						log.ErrorLog.Println("error executing buttons command:", err)
 					}
 
 					var categoryID int
@@ -222,7 +222,7 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 						// The folder doesn't exist in the database, so we need to add it
 						if err := a.model.AddCategory(category); err != nil {
 							if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-								dlog.WarningLog.Printf("Failed to add category %s: %v", category, err)
+								log.WarningLog.Printf("Failed to add category %s: %v", category, err)
 							}
 							return
 						}
@@ -232,19 +232,19 @@ func (a *API) PromptInteractionManage(s *discordgo.Session, i *discordgo.Interac
 
 					err = a.model.MoveSound(categoryID, soundName)
 					if err != nil {
-						dlog.ErrorLog.Println("error moving sound to another category:", err)
+						log.ErrorLog.Println("error moving sound to another category:", err)
 						return
 					}
 
 					response = fmt.Sprintf("🎶  Moved sound %s to category %s", soundName, category)
 					err = a.UpdateInteractionResponse(response, s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error executing buttons command:", err)
+						log.ErrorLog.Println("error executing buttons command:", err)
 					}
 				default:
 					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("fallback to default manage handler", err)
+						log.ErrorLog.Println("fallback to default manage handler", err)
 					}
 				}
 			}
@@ -262,7 +262,7 @@ func (a *API) DownloadAudio(download Download) error {
 	if download.Category == "" {
 		destFile = filepath.Join(a.model.Config.DataDir, download.SoundName+".mp3")
 	}
-	dlog.InfoLog.Printf("Downloading %s to %s. START: %s, END: %s", download.URL, destFile, download.Start, download.End)
+	log.InfoLog.Printf("Downloading %s to %s. START: %s, END: %s", download.URL, destFile, download.Start, download.End)
 	cmdStr := fmt.Sprintf("yt-dlp -x --audio-format mp3 --force-overwrites -o %s %s", destFile, download.URL)
 	if download.Start != "" && download.End != "" {
 		cmdStr = fmt.Sprintf("yt-dlp -x --audio-format mp3 --download-sections \"*%s-%s\" --force-overwrites -o %s %s", download.Start, download.End, destFile, download.URL)
@@ -278,10 +278,10 @@ func (a *API) DownloadAudio(download Download) error {
 
 	// If the context has expired or was canceled before the command completed, handle that here
 	if ctx.Err() == context.DeadlineExceeded {
-		dlog.ErrorLog.Println("Download Audio operation timed out")
+		log.ErrorLog.Println("Download Audio operation timed out")
 		return ctx.Err()
 	} else if ctx.Err() == context.Canceled {
-		dlog.ErrorLog.Println("Download Audio operation was canceled")
+		log.ErrorLog.Println("Download Audio operation was canceled")
 		return ctx.Err()
 	}
 
@@ -312,10 +312,10 @@ func (a *API) ConvertMP3ToDCA(fileName, categoryName string) error {
 
 	// Check if the context was canceled or timed out
 	if ctx.Err() == context.DeadlineExceeded {
-		dlog.ErrorLog.Println("Converting Audio operation timed out")
+		log.ErrorLog.Println("Converting Audio operation timed out")
 		return ctx.Err()
 	} else if ctx.Err() == context.Canceled {
-		dlog.ErrorLog.Println("Converting Audio operation was canceled")
+		log.ErrorLog.Println("Converting Audio operation was canceled")
 		return ctx.Err()
 	}
 

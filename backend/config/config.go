@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 type Config struct {
@@ -61,7 +61,7 @@ func LoadConfig() *Config {
 	configOnce.Do(func() {
 		timeout := os.Getenv("BOT_TIMEOUT")
 		if timeout == "" {
-			dlog.InfoLog.Println("environment variable BOT_TIMEOUT not set, using default value of 120 Minutes")
+			log.InfoLog.Println("environment variable BOT_TIMEOUT not set, using default value of 120 Minutes")
 			timeout = "120"
 		}
 
@@ -78,7 +78,7 @@ func LoadConfig() *Config {
 		}
 		// Check if Token is actually set
 		if configInstance.Token == "" {
-			dlog.FatalLog.Fatalf("environment variable TOKEN not set")
+			log.FatalLog.Fatalf("environment variable TOKEN not set")
 		}
 
 		// check if necessary binaries are on the system
@@ -86,7 +86,7 @@ func LoadConfig() *Config {
 		for _, bin := range binaries {
 			_, err := exec.LookPath(bin)
 			if err != nil {
-				dlog.FatalLog.Fatalf("%s not in PATH", bin)
+				log.FatalLog.Fatalf("%s not in PATH", bin)
 			}
 		}
 	})

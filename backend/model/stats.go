@@ -4,7 +4,8 @@ import (
 	"database/sql"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 type SoundInfo struct {
@@ -25,7 +26,7 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 	DESC LIMIT 10;`)
 
 	if err != nil {
-		dlog.FatalLog.Fatal(err)
+		log.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -36,7 +37,7 @@ func (m *Model) GetAllUserStatistics() (soundStats map[string]int, err error) {
 
 		err = rows.Scan(&sound, &count)
 		if err != nil {
-			dlog.FatalLog.Fatal(err)
+			log.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid {
 			soundStats[sound.String] = int(count.Int64)
@@ -61,7 +62,7 @@ func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats [
 	DESC LIMIT ?;`, user.ID, limit)
 
 	if err != nil {
-		dlog.FatalLog.Fatal(err)
+		log.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -75,7 +76,7 @@ func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats [
 
 		err = rows.Scan(&sound, &count, &category)
 		if err != nil {
-			dlog.FatalLog.Fatal(err)
+			log.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid && category.Valid {
 			stat.Name = sound.String
@@ -93,7 +94,7 @@ func (m *Model) GetUserStatistics(user *discordgo.User, limit int) (soundStats [
 func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 	rows, err := m.Db.Query("SELECT s.name, COALESCE(SUM(su.count), 0) AS total_plays FROM sounds AS s LEFT JOIN stats_users AS su ON s.id = su.sound_id GROUP BY s.id, s.name HAVING total_plays > 0 ORDER BY total_plays DESC LIMIT 10;")
 	if err != nil {
-		dlog.FatalLog.Fatal(err)
+		log.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -104,7 +105,7 @@ func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 
 		err = rows.Scan(&sound, &count)
 		if err != nil {
-			dlog.FatalLog.Fatal(err)
+			log.FatalLog.Fatal(err)
 		}
 		if sound.Valid && count.Valid {
 			soundStats[sound.String] = int(count.Int64)
@@ -119,7 +120,7 @@ func (m *Model) GetSoundStatistics() (soundStats map[string]int, err error) {
 func (m *Model) AddUserStatistics(user *discordgo.User, soundName string) error {
 	// userID, err := strconv.Atoi(user.ID)
 	// if err != nil {
-	// 	dlog.ErrorLog.Println("error converting user ID to int:", err)
+	// 	log.ErrorLog.Println("error converting user ID to int:", err)
 	// 	return err
 	// }
 	_, err := m.Db.Exec("INSERT INTO stats_users (user_id, sound_id, count) VALUES (?, (SELECT id FROM sounds WHERE name = ?), 1) ON CONFLICT(user_id, sound_id) DO UPDATE SET count = count + 1;", user.ID, soundName)

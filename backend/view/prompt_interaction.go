@@ -2,7 +2,7 @@ package view
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 )
 
@@ -42,7 +42,7 @@ func RegisterPromptInteractionsAudio(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -69,7 +69,7 @@ func RegisterPromptInteractionsButtons(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -157,7 +157,7 @@ func RegisterPromptInteractionsManage(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -166,7 +166,7 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	commandName := "favorite"
 	/*sounds, err := a.model.GetSoundsAll()
 	if err != nil {
-		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
+		log.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
@@ -223,7 +223,7 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -232,7 +232,7 @@ func RegisterPromptInteractionsGulag(s *discordgo.Session) {
 	commandName := "gulag"
 	/*users, err := a.model.GetUsers()
 	if err != nil {
-		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
+		log.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var usersChoices []*discordgo.ApplicationCommandOptionChoice
@@ -295,7 +295,7 @@ func RegisterPromptInteractionsGulag(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -332,7 +332,7 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -341,7 +341,7 @@ func RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	// Register the command globally
 	/*sounds, err := a.model.GetSoundsAll()
 	if err != nil {
-		dlog.FatalLog.Fatalf("cannot get sounds: %v", err)
+		log.FatalLog.Fatalf("cannot get sounds: %v", err)
 		return
 	}
 	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
@@ -372,7 +372,7 @@ func RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -397,7 +397,7 @@ func RegisterPromptInteractionsMisc(s *discordgo.Session) {
 	// Now register the new command
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, model.Meta.Guild.ID, commands[0])
 	if err != nil {
-		dlog.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
+		log.FatalLog.Fatalf("failed to create '%s' command: %v", commandName, err)
 	}
 }
 
@@ -406,7 +406,7 @@ func deletePromptInteraction(s *discordgo.Session, commandName string) {
 	// Fetch all the global commands
 	commandsList, err := s.ApplicationCommands(s.State.User.ID, model.Meta.Guild.ID)
 	if err != nil {
-		dlog.FatalLog.Fatalf("cannot fetch commands: %v", err)
+		log.FatalLog.Fatalf("cannot fetch commands: %v", err)
 	}
 	// Check if the "audio" command already exists
 	var existingCmd *discordgo.ApplicationCommand
@@ -421,7 +421,7 @@ func deletePromptInteraction(s *discordgo.Session, commandName string) {
 	if existingCmd != nil {
 		err := s.ApplicationCommandDelete(s.State.User.ID, model.Meta.Guild.ID, existingCmd.ID)
 		if err != nil {
-			dlog.FatalLog.Printf("failed to delete existing command %s: %v", commandName, err)
+			log.FatalLog.Printf("failed to delete existing command %s: %v", commandName, err)
 		}
 	}
 }

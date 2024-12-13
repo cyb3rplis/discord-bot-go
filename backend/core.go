@@ -11,7 +11,7 @@ import (
 	"github.com/cyb3rplis/discord-bot-go/config"
 	"github.com/cyb3rplis/discord-bot-go/controller"
 	"github.com/cyb3rplis/discord-bot-go/db"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/cyb3rplis/discord-bot-go/view"
 )
@@ -21,12 +21,12 @@ var readyMutex = &sync.Mutex{}
 func Init() {
 	m, dbClose, err := db.InitModel()
 	if err != nil {
-		dlog.FatalLog.Fatalf("Failed to initialize database: %v", err)
+		log.FatalLog.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
 		if err != nil {
 			if err := dbClose(); err != nil {
-				dlog.FatalLog.Fatalf("Failed to close database: %v", err)
+				log.FatalLog.Fatalf("Failed to close database: %v", err)
 			}
 		}
 	}()
@@ -37,11 +37,11 @@ func Init() {
 	// Check if the sound directory exists
 	if _, err := os.Stat(modelInstance.Config.SoundsDir); os.IsNotExist(err) {
 		if err != nil {
-			dlog.FatalLog.Fatalf("Failed to check sound directory: %v", err)
+			log.FatalLog.Fatalf("Failed to check sound directory: %v", err)
 		}
 		err = os.Mkdir(m.Config.SoundsDir, 0755)
 		if err != nil {
-			dlog.FatalLog.Fatalf("Failed to create sound directory: %v", err)
+			log.FatalLog.Fatalf("Failed to create sound directory: %v", err)
 		}
 	}
 
@@ -49,14 +49,14 @@ func Init() {
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
-		dlog.FatalLog.Fatalf("error creating Discord session: %v", err)
+		log.FatalLog.Fatalf("error creating Discord session: %v", err)
 	}
 
 	//set bot ready
 	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.Ready) {
 		readyMutex.Lock()
 		defer readyMutex.Unlock()
-		dlog.InfoLog.Println("Bot is ready")
+		log.InfoLog.Println("Bot is ready")
 		view.BotReady = true
 	})
 
@@ -95,13 +95,13 @@ func Init() {
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		dlog.ErrorLog.Fatalf("error opening Discord session: %v", err)
+		log.ErrorLog.Fatalf("error opening Discord session: %v", err)
 	}
 
 	go ctrl.SyncSoundDirectories()
 
 	// Wait here until CTRL-C or other term signal is received.
-	dlog.InfoLog.Println("Bot is now running")
+	log.InfoLog.Println("Bot is now running")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
@@ -128,10 +128,10 @@ func NewBot() {
 // guild is joined.
 func guildCreate(event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
-		dlog.FatalLog.Fatalf("Guild is unavailable")
+		log.FatalLog.Fatalf("Guild is unavailable")
 	}
-	dlog.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
-	dlog.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
+	log.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
+	log.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
 	config.LoadGuild(event.Guild)
 	model.Meta = model.NewInfo()
 }

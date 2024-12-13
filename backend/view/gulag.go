@@ -7,7 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyb3rplis/discord-bot-go/config"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -54,19 +55,19 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					minutes, err := strconv.Atoi(timeout)
 					if err != nil {
 						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  Invalid time out value: %s\n", timeout), s, i)
-						dlog.ErrorLog.Println("error converting timeout to int:", err)
+						log.ErrorLog.Println("error converting timeout to int:", err)
 						return
 					}
 					err = a.model.GulagUser(gulagUser, minutes)
 					if err != nil {
 						_ = a.UpdateInteractionResponse(fmt.Sprintf("🧱  error putting user into gulag: %s --> %v \n", gulagUser.User.GlobalName, err), s, i)
-						dlog.ErrorLog.Println("error putting user into gulag:", err)
+						log.ErrorLog.Println("error putting user into gulag:", err)
 						return
 					}
-					dlog.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", interactionUser.GlobalName, gulagUser.User.GlobalName, minutes)
+					log.InfoLog.Printf("Admin %s put user: %s in the gulag for %d Minutes\n", interactionUser.GlobalName, gulagUser.User.GlobalName, minutes)
 					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been put into the gulag for %d minutes\n", gulagUser.User.GlobalName, minutes), s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error sending hidden message:", err)
+						log.ErrorLog.Println("error sending hidden message:", err)
 						return
 					}
 					return
@@ -80,14 +81,14 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 					}
 					err := a.model.ReleaseUser(gulagUser)
 					if err != nil {
-						dlog.ErrorLog.Println("error releasing user from gulag:", err)
+						log.ErrorLog.Println("error releasing user from gulag:", err)
 						_ = a.SendInteractionRespond(fmt.Sprintf("🧱  error releasing user %s from gulag --> %v \n", gulagUser.User.GlobalName, err), s, i)
 						return
 					}
-					dlog.InfoLog.Printf("Admin %s released: %s from gulag\n", interactionUser.GlobalName, gulagUser.User.GlobalName)
+					log.InfoLog.Printf("Admin %s released: %s from gulag\n", interactionUser.GlobalName, gulagUser.User.GlobalName)
 					err = a.SendInteractionRespond(fmt.Sprintf("🧱  User %s has been released from the gulag\n", gulagUser.User.GlobalName), s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error sending hidden message:", err)
+						log.ErrorLog.Println("error sending hidden message:", err)
 						return
 					}
 
@@ -96,7 +97,7 @@ func (a *API) PromptInteractionGulag(s *discordgo.Session, i *discordgo.Interact
 			default:
 				err := a.SendInteractionRespond("🧱  Something went wrong...", s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("fallback to default gulag handler", err)
+					log.ErrorLog.Println("fallback to default gulag handler", err)
 				}
 			}
 		}

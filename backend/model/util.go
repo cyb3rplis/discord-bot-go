@@ -11,7 +11,8 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 // ScanDirectory scans the sound directory and returns a map of folders and files.
@@ -221,7 +222,7 @@ func (m *Model) LeaveVoiceChannel(s *discordgo.Session) {
 	// Check if the bot is currently connected to a voice channel in the guild
 	guild, err := s.State.Guild(Meta.Guild.ID)
 	if err != nil {
-		dlog.ErrorLog.Println("error finding guild:", err)
+		log.ErrorLog.Println("error finding guild:", err)
 		return
 	}
 
@@ -237,10 +238,10 @@ func (m *Model) LeaveVoiceChannel(s *discordgo.Session) {
 	if botInVC {
 		err := vc.Disconnect()
 		if err != nil {
-			dlog.ErrorLog.Println("error disconnecting from voice channel:", err)
+			log.ErrorLog.Println("error disconnecting from voice channel:", err)
 			return
 		}
-		dlog.InfoLog.Println("Bot successfully left the voice channel after inactivity.")
+		log.InfoLog.Println("Bot successfully left the voice channel after inactivity.")
 	}
 }
 
@@ -248,7 +249,7 @@ func (m *Model) LeaveVoiceChannel(s *discordgo.Session) {
 func getChannelByName(s *discordgo.Session, channelName string) (*discordgo.Channel, error) {
 	guild, err := s.State.Guild(Meta.Guild.ID)
 	if err != nil {
-		dlog.FatalLog.Fatalf("Failed to get guild: %v", err)
+		log.FatalLog.Fatalf("Failed to get guild: %v", err)
 	}
 
 	channels, err := s.GuildChannels(guild.ID)
@@ -271,13 +272,13 @@ func getChannelByName(s *discordgo.Session, channelName string) (*discordgo.Chan
 func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 	channel, err := getChannelByName(s, m.Config.BotChannel)
 	if err != nil {
-		dlog.ErrorLog.Printf("Failed to get channel by name: %v", err)
+		log.ErrorLog.Printf("Failed to get channel by name: %v", err)
 		return
 	}
 
 	pinnedMessages, err := s.ChannelMessagesPinned(channel.ID)
 	if err != nil {
-		dlog.ErrorLog.Printf("Failed to get pinned messages: %v", err)
+		log.ErrorLog.Printf("Failed to get pinned messages: %v", err)
 		return
 	}
 
@@ -291,7 +292,7 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 
 	newSounds, err := m.GetNewSounds()
 	if err != nil {
-		dlog.ErrorLog.Printf("Failed to get new sounds: %v", err)
+		log.ErrorLog.Printf("Failed to get new sounds: %v", err)
 		return
 	}
 
@@ -301,7 +302,7 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 		for _, message := range botMessages {
 			err = s.ChannelMessageUnpin(channel.ID, message.ID)
 			if err != nil {
-				dlog.ErrorLog.Printf("Failed to unpin message: %v", err)
+				log.ErrorLog.Printf("Failed to unpin message: %v", err)
 			}
 		}
 		return
@@ -315,7 +316,7 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 	for _, message := range botMessages {
 		err = s.ChannelMessageUnpin(channel.ID, message.ID)
 		if err != nil {
-			dlog.ErrorLog.Printf("Failed to unpin message: %v", err)
+			log.ErrorLog.Printf("Failed to unpin message: %v", err)
 			return
 		}
 	}
@@ -323,7 +324,7 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 	message := fmt.Sprintf("Here are the %d newest sounds:", len(newSounds))
 	_, err = s.ChannelMessageSend(channel.ID, message)
 	if err != nil {
-		dlog.ErrorLog.Printf("error sending new sounds message: %v", err)
+		log.ErrorLog.Printf("error sending new sounds message: %v", err)
 		return
 	}
 
@@ -333,13 +334,13 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 	}
 	st, err := s.ChannelMessageSendComplex(channel.ID, buttonMessage)
 	if err != nil {
-		dlog.ErrorLog.Printf("error sending new sounds message: %v", err)
+		log.ErrorLog.Printf("error sending new sounds message: %v", err)
 		return
 	}
 
 	err = s.ChannelMessagePin(channel.ID, st.ID)
 	if err != nil {
-		dlog.ErrorLog.Printf("Failed to pin message: %v", err)
+		log.ErrorLog.Printf("Failed to pin message: %v", err)
 		return
 	}
 }

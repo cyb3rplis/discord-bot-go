@@ -2,8 +2,9 @@ package view
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
 	"github.com/cyb3rplis/discord-bot-go/model"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -14,7 +15,7 @@ func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.Intera
 			if len(i.ApplicationCommandData().Options) == 0 {
 				err := a.handleList(s, i)
 				if err != nil {
-					dlog.ErrorLog.Println("error handling list:", err)
+					log.ErrorLog.Println("error handling list:", err)
 				}
 			} else {
 				option := i.ApplicationCommandData().Options[0]
@@ -22,16 +23,16 @@ func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.Intera
 				case "list":
 					err := a.SendInteractionRespond("👉 Listing sound category buttons", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error executing buttons command:", err)
+						log.ErrorLog.Println("error executing buttons command:", err)
 					}
 					err = a.handleList(s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("error handling buttons command:", err)
+						log.ErrorLog.Println("error handling buttons command:", err)
 					}
 				default:
 					err := a.SendInteractionRespond("🎶  Something went wrong...", s, i)
 					if err != nil {
-						dlog.ErrorLog.Println("fallback to default buttons handler", err)
+						log.ErrorLog.Println("fallback to default buttons handler", err)
 					}
 
 				}
@@ -44,12 +45,12 @@ func (a *API) PromptInteractionButtons(s *discordgo.Session, i *discordgo.Intera
 func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	categories, err := a.model.GetCategories()
 	if err != nil {
-		dlog.ErrorLog.Println("error getting categories:", err)
+		log.ErrorLog.Println("error getting categories:", err)
 	}
 	if len(categories) == 0 {
 		_, err = a.SendMessage("No sound categories found.", s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error[list1] sending message:", err)
+			log.ErrorLog.Println("error[list1] sending message:", err)
 		}
 		return err
 	}
@@ -58,7 +59,7 @@ func (a *API) handleList(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	for _, message := range messages {
 		_, err = a.SendMessageComplex(message, s, i, false)
 		if err != nil {
-			dlog.ErrorLog.Println("error[list2] sending message:", err)
+			log.ErrorLog.Println("error[list2] sending message:", err)
 		}
 	}
 	return nil

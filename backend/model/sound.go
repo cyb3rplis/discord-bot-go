@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 // getSound retrieves sound data from the database.
@@ -19,7 +19,7 @@ func (m *Model) getSound(soundName string) ([]byte, error) {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("sound not found: %s", soundName)
 		}
-		dlog.ErrorLog.Println("error querying sound file from database:", err)
+		log.ErrorLog.Println("error querying sound file from database:", err)
 		return nil, err
 	}
 	return fileData, nil
@@ -29,7 +29,7 @@ func (m *Model) getSound(soundName string) ([]byte, error) {
 func openSound(fileName string) (*os.File, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
-		dlog.ErrorLog.Println("error opening sound file:", err)
+		log.ErrorLog.Println("error opening sound file:", err)
 		return nil, err
 	}
 	return file, nil
@@ -48,12 +48,12 @@ func encodeSound(file io.Reader) ([][]byte, error) {
 			break
 		}
 		if err != nil {
-			dlog.ErrorLog.Println("error reading opus frame length:", err)
+			log.ErrorLog.Println("error reading opus frame length:", err)
 			return nil, err
 		}
 
 		if opusLen <= 0 {
-			dlog.ErrorLog.Println("invalid opus frame length:", opusLen)
+			log.ErrorLog.Println("invalid opus frame length:", opusLen)
 			return nil, fmt.Errorf("invalid opus frame length: %d", opusLen)
 		}
 
@@ -61,7 +61,7 @@ func encodeSound(file io.Reader) ([][]byte, error) {
 		inBuf := make([]byte, opusLen)
 		err = binary.Read(file, binary.LittleEndian, &inBuf)
 		if err != nil {
-			dlog.ErrorLog.Println("error reading PCM data:", err)
+			log.ErrorLog.Println("error reading PCM data:", err)
 			return nil, err
 		}
 
@@ -122,7 +122,7 @@ func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []b
 	`, fileName, categoryID, fileHash, fileData)
 
 	if err != nil {
-		dlog.ErrorLog.Printf("Error inserting sound into database: %v", err)
+		log.ErrorLog.Printf("Error inserting sound into database: %v", err)
 	}
 
 	return err
@@ -132,7 +132,7 @@ func (m *Model) AddSound(categoryID int, fileName, fileHash string, fileData []b
 func (m *Model) DeleteSound(soundName string) error {
 	_, err := m.Db.Exec("DELETE FROM sounds WHERE name = ?", soundName)
 	if err != nil {
-		dlog.ErrorLog.Printf("Error deleting sound from database: %v", err)
+		log.ErrorLog.Printf("Error deleting sound from database: %v", err)
 	}
 	return err
 }
@@ -141,7 +141,7 @@ func (m *Model) DeleteSound(soundName string) error {
 func (m *Model) MoveSound(categoryID int, soundName string) error {
 	_, err := m.Db.Exec("UPDATE sounds SET category_id = ? WHERE name = ?", categoryID, soundName)
 	if err != nil {
-		dlog.ErrorLog.Printf("Error moving sound to another category: %v", err)
+		log.ErrorLog.Printf("Error moving sound to another category: %v", err)
 	}
 
 	return err
@@ -229,9 +229,9 @@ func (m *Model) GetCategoryByID(folderName string) int {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This should not happen because the category should exist by this point.
-			dlog.InfoLog.Printf("Category %s not found in database", folderName)
+			log.InfoLog.Printf("Category %s not found in database", folderName)
 		} else {
-			dlog.FatalLog.Fatal(err)
+			log.FatalLog.Fatal(err)
 		}
 	}
 	return categoryID
@@ -255,7 +255,7 @@ func (m *Model) GetSound(soundName string) (SoundInfo, error) {
 func (m *Model) GetSoundsM() map[int]map[string]string {
 	rows, err := m.Db.Query("SELECT category_id, name, hash FROM sounds")
 	if err != nil {
-		dlog.FatalLog.Fatal(err)
+		log.FatalLog.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -264,7 +264,7 @@ func (m *Model) GetSoundsM() map[int]map[string]string {
 		var categoryID int
 		var fileName, fileHash string
 		if err := rows.Scan(&categoryID, &fileName, &fileHash); err != nil {
-			dlog.FatalLog.Fatal(err)
+			log.FatalLog.Fatal(err)
 		}
 		if sounds[categoryID] == nil {
 			sounds[categoryID] = make(map[string]string)
@@ -284,7 +284,7 @@ func (m *Model) AddCategory(folderName string) error {
 	}
 	// If the category already exists, skip the insertion
 	if existingID != 0 {
-		//dlog.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
+		//log.InfoLog.Printf("Category with name %s already exists, skipping insertion", folderName)
 		return nil
 	}
 	_, err = m.Db.Exec("INSERT INTO categories (name) VALUES (?)", folderName)

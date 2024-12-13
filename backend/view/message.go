@@ -5,16 +5,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyb3rplis/discord-bot-go/dlog"
-
 	"github.com/bwmarrin/discordgo"
+
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 )
 
 func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Session, i *discordgo.InteractionCreate, delete bool) (*discordgo.Message, error) {
 	// send complex message
 	message, err := s.ChannelMessageSendComplex(i.ChannelID, msg)
 	if err != nil {
-		dlog.ErrorLog.Println("error[msg1] sending message:", err)
+		log.ErrorLog.Println("error[msg1] sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -22,7 +22,7 @@ func (a *API) SendMessageComplex(msg *discordgo.MessageSend, s *discordgo.Sessio
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
 		if err != nil {
-			dlog.ErrorLog.Println("error deleting message:", err)
+			log.ErrorLog.Println("error deleting message:", err)
 		}
 	}
 	return message, nil
@@ -32,7 +32,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 	// send message
 	message, err := s.ChannelMessageSend(i.ChannelID, msg)
 	if err != nil {
-		dlog.ErrorLog.Println("error[msg2] sending message:", err)
+		log.ErrorLog.Println("error[msg2] sending message:", err)
 		return nil, err
 	}
 	if delete {
@@ -40,7 +40,7 @@ func (a *API) SendMessage(msg string, s *discordgo.Session, i *discordgo.Interac
 		time.Sleep(5 * time.Second)
 		err = s.ChannelMessageDelete(message.ChannelID, message.ID)
 		if err != nil {
-			dlog.ErrorLog.Println("error deleting message:", err)
+			log.ErrorLog.Println("error deleting message:", err)
 		}
 	}
 	return message, nil
@@ -89,7 +89,7 @@ func (a *API) DeleteOldStopSoundButtons(s *discordgo.Session, st *discordgo.Mess
 	// Fetch messages in the channel (limit to the most recent 100)
 	messages, err := s.ChannelMessages(st.ChannelID, 10, st.ID, "", "")
 	if err != nil {
-		dlog.ErrorLog.Printf("Error fetching messages: %v", err)
+		log.ErrorLog.Printf("Error fetching messages: %v", err)
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (a *API) DeleteOldStopSoundButtons(s *discordgo.Session, st *discordgo.Mess
 	if len(bulkDelete) > 0 {
 		err = s.ChannelMessagesBulkDelete(st.ChannelID, bulkDelete)
 		if err != nil {
-			dlog.ErrorLog.Printf("Error deleting messages in bulk: %v", err)
+			log.ErrorLog.Printf("Error deleting messages in bulk: %v", err)
 		}
 	}
 

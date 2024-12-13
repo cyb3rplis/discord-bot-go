@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/cyb3rplis/discord-bot-go/dlog"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
 	"github.com/cyb3rplis/discord-bot-go/model"
 	"github.com/go-co-op/gocron"
 )
@@ -29,13 +29,13 @@ func (c *Controller) SyncSoundDirectories() {
 	s.Every(interval).Do(func() {
 		fsSounds, err := c.model.ScanDirectory()
 		if err != nil {
-			dlog.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
+			log.FatalLog.Printf("Cron: error scanning sound directory: %v", err)
 		}
 		err = c.view.SyncDatabaseWithFileSystem(fsSounds)
 		if err != nil {
-			dlog.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
+			log.FatalLog.Printf("Cron: error syncing database with filesystem: %v", err)
 		}
-		//dlog.InfoLog.Println("Cron: database synced with filesystem")
+		//log.InfoLog.Println("Cron: database synced with filesystem")
 	})
 	// starts the scheduler asynchronously
 	s.StartAsync()
@@ -55,7 +55,7 @@ func (c *Controller) SyncUsers(s *discordgo.Session, m *model.Model) {
 func (c *Controller) CheckBotActivity(s *discordgo.Session, m *model.Model) {
 	botTimeout, err := strconv.Atoi(m.Config.BotTimeout)
 	if err != nil {
-		dlog.FatalLog.Fatalf("Failed to convert bot timeout to integer: %v", err)
+		log.FatalLog.Fatalf("Failed to convert bot timeout to integer: %v", err)
 	}
 
 	interval := time.Minute * 5
