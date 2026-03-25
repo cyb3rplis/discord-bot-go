@@ -1,0 +1,133 @@
+package config
+
+import (
+	"database/sql"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
+)
+
+type Config struct {
+	Token        string `json:"token"`
+	DataDir      string `json:"data_dir"`
+	SoundsDir    string `json:"sounds_dir"`
+	DB           string `json:"db"`
+	AudioTemp    string `json:"audio_temp"`
+	AudioTimeout int    `json:"audio_timeout"`
+	BotTimeout   string `json:"bot_timeout"`
+	AdminRole    string `json:"admin"`
+	BotChannel   string `json:"bot_channel"`
+}
+
+type ExtendedUser struct {
+	User      *discordgo.User `json:"user"`
+	Gulagged  sql.NullTime    `json:"gulagged"`
+	Remaining time.Duration   `json:"remaining"`
+}
+
+type Sound struct {
+	ID         int          `json:"id"`
+	Name       string       `json:"name"`
+	CreatedAt  sql.NullTime `json:"created_at"`
+	CategoryID int          `json:"category_id"`
+	Hash       string       `json:"hash"`
+}
+
+var (
+	configInstance *Config
+	configOnce     sync.Once
+)
+
+var (
+	guildInstance *discordgo.Guild
+	guildOnce     sync.Once
+)
+
+var AppPath = func() string {
+	if path := os.Getenv("APP_PATH"); path != "" { //use for local development
+		return path
+	}
+	return "./"
+}
+
+func LoadConfig() *Config {
+	configOnce.Do(func() {
+		timeout := os.Getenv("BOT_TIMEOUT")
+		if timeout == "" {
+			log.InfoLog.Println("environment variable BOT_TIMEOUT not set, using default value of 120 Minutes")
+			timeout = "120"
+		}
+
+		configInstance = &Config{
+			Token:        os.Getenv("TOKEN"), // Read the token from .env
+			DataDir:      filepath.Join(AppPath(), "data"),
+			SoundsDir:    filepath.Join(AppPath(), "data", "sounds"),
+			DB:           filepath.Join(AppPath(), "data", "soundbot.db"),
+			AudioTemp:    "temp",
+			AudioTimeout: 20,
+			BotTimeout:   timeout,
+			AdminRole:    os.Getenv("ADMIN_ROLE"),
+			BotChannel:   os.Getenv("BOT_CHANNEL"),
+		}
+		// Check if Token is actually set
+		if configInstance.Token == "" {
+			log.FatalLog.Fatalf("environment variable TOKEN not set")
+		}
+
+		// check if necessary binaries are on the system
+		binaries := []string{"dca", "ffmpeg", "yt-dlp"}
+		for _, bin := range binaries {
+			_, err := exec.LookPath(bin)
+			if err != nil {
+				log.FatalLog.Fatalf("%s not in PATH", bin)
+			}
+		}
+	})
+
+	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "TOKEN", configInstance.Token[0:10]+"...")
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "SOUNDS_DIR", configInstance.SoundsDir)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "DB", configInstance.DB)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "AUDIO_TEMP", configInstance.AudioTemp)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20d |\n", "AUDIO_TIMEOUT", configInstance.AudioTimeout)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "BOT_TIMEOUT", configInstance.BotTimeout)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "BOT_CHANNEL", configInstance.BotChannel)
+	fmt.Printf("|%s|\n", strings.Repeat("-", 40))
+	fmt.Printf("| %-15s | %-20s |\n", "ADMIN_ROLE", configInstance.AdminRole)
+	fmt.Printf("+%s+\n", strings.Repeat("-", 40))
+
+	return configInstance
+}
+
+// GetConfig provides global access to the configuration instance.
+func GetConfig() *Config {
+	if configInstance == nil {
+		return LoadConfig()
+	}
+	return configInstance
+}
+
+func LoadGuild(guild *discordgo.Guild) *discordgo.Guild {
+	guildOnce.Do(func() {
+		guildInstance = guild
+	})
+
+	return guildInstance
+}
+
+func GetGuild() *discordgo.Guild {
+	return guildInstance
+}

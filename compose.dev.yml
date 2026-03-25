@@ -1,0 +1,17 @@
+services:
+  luren-bot-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend
+          target: /app/discord-bot-go
+    container_name: luren-bot-dev
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+      - ./data:/app/data
+    restart: unless-stopped

@@ -1,0 +1,9 @@
+services:
+  luren-bot:
+    image: redteampanda/discord-bot-go:latest
+    container_name: luren-bot
+    env_file:
+      - .env
+    volumes:
+      - ${APP_PATH:-./}/data:/app/data #use ./data if APP_PATH is not set
+    restart: unless-stopped

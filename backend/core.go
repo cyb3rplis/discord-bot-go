@@ -1,0 +1,137 @@
+package backend
+
+import (
+	"context"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/cyb3rplis/discord-bot-go/config"
+	"github.com/cyb3rplis/discord-bot-go/controller"
+	"github.com/cyb3rplis/discord-bot-go/db"
+	log "github.com/cyb3rplis/discord-bot-go/logger"
+	"github.com/cyb3rplis/discord-bot-go/model"
+	"github.com/cyb3rplis/discord-bot-go/view"
+)
+
+var readyMutex = &sync.Mutex{}
+
+func Init() {
+	m, dbClose, err := db.InitModel()
+	if err != nil {
+		log.FatalLog.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if err := dbClose(); err != nil {
+				log.FatalLog.Fatalf("Failed to close database: %v", err)
+			}
+		}
+	}()
+	modelInstance := model.New(&m)
+	viewInstance := view.New(modelInstance)
+	ctrl := controller.New(modelInstance, viewInstance)
+
+	// Check if the sound directory exists
+	if _, err := os.Stat(modelInstance.Config.SoundsDir); os.IsNotExist(err) {
+		if err != nil {
+			log.FatalLog.Fatalf("Failed to check sound directory: %v", err)
+		}
+		err = os.Mkdir(m.Config.SoundsDir, 0755)
+		if err != nil {
+			log.FatalLog.Fatalf("Failed to create sound directory: %v", err)
+		}
+	}
+
+	cfg := config.GetConfig()
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + cfg.Token)
+	if err != nil {
+		log.FatalLog.Fatalf("error creating Discord session: %v", err)
+	}
+
+	//set bot ready
+	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.Ready) {
+		readyMutex.Lock()
+		defer readyMutex.Unlock()
+		log.InfoLog.Println("Bot is ready")
+		view.BotReady = true
+	})
+
+	// Register guildCreate as a callback for the guildCreate events.
+	// This will be called every time a new guild is joined.
+	dg.AddHandlerOnce(func(s *discordgo.Session, event *discordgo.GuildCreate) {
+		guildCreate(event)
+		view.RegisterPromptInteractionsButtons(s)
+		view.RegisterPromptInteractionsManage(s)
+		view.RegisterPromptInteractionsAudio(s)
+		view.RegisterPromptInteractionsFavorite(s)
+		view.RegisterPromptInteractionsGulag(s)
+		view.RegisterPromptInteractionsStats(s)
+		view.RegisterPromptInteractionsPlaySound(s)
+		view.RegisterPromptInteractionsMisc(s)
+		go ctrl.SyncUsers(s, modelInstance)
+		go ctrl.CheckBotActivity(s, modelInstance)
+		go ctrl.CheckNewSounds(s, modelInstance)
+	})
+
+	// Register prompt interaction handlers
+	// This will be called every time a new interaction is created.
+	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
+	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
+	dg.AddHandler(viewInstance.PromptInteractionManage)    //manage
+	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
+	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
+	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag
+	dg.AddHandler(viewInstance.PromptInteractionStats)     //stats
+	dg.AddHandler(viewInstance.PromptInteractionPlaySound) //play sound
+	dg.AddHandler(viewInstance.PromptInteractionMisc)      //misc
+
+	// messages and voice states.
+	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers | discordgo.IntentsGuildPresences
+
+	// Open the websocket and begin listening.
+	err = dg.Open()
+	if err != nil {
+		log.ErrorLog.Fatalf("error opening Discord session: %v", err)
+	}
+
+	go ctrl.SyncSoundDirectories()
+
+	// Wait here until CTRL-C or other term signal is received.
+	log.InfoLog.Println("Bot is now running")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt)
+	go func() {
+		<-s
+		cancel()
+	}()
+
+	// Cleanly close down the Discord session.
+	_ = dg.Close()
+
+	ctrl.Run(ctx)
+}
+
+func NewBot() {
+	Init()
+}
+
+// This function will be called (due to AddHandler above) every time a new
+// guild is joined.
+func guildCreate(event *discordgo.GuildCreate) {
+	if event.Guild.Unavailable {
+		log.FatalLog.Fatalf("Guild is unavailable")
+	}
+	log.InfoLog.Printf("Joined guild: %s", event.Guild.Name)
+	log.InfoLog.Printf("Guild ID: %s", event.Guild.ID)
+	config.LoadGuild(event.Guild)
+	model.Meta = model.NewInfo()
+}

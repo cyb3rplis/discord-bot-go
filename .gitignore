@@ -1,0 +1,16 @@
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
+
+# dist folder
+dist
+data
+
+# venv's
+.venv
+venv
+
+identifier.sqlite
