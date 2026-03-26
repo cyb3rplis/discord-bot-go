@@ -125,10 +125,11 @@ func RegisterPromptInteractionsManage(s *discordgo.Session) {
 					Description: "Delete a sound button by name",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "name",
-							Description: "The name of the sound button to delete",
-							Required:    true,
+							Type:         discordgo.ApplicationCommandOptionString,
+							Name:         "name",
+							Description:  "The name of the sound button to delete",
+							Required:     true,
+							Autocomplete: true,
 						},
 					},
 				},
@@ -138,10 +139,11 @@ func RegisterPromptInteractionsManage(s *discordgo.Session) {
 					Description: "Move a sound to a different category",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "name",
-							Description: "The name of the sound button to delete",
-							Required:    true,
+							Type:         discordgo.ApplicationCommandOptionString,
+							Name:         "name",
+							Description:  "The name of the sound button to move",
+							Required:     true,
+							Autocomplete: true,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
@@ -164,19 +166,6 @@ func RegisterPromptInteractionsManage(s *discordgo.Session) {
 // RegisterPromptInteractionsFavorite - Register prompt interactions for favorite
 func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 	commandName := "favorite"
-	/*sounds, err := a.model.GetSoundsAll()
-	if err != nil {
-		log.FatalLog.Fatalf("cannot get sounds: %v", err)
-		return
-	}
-	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
-	for _, sound := range sounds {
-		soundChoice := &discordgo.ApplicationCommandOptionChoice{
-			Name:  sound,
-			Value: sound,
-		}
-		soundsChoices = append(soundsChoices, soundChoice)
-	}*/
 	// Register the command globally
 	commands := []*discordgo.ApplicationCommand{
 		{
@@ -194,10 +183,11 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 					Description: "Add a sound to your favorites",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "sound",
-							Description: "The name of the sound to add",
-							Required:    true,
+							Type:         discordgo.ApplicationCommandOptionString,
+							Name:         "sound",
+							Description:  "The name of the sound to add",
+							Required:     true,
+							Autocomplete: true,
 						},
 					},
 				},
@@ -207,10 +197,11 @@ func RegisterPromptInteractionsFavorite(s *discordgo.Session) {
 					Description: "Remove a sound from your favorites",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "sound",
-							Description: "The name of the sound to remove",
-							Required:    true,
+							Type:         discordgo.ApplicationCommandOptionString,
+							Name:         "sound",
+							Description:  "The name of the sound to remove",
+							Required:     true,
+							Autocomplete: true,
 						},
 					},
 				},
@@ -339,29 +330,17 @@ func RegisterPromptInteractionsStats(s *discordgo.Session) {
 func RegisterPromptInteractionsPlaySound(s *discordgo.Session) {
 	commandName := "play"
 	// Register the command globally
-	/*sounds, err := a.model.GetSoundsAll()
-	if err != nil {
-		log.FatalLog.Fatalf("cannot get sounds: %v", err)
-		return
-	}
-	var soundsChoices []*discordgo.ApplicationCommandOptionChoice
-	for _, sound := range sounds {
-		soundChoice := &discordgo.ApplicationCommandOptionChoice{
-			Name:  sound,
-			Value: sound,
-		}
-		soundsChoices = append(soundsChoices, soundChoice)
-	}*/
 	commands := []*discordgo.ApplicationCommand{
 		{
 			Name:        commandName,
 			Description: "Play a sound by name",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "sound",
-					Description: "The name of the sound to play",
-					Required:    true,
+					Type:         discordgo.ApplicationCommandOptionString,
+					Name:         "sound",
+					Description:  "The name of the sound to play",
+					Required:     true,
+					Autocomplete: true,
 				},
 			},
 		},

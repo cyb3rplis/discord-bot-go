@@ -79,15 +79,16 @@ func Init() {
 
 	// Register prompt interaction handlers
 	// This will be called every time a new interaction is created.
-	dg.AddHandler(viewInstance.InteractionHandler)         //interaction handler
-	dg.AddHandler(viewInstance.PromptInteractionButtons)   //buttons
-	dg.AddHandler(viewInstance.PromptInteractionManage)    //manage
-	dg.AddHandler(viewInstance.PromptInteractionAudio)     //audio
-	dg.AddHandler(viewInstance.PromptInteractionFavorite)  //favorite
-	dg.AddHandler(viewInstance.PromptInteractionGulag)     //gulag
-	dg.AddHandler(viewInstance.PromptInteractionStats)     //stats
-	dg.AddHandler(viewInstance.PromptInteractionPlaySound) //play sound
-	dg.AddHandler(viewInstance.PromptInteractionMisc)      //misc
+	dg.AddHandler(viewInstance.AutocompleteHandler)         //autocomplete
+	dg.AddHandler(viewInstance.InteractionHandler)          //interaction handler
+	dg.AddHandler(viewInstance.PromptInteractionButtons)    //buttons
+	dg.AddHandler(viewInstance.PromptInteractionManage)     //manage
+	dg.AddHandler(viewInstance.PromptInteractionAudio)      //audio
+	dg.AddHandler(viewInstance.PromptInteractionFavorite)   //favorite
+	dg.AddHandler(viewInstance.PromptInteractionGulag)      //gulag
+	dg.AddHandler(viewInstance.PromptInteractionStats)      //stats
+	dg.AddHandler(viewInstance.PromptInteractionPlaySound)  //play sound
+	dg.AddHandler(viewInstance.PromptInteractionMisc)       //misc
 
 	// messages and voice states.
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentDirectMessages | discordgo.IntentGuildMembers | discordgo.IntentsGuildPresences

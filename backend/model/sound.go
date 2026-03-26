@@ -311,6 +311,25 @@ func (m *Model) GetCategoriesM() (map[string]int, error) {
 	return categories, nil
 }
 
+// SearchSounds returns sounds whose name contains the query string (case-insensitive), limited to 25 results for Discord autocomplete.
+func (m *Model) SearchSounds(query string) ([]string, error) {
+	rows, err := m.Db.Query("SELECT name FROM sounds WHERE name LIKE ? ORDER BY name ASC LIMIT 25", "%"+query+"%")
+	if err != nil {
+		return nil, fmt.Errorf("failed to search sounds: %w", err)
+	}
+	defer rows.Close()
+
+	var sounds []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("failed to scan sound: %w", err)
+		}
+		sounds = append(sounds, name)
+	}
+	return sounds, nil
+}
+
 // GetCategories returns a slice of sound categories (from DB)
 func (m *Model) GetCategories() ([]string, error) {
 	rows, err := m.Db.Query("SELECT name FROM categories")
