@@ -1,96 +1,121 @@
 # discord-bot-go
 
 <p align="center">
-  <img src="./assets/discord-bot-logo2.webp" alt="discord-go-bot's image" width="350p"/>
+  <img src="./assets/discord-bot-logo2.webp" alt="discord-bot-go" width="350"/>
 </p>
 
-discord-bot-go is a versatile [Discord](https://discord.com/) bot written in [Go](https://golang.org/) using the [DiscordGo](https://github.com/bwmarrin/discordgo/) library. \
-It allows users to play and manage audio directly from Discord, supporting local files and YouTube. \
-The bot also features interactive buttons for a seamless user experience, eliminating the need for command-based interactions.
+<p align="center">
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.23-00ADD8?logo=go&logoColor=white" alt="Go"></a>
+  <a href="https://github.com/bwmarrin/discordgo"><img src="https://img.shields.io/badge/DiscordGo-v0.28.1-5865F2?logo=discord&logoColor=white" alt="DiscordGo"></a>
+  <a href="https://hub.docker.com/r/cyb3rplis/discord-bot-go"><img src="https://img.shields.io/badge/Docker-Hub-2496ED?logo=docker&logoColor=white" alt="Docker Hub"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
+</p>
 
-# Features
+A feature-rich [Discord](https://discord.com/) soundboard bot written in [Go](https://golang.org/) using the [DiscordGo](https://github.com/bwmarrin/discordgo/) library. Play and manage audio directly in Discord voice channels from local files or YouTube via [yt-dlp](https://github.com/yt-dlp/yt-dlp). Fully interactive with button-based controls — no commands needed.
 
-- [x] Categories
-- [x] Sync and Play music from local files
-- [x] Interact with buttons to play music (no need to type commands)
-- [x] Play music from video platform via yt-dlp
-- [x] Statistics (Sounds, Users)
-- [x] Most used sounds (Top 10)
-- [x] Add, Remove and List Favorites
-- [x] Pin New Sounds as Message
-- [x] Delete sounds
-- [x] Move sounds
-- [x] Add sounds via yt-dlp
-- [x] Gulag users for a specified amount of time (can't use sounds)
+## Features
 
-## Executing the bot
+- **Soundboard** — Organize and play sounds from categorized local MP3 files
+- **YouTube playback** — Stream audio from video platforms via yt-dlp
+- **Button controls** — Interactive UI with no command-based interactions required
+- **Categories** — Group sounds into categories for easy browsing
+- **Favorites** — Add, remove, and list personal favorites
+- **Statistics** — View sound and user stats, including a top 10 most-played leaderboard
+- **Sound management** — Add, delete, and move sounds; pin new sounds as messages
+- **Gulag** — Temporarily restrict a user from using sounds for a specified duration
 
-INFO: Setting ${APP_PATH} is optional. If not set, it will default to the current directory.
+## Tech Stack
 
-Place all your sound files in MP3 format in `${APP_PATH}/data/sounds`.
-They all have to be within subdirectories, which act as categories for the sound bot.
+| Component | Technology |
+|-----------|------------|
+| Language | Go 1.23 |
+| Discord library | [DiscordGo](https://github.com/bwmarrin/discordgo/) |
+| Database | SQLite ([go-sqlite3](https://github.com/mattn/go-sqlite3)) |
+| Scheduler | [gocron](https://github.com/go-co-op/gocron) |
+| Audio encoding | [DCA](https://github.com/cyb3rplis/dca), FFmpeg |
+| Media download | [yt-dlp](https://github.com/yt-dlp/yt-dlp) |
+| Deployment | Docker, Docker Compose |
+| CI/CD | GitHub Actions |
 
-```
-$ ls -lR ${APP_PATH}/data/sounds
-${APP_PATH}/data/sounds
-total 4
-drwxr-xr-x 2 user user 4096 Oct 30 18:56 test
+## Prerequisites
 
-${APP_PATH}/data/sounds/test:
-total 4
--rw-r--r-- 1 user user 5 Oct 30 18:56 file.mp3
-```
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- A [Discord bot token](https://discord.com/developers/applications)
 
-IMPORTANT: the `./data` directory will also contain the `soundbot.db` database, so make sure to create a backup of the folder regularly.
+## Quick Start
 
-Make sure to place your token in the `.env` file in the root directory of the project. See `.env.example`.
+### 1. Configure environment variables
 
-Run the container:
+Copy the example file and fill in your values:
 
-```
-$ docker compose up -d
-```
-
-Check logs with `docker logs`
-
-```
-$ docker logs luren-bot
+```bash
+cp .env.example .env
 ```
 
-When running the container this way, it will automatically start on a reboot (unless it was manually stopped before), as configured in `compose.yml`.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TOKEN` | Discord bot token | *(required)* |
+| `APP_PATH` | Path to the data directory | `./` |
+| `ADMIN_ROLE` | Role name with elevated bot permissions | *(required)* |
+| `BOT_TIMEOUT` | Minutes of inactivity before leaving voice | `10` |
+| `BOT_CHANNEL` | Channel where the bot pins messages | *(required)* |
+
+### 2. Add sound files
+
+Place MP3 files inside subdirectories of `${APP_PATH}/data/sounds/`. Each subdirectory acts as a **category**.
 
 ```
-[...]
-    restart: unless-stopped
+data/sounds/
+├── memes/
+│   ├── airhorn.mp3
+│   └── bruh.mp3
+└── music/
+    └── intro.mp3
 ```
 
-Potential values can be set to the following:
+### 3. Run the bot
 
-```
-no (default): Does not automatically restart the container.
-always: Always restarts the container if it stops or the Docker daemon restarts.
-unless-stopped: Restarts the container unless it was manually stopped.
-on-failure: Only restarts the container if it exits with a non-zero exit code.
+```bash
+docker compose up -d
 ```
 
-To stop the container:
+### 4. View logs
 
-```
-$ docker compose stop
+```bash
+docker logs luren-bot
 ```
 
-To fetch the newest version of the docker image:
+> **Note:** The `./data` directory also contains the `soundbot.db` SQLite database. Back up this directory regularly.
 
+## Updating
+
+Pull the latest image and restart:
+
+```bash
+docker compose pull
+docker compose up -d
 ```
-$ docker compose pull
+
+## Stopping
+
+```bash
+docker compose stop
 ```
+
+## Restart Policy
+
+The default `compose.yml` uses `restart: unless-stopped`, meaning the container will automatically restart on reboot unless manually stopped. See the [Docker restart policy docs](https://docs.docker.com/config/containers/start-containers-automatically/) for other options.
 
 ## Development
 
-Run the container like so (omit --watch if you don't want to rebuild the running container on changes):
+Build and run with live reload on code changes:
 
-```
-$ docker compose -f compose.dev.yml up -d --watch --build
+```bash
+docker compose -f compose.dev.yml up -d --watch --build
 ```
 
-This will rebuild the image once any changes are made to the backend.
+The container rebuilds automatically when changes are detected in the backend.
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
