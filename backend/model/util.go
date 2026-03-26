@@ -276,7 +276,7 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 		return
 	}
 
-	pinnedMessages, err := s.ChannelMessagesPinned(channel.ID)
+	pinnedMessages, err := s.ChannelMessagesPinned(channel.ID, nil, 0)
 	if err != nil {
 		log.ErrorLog.Printf("Failed to get pinned messages: %v", err)
 		return
@@ -284,9 +284,9 @@ func (m *Model) PinNewSoundButtons(s *discordgo.Session) {
 
 	// we only want to have messages from the bot
 	botMessages := []*discordgo.Message{}
-	for _, message := range pinnedMessages {
-		if message.Author.ID == s.State.User.ID {
-			botMessages = append(botMessages, message)
+	for _, pin := range pinnedMessages.Items {
+		if pin.Message.Author.ID == s.State.User.ID {
+			botMessages = append(botMessages, pin.Message)
 		}
 	}
 
