@@ -1,6 +1,6 @@
 # Stage 1: Build the Go application
 FROM golang:1.23 AS backend
-RUN go install github.com/cyb3rplis/dca/cmd/dca@latest
+RUN GONOSUMCHECK=github.com/cyb3rplis/dca GOFLAGS=-mod=mod go install github.com/cyb3rplis/dca/cmd/dca@v0.1.0
 ENV GOFLAGS="-mod=vendor"
 ENV GOOS=linux
 ENV GOARCH=amd64
