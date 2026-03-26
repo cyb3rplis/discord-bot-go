@@ -1,6 +1,8 @@
 # Stage 1: Build the Go application
 FROM golang:1.23 AS backend
-RUN GONOSUMCHECK=github.com/cyb3rplis/dca GOFLAGS=-mod=mod go install github.com/cyb3rplis/dca/cmd/dca@v0.1.0
+RUN git clone https://github.com/cyb3rplis/dca.git /tmp/dca \
+    && cd /tmp/dca/cmd/dca \
+    && go build -o /usr/local/bin/dca .
 ENV GOFLAGS="-mod=vendor"
 ENV GOOS=linux
 ENV GOARCH=amd64
@@ -23,5 +25,5 @@ RUN wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /us
 
 COPY --from=mwader/static-ffmpeg:latest /ffmpeg /usr/local/bin/
 COPY --from=backend /dist/discord-bot-go ./
-COPY --from=backend /go/bin/dca /usr/local/bin/
+COPY --from=backend /usr/local/bin/dca /usr/local/bin/
 CMD ["./discord-bot-go"]
