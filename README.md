@@ -13,6 +13,18 @@
 
 A feature-rich [Discord](https://discord.com/) soundboard bot written in [Go](https://golang.org/) using the [DiscordGo](https://github.com/bwmarrin/discordgo/) library. Play and manage audio directly in Discord voice channels from local files or YouTube via [yt-dlp](https://github.com/yt-dlp/yt-dlp). Fully interactive with button-based controls — no commands needed.
 
+## Screenshots
+
+<!-- TODO: Add screenshots -->
+
+| Feature | Preview |
+|---------|---------|
+| Category buttons | ![Category buttons](./assets/placeholder-categories.png) |
+| Sound buttons | ![Sound buttons](./assets/placeholder-sounds.png) |
+| Now playing | ![Now playing](./assets/placeholder-now-playing.png) |
+| Statistics | ![Statistics](./assets/placeholder-stats.png) |
+| Favorites | ![Favorites](./assets/placeholder-favorites.png) |
+
 ## Features
 
 - **Soundboard** — Organize and play sounds from categorized local MP3 files
@@ -23,6 +35,117 @@ A feature-rich [Discord](https://discord.com/) soundboard bot written in [Go](ht
 - **Statistics** — View sound and user stats, including a top 10 most-played leaderboard
 - **Sound management** — Add, delete, and move sounds; pin new sounds as messages
 - **Gulag** — Temporarily restrict a user from using sounds for a specified duration
+- **Spam protection** — Automatic rate limiting (max 15 interactions per 15 seconds)
+- **Auto-leave** — Bot leaves voice channel after configurable inactivity timeout
+
+## Commands
+
+### `/play`
+
+Play a sound directly by name.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `sound` | Yes | The name of the sound to play |
+
+### `/audio`
+
+Play or replay audio from an external URL.
+
+| Subcommand | Description |
+|------------|-------------|
+| `play` | Play audio from a URL (YouTube, Vimeo, etc.) |
+| `last` | Replay the last played audio |
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `url` | Yes (for `play`) | The URL of the video to play |
+
+### `/buttons`
+
+Display the soundboard UI.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all sound category buttons in the channel |
+
+### `/favorite`
+
+Manage your personal favorite sounds.
+
+| Subcommand | Description |
+|------------|-------------|
+| `buttons` | Display your favorite sounds as buttons |
+| `add` | Add a sound to your favorites |
+| `remove` | Remove a sound from your favorites |
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `sound` | Yes (for `add`/`remove`) | The name of the sound |
+
+### `/manage`
+
+Add, delete, or move sounds. Requires the configured admin role.
+
+| Subcommand | Description |
+|------------|-------------|
+| `create` | Create a new sound from a URL |
+| `delete` | Delete a sound |
+| `move` | Move a sound to a different category |
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `url` | Yes (for `create`) | URL to download audio from |
+| `name` | Yes (for `create`/`delete`) | Name of the sound |
+| `category` | Yes (for `create`/`move`) | Target category |
+| `start_time` | No (for `create`) | Start timestamp for clipping |
+| `end_time` | No (for `create`) | End timestamp for clipping |
+
+### `/stats`
+
+View usage statistics.
+
+| Subcommand | Description |
+|------------|-------------|
+| `sounds` | Top 10 most played sounds |
+| `users` | Top 10 most active users |
+| `me` | Your personal sound statistics |
+
+### `/gulag`
+
+Restrict users from using the soundboard. Requires the configured admin role.
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all users currently in the gulag |
+| `add` | Add a user to the gulag |
+| `remove` | Remove a user from the gulag |
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `user` | Yes (for `add`/`remove`) | The target user |
+| `timeout` | Yes (for `add`) | Duration in minutes |
+
+### `/misc`
+
+Miscellaneous bot controls.
+
+| Subcommand | Description |
+|------------|-------------|
+| `leave` | Force the bot to leave the voice channel |
+
+## Button Interactions
+
+The bot is designed around a button-driven interface. No commands are needed for everyday use.
+
+| Button | Description |
+|--------|-------------|
+| **Category** | Click a category to browse its sounds |
+| **Sound** | Click a sound to play it in your voice channel |
+| **Stop** | Stop the currently playing sound |
+
+<!-- TODO: Add screenshot of button interaction flow -->
+![Button interaction flow](./assets/placeholder-button-flow.png)
 
 ## Tech Stack
 
