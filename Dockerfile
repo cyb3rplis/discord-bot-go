@@ -1,6 +1,6 @@
 # Stage 1: Build the Go application
 FROM golang:1.23 AS backend
-RUN go install github.com/redteampanda-ng/dca/cmd/dca@latest
+RUN go install github.com/cyb3rplis/dca/cmd/dca@latest
 ENV GOFLAGS="-mod=vendor"
 ENV GOOS=linux
 ENV GOARCH=amd64

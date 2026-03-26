@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY_IMAGE: redteampanda/discord-bot-go
+  REGISTRY_IMAGE: cyb3rplis/discord-bot-go
 
 concurrency:
   group: format('{0}-{1}', ${{ github.ref }}, 'Build Docker Images')
@@ -54,6 +54,6 @@ jobs:
 #      - name: Generate artifact attestation
 #        uses: actions/attest-build-provenance@v1
 #        with:
-#          subject-name: redteampanda/discord-bot-go
+#          subject-name: cyb3rplis/discord-bot-go
 #          subject-digest: ${{ steps.push.outputs.digest }}
 #          push-to-registry: true
