@@ -21,9 +21,14 @@ A feature-rich [Discord](https://discord.com/) soundboard bot written in [Go](ht
 |---------|---------|
 | Category buttons | ![Category buttons](./assets/placeholder-categories.png) |
 | Sound buttons | ![Sound buttons](./assets/placeholder-sounds.png) |
+| Autocomplete | ![Autocomplete](./assets/placeholder-autocomplete.png) |
 | Now playing | ![Now playing](./assets/placeholder-now-playing.png) |
+| Now playing (YouTube) | ![Now playing YouTube](./assets/placeholder-now-playing-youtube.png) |
 | Statistics | ![Statistics](./assets/placeholder-stats.png) |
 | Favorites | ![Favorites](./assets/placeholder-favorites.png) |
+| Favorite buttons | ![Favorite buttons](./assets/placeholder-favorite-buttons.png) |
+| Gulag list | ![Gulag list](./assets/placeholder-gulag.png) |
+| Sound management | ![Sound management](./assets/placeholder-manage.png) |
 
 ## Features
 
@@ -33,6 +38,7 @@ A feature-rich [Discord](https://discord.com/) soundboard bot written in [Go](ht
 - **Categories** — Group sounds into categories for easy browsing
 - **Favorites** — Add, remove, and list personal favorites
 - **Statistics** — View sound and user stats, including a top 10 most-played leaderboard
+- **Autocomplete** — Sound name suggestions as you type in commands
 - **Sound management** — Add, delete, and move sounds; pin new sounds as messages
 - **Gulag** — Temporarily restrict a user from using sounds for a specified duration
 - **Spam protection** — Automatic rate limiting (max 15 interactions per 15 seconds)
