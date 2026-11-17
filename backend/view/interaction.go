@@ -85,11 +85,7 @@ func (a *API) InteractionHandler(s *discordgo.Session, i *discordgo.InteractionC
 
 // handleStopSoundInteraction handles the stop sound interaction
 func (a *API) handleStopSoundInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// Check if the bot is currently speaking, and exit
-	if botSpeaking {
-		stopChannel <- struct{}{}
-		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
-	}
+	stopCurrentSound()
 
 	// Delete the message that contains the stop button
 	st, err := s.ChannelMessage(i.ChannelID, i.ID)

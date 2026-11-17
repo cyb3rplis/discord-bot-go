@@ -16,8 +16,23 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var botSpeaking = false
-var stopChannel = make(chan struct{})
+var (
+	playMu      sync.Mutex    // serializes playback
+	stopMu      sync.Mutex    // guards currentStop
+	currentStop chan struct{} // closed to stop the active or pending sound
+)
+
+const opusSendTimeout = 2 * time.Second // max wait for the voice connection to accept a frame
+
+// stopCurrentSound signals the active sound to stop without blocking.
+func stopCurrentSound() {
+	stopMu.Lock()
+	defer stopMu.Unlock()
+	if currentStop != nil {
+		close(currentStop)
+		currentStop = nil
+	}
+}
 
 var userLastInteraction = make(map[string]time.Time)
 var userInteractionCount = make(map[string]int)
@@ -126,10 +141,30 @@ func (a *API) PromptInteractionPlaySound(s *discordgo.Session, i *discordgo.Inte
 
 // PlaySound plays the current buffer to the provided channel.
 func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, guildID, channelID, soundName string) error {
-	// check if the bot is currently speaking, and exit early to avoid corrupted sound buffer
-	if botSpeaking {
-		stopChannel <- struct{}{}
-		time.Sleep(150 * time.Millisecond) // Give some time for the current sound to stop
+	// Stop the current sound and register this one as the latest request.
+	stop := make(chan struct{})
+	stopMu.Lock()
+	if currentStop != nil {
+		close(currentStop)
+	}
+	currentStop = stop
+	stopMu.Unlock()
+	defer func() {
+		stopMu.Lock()
+		if currentStop == stop {
+			currentStop = nil
+		}
+		stopMu.Unlock()
+	}()
+
+	playMu.Lock()
+	defer playMu.Unlock()
+
+	// A newer request or the stop button superseded this one while waiting.
+	select {
+	case <-stop:
+		return nil
+	default:
 	}
 
 	// Load the sound file.
@@ -150,7 +185,6 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	if err != nil {
 		return err
 	}
-	botSpeaking = true
 
 	// Sleep for a specified amount of time before playing the sound
 	time.Sleep(150 * time.Millisecond)
@@ -161,14 +195,18 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 	// Send the buffer data.
 	for _, buff := range buffer {
 		select {
-		case <-stopChannel:
-			// Stop sending buffer data if stop signal is received
+		case vc.OpusSend <- buff:
+		case <-stop:
 			_ = vc.Speaking(false)
-			botSpeaking = false
-			buffer = nil
 			return nil
-		default:
-			vc.OpusSend <- buff
+		case <-time.After(opusSendTimeout):
+			// Voice sender is dead, drop the connection so the next play rejoins cleanly.
+			log.ErrorLog.Printf("voice connection stalled while playing %s, disconnecting", soundName)
+			_ = vc.Speaking(false)
+			if err := vc.Disconnect(); err != nil {
+				log.ErrorLog.Println("error disconnecting stalled voice connection:", err)
+			}
+			return fmt.Errorf("voice connection stalled")
 		}
 	}
 
@@ -177,13 +215,6 @@ func (a *API) PlaySound(s *discordgo.Session, i *discordgo.InteractionCreate, gu
 
 	// Sleep for a specified amount of time before ending.
 	time.Sleep(250 * time.Millisecond)
-
-	// Disconnect from the provided voice channel.
-	//vc.Disconnect()
-
-	// empty buffer to not play older sounds
-	buffer = nil
-	botSpeaking = false
 
 	// Update the bot activity
 	model.UpdateBotActivity()
